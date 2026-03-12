@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 10% 22%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 22%;
+    --primary: 266 84% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 193 100% 94%;
+    --secondary-foreground: 230 35% 18%;
+    --muted: 258 100% 97%;
+    --muted-foreground: 236 16% 42%;
+    --accent: 35 100% 92%;
+    --accent-foreground: 20 78% 24%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 262 56% 90%;
+    --border-soft: 260 56% 94%;
+    --input: 262 56% 91%;
+    --ring: 266 84% 62%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 85%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 85%;
+    --primary: 273 100% 72%;
+    --primary-foreground: 247 45% 10%;
+    --secondary: 191 82% 22%;
+    --secondary-foreground: 193 100% 93%;
+    --muted: 245 27% 18%;
+    --muted-foreground: 228 20% 74%;
+    --accent: 27 95% 28%;
+    --accent-foreground: 38 100% 92%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 248 27% 22%;
+    --border-soft: 249 22% 27%;
+    --input: 248 27% 20%;
+    --ring: 273 100% 72%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border/20;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: hsl(var(--muted-foreground) / 0.2);
+    color: hsl(var(--foreground));
+  }
+}
