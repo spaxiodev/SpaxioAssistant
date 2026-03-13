@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getPublicAppUrl } from '@/lib/app-url';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CopyScript } from '@/app/dashboard/install/copy-script';
 import { WidgetPreviewWithPreset } from '@/app/dashboard/install/widget-preview-with-preset';
@@ -40,11 +41,7 @@ export default async function InstallPage() {
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  const envBaseUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const baseUrl =
-    envBaseUrl && !envBaseUrl.includes('localhost')
-      ? envBaseUrl
-      : 'https://app.spaxio.ai';
+  const baseUrl = getPublicAppUrl();
 
   const widgetId = widget?.id ?? 'YOUR_WIDGET_ID';
   const scriptTag = `<script src="${baseUrl}/widget.js" data-widget-id="${widgetId}"></script>`;

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { getPublicAppUrl } from '@/lib/app-url';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.spaxio.ai';
-
-function getScript(): string {
+function getScript(baseUrl: string): string {
   const path = join(process.cwd(), 'src', 'app', 'widget.js', 'embed.in.js');
   const raw = readFileSync(path, 'utf8');
   const escaped = baseUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -12,7 +11,8 @@ function getScript(): string {
 }
 
 export function GET() {
-  const script = getScript();
+  const baseUrl = getPublicAppUrl();
+  const script = getScript(baseUrl);
   const isDev = process.env.NODE_ENV !== 'production';
   return new NextResponse(script, {
     headers: {
