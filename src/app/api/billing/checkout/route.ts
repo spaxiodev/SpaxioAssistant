@@ -25,23 +25,44 @@ export async function POST(request: Request) {
 
     const stripe = new Stripe(secretKey);
     const supabase = createAdminClient();
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from('subscriptions')
       .select('stripe_customer_id')
       .eq('organization_id', organizationId)
-      .single();
+      .maybeSingle();
 
-    let customerId = sub?.stripe_customer_id;
+    if (subError) {
+      console.error('[API Error] billing/checkout: subscriptions select failed', subError);
+      return NextResponse.json(
+        { error: 'Could not load billing record. Please try again.' },
+        { status: 503 }
+      );
+    }
+
+    let customerId = sub?.stripe_customer_id ?? null;
 
     if (!customerId) {
       const customer = await stripe.customers.create({
         metadata: { organization_id: organizationId },
       });
       customerId = customer.id;
-      await supabase
+      const { error: upsertError } = await supabase
         .from('subscriptions')
-        .update({ stripe_customer_id: customerId })
-        .eq('organization_id', organizationId);
+        .upsert(
+          {
+            organization_id: organizationId,
+            stripe_customer_id: customerId,
+            status: 'trialing',
+          },
+          { onConflict: 'organization_id' }
+        );
+      if (upsertError) {
+        console.error('[API Error] billing/checkout: subscriptions upsert failed', upsertError);
+        return NextResponse.json(
+          { error: 'Could not save billing customer. Please try again.' },
+          { status: 503 }
+        );
+      }
     }
 
     const priceId = process.env.STRIPE_PRICE_ID;

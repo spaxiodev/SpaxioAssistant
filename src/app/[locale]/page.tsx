@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+import { ContactForm } from '@/components/contact-form';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -67,18 +68,19 @@ export default async function HomePage({ params }: Props) {
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Button asChild size="sm" className="rounded-full">
-              <a href="mailto:support@spaxioassistant.com">{t('contactCta')}</a>
+              <a href="mailto:polidorispaxio@gmail.com">{t('contactCta')}</a>
             </Button>
             <p className="text-xs text-muted-foreground sm:text-sm">
               <span className="font-medium text-foreground">{t('contactEmailLabel')} </span>
               <a
-                href="mailto:support@spaxioassistant.com"
+                href="mailto:polidorispaxio@gmail.com"
                 className="underline-offset-4 hover:underline"
               >
-                support@spaxioassistant.com
+                polidorispaxio@gmail.com
               </a>
             </p>
           </div>
+          <ContactForm />
         </section>
       </div>
     </div>

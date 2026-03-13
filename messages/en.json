@@ -23,7 +23,19 @@
     "contactTitle": "Want to talk to a human?",
     "contactDescription": "Have questions about Spaxio Assistant, billing, or whether it's a good fit for your business? Send us an email and we'll get back to you shortly.",
     "contactCta": "Email support",
-    "contactEmailLabel": "Support:"
+    "contactEmailLabel": "Support:",
+    "contactFormName": "Name",
+    "contactFormNamePlaceholder": "Your name",
+    "contactFormEmail": "Email",
+    "contactFormEmailPlaceholder": "you@example.com",
+    "contactFormSubject": "Subject (optional)",
+    "contactFormSubjectPlaceholder": "What is this about?",
+    "contactFormMessage": "Message",
+    "contactFormMessagePlaceholder": "Your message…",
+    "contactFormSubmit": "Send message",
+    "contactFormSending": "Sending…",
+    "contactFormSuccess": "Thanks! Your message was sent. We'll get back to you soon.",
+    "contactFormError": "Something went wrong. Please try again or email us directly."
   },
   "login": {
     "title": "Log in",

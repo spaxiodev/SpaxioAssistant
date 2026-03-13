@@ -23,7 +23,19 @@
     "contactTitle": "Envie d'échanger avec un humain ?",
     "contactDescription": "Vous avez des questions sur Spaxio Assistant, la facturation ou l'adéquation avec votre entreprise ? Écrivez-nous et nous vous répondrons rapidement.",
     "contactCta": "Écrire au support",
-    "contactEmailLabel": "Support :"
+    "contactEmailLabel": "Support :",
+    "contactFormName": "Nom",
+    "contactFormNamePlaceholder": "Votre nom",
+    "contactFormEmail": "E-mail",
+    "contactFormEmailPlaceholder": "vous@exemple.com",
+    "contactFormSubject": "Sujet (optionnel)",
+    "contactFormSubjectPlaceholder": "De quoi s'agit-il ?",
+    "contactFormMessage": "Message",
+    "contactFormMessagePlaceholder": "Votre message…",
+    "contactFormSubmit": "Envoyer",
+    "contactFormSending": "Envoi…",
+    "contactFormSuccess": "Merci ! Votre message a bien été envoyé. Nous vous répondrons bientôt.",
+    "contactFormError": "Une erreur s'est produite. Réessayez ou écrivez-nous directement."
   },
   "login": {
     "title": "Connexion",
