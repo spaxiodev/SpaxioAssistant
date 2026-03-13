@@ -20,7 +20,12 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    return [{ source: '/favicon.ico', destination: '/icon.png' }];
+    return [
+      { source: '/favicon.ico', destination: '/icon.png' },
+      // Locale-prefixed routes: allow /widget-preview and /widget to work without locale (default: en)
+      { source: '/widget-preview', destination: '/en/widget-preview' },
+      { source: '/widget', destination: '/en/widget' },
+    ];
   },
   async headers() {
     const securityHeaders = [

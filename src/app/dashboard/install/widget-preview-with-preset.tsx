@@ -7,6 +7,7 @@ import { Monitor, Smartphone } from 'lucide-react';
 type Props = {
   widgetId: string;
   baseUrl: string;
+  locale: string;
   initialPreset: string;
 };
 
@@ -24,7 +25,7 @@ const PRESET_OPTIONS = [
 
 type ViewMode = 'desktop' | 'mobile';
 
-export function WidgetPreviewWithPreset({ widgetId, baseUrl, initialPreset }: Props) {
+export function WidgetPreviewWithPreset({ widgetId, baseUrl, locale, initialPreset }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [preset, setPreset] = useState(initialPreset || 'bottom-right');
   const [viewMode, setViewMode] = useState<ViewMode>('desktop');
@@ -58,7 +59,7 @@ export function WidgetPreviewWithPreset({ widgetId, baseUrl, initialPreset }: Pr
     });
   };
 
-  const previewUrl = `${baseUrl}/widget-preview?widgetId=${encodeURIComponent(widgetId)}&preview=${previewNonce}`;
+  const previewUrl = `${baseUrl}/${locale}/widget-preview?widgetId=${encodeURIComponent(widgetId)}&preview=${previewNonce}`;
 
   return (
     <div className="space-y-4">

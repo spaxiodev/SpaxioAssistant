@@ -5,6 +5,11 @@
   if (!widgetId) return;
 
   var base = (script && script.getAttribute('data-base-url')) || "__SPAXIO_BASE_URL__";
+  if (!base || base === '__SPAXIO_BASE_URL__' || base.indexOf('localhost') !== -1) {
+    try {
+      if (script && script.src) base = new URL(script.src).origin;
+    } catch (e) {}
+  }
   var baseOrigin = (function() { try { return new URL(base).origin; } catch (e) { return ''; } })();
 
   function detectLanguage() {

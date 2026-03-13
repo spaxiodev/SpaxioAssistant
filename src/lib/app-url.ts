@@ -2,14 +2,41 @@
  * Public URL of this app (where the widget script and dashboard are served).
  * Used for the embed script, install page script tag, and widget iframe.
  *
- * Set NEXT_PUBLIC_APP_URL in production (e.g. https://app.spaxio.ai or your Vercel URL).
- * On Vercel, if unset we fall back to https://${VERCEL_URL}.
+ * Set NEXT_PUBLIC_APP_URL in production (e.g. https://spaxioassistant.com).
+ * When not set, we use the request's host so the widget works at your actual domain.
  */
-export function getPublicAppUrl(): string {
+function isProductionHost(host: string): boolean {
+  if (!host || host.includes('localhost') || host.startsWith('127.')) return false;
+  return true;
+}
+
+export function getPublicAppUrl(options?: { request?: Request; headers?: Headers }): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (fromEnv && !fromEnv.includes('localhost')) {
     return fromEnv.replace(/\/$/, '');
   }
+
+  // Prefer the actual request host so the widget works at your deployed domain (e.g. spaxioassistant.com)
+  if (options?.request) {
+    try {
+      const url = new URL(options.request.url);
+      if (isProductionHost(url.host)) {
+        return url.origin;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (options?.headers) {
+    const host = options.headers.get('host')?.trim();
+    const proto = options.headers.get('x-forwarded-proto')?.trim() || 'https';
+    if (host && isProductionHost(host)) {
+      const scheme = proto === 'https' ? 'https' : 'http';
+      return `${scheme}://${host}`.replace(/\/$/, '');
+    }
+  }
+
   const vercel = process.env.VERCEL_URL?.trim();
   if (vercel) {
     return `https://${vercel}`;

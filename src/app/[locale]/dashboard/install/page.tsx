@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
@@ -7,8 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CopyScript } from '@/app/dashboard/install/copy-script';
 import { WidgetPreviewWithPreset } from '@/app/dashboard/install/widget-preview-with-preset';
 import { getTranslations } from 'next-intl/server';
+import { routing } from '@/i18n/routing';
 
-export default async function InstallPage() {
+type Props = { params: Promise<{ locale: string }> };
+
+export default async function InstallPage({ params }: Props) {
+  const { locale } = await params;
+  const widgetLocale = routing.locales.includes(locale) ? locale : routing.defaultLocale;
+
   const orgId = await getOrganizationId();
   if (!orgId) return null;
 
@@ -41,7 +48,8 @@ export default async function InstallPage() {
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  const baseUrl = getPublicAppUrl();
+  const headersList = await headers();
+  const baseUrl = getPublicAppUrl({ headers: headersList });
 
   const widgetId = widget?.id ?? 'YOUR_WIDGET_ID';
   const scriptTag = `<script src="${baseUrl}/widget.js" data-widget-id="${widgetId}"></script>`;
@@ -105,6 +113,7 @@ export default async function InstallPage() {
           <WidgetPreviewWithPreset
             widgetId={widget?.id ?? ''}
             baseUrl={baseUrl}
+            locale={widgetLocale}
             initialPreset={settings?.widget_position_preset ?? 'bottom-right'}
           />
         </CardContent>

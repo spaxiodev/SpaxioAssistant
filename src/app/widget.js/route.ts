@@ -10,8 +10,8 @@ function getScript(baseUrl: string): string {
   return raw.replace('__SPAXIO_BASE_URL__', escaped).trim();
 }
 
-export function GET() {
-  const baseUrl = getPublicAppUrl();
+export function GET(request: Request) {
+  const baseUrl = getPublicAppUrl({ request });
   const script = getScript(baseUrl);
   const isDev = process.env.NODE_ENV !== 'production';
   return new NextResponse(script, {
