@@ -11,7 +11,7 @@ function WidgetPreviewContent() {
 
   useEffect(() => {
     if (!widgetId || !containerRef.current) return;
-    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const base = window.location.origin;
     const script = document.createElement('script');
     script.src = `${base}/widget.js`;
     script.setAttribute('data-widget-id', widgetId);
