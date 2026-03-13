@@ -30,6 +30,18 @@ export async function Footer() {
           >
             {t('about')}
           </a>
+          <Link
+            href="/privacy-policy"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t('privacy')}
+          </Link>
+          <Link
+            href="/terms-and-conditions"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t('terms')}
+          </Link>
           <Button asChild size="sm" variant="outline" className="rounded-full">
             <Link href="/dashboard/billing">{t('pricing')}</Link>
           </Button>
