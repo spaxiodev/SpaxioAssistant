@@ -85,11 +85,16 @@ export interface Database {
           widget_logo_url: string | null;
           widget_label_override: string | null;
           show_widget_label: boolean;
+          widget_enabled: boolean;
           widget_position_preset: string;
           widget_position_bottom: number;
           widget_position_right: number;
           faq_page_url: string | null;
           service_base_prices: Record<string, number>; // service_type -> minimum price for "worth it"
+          website_url: string | null;
+          website_learned_content: string | null;
+          website_learned_at: string | null;
+          last_learn_attempt_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -111,11 +116,16 @@ export interface Database {
           widget_logo_url?: string | null;
           widget_label_override?: string | null;
           show_widget_label?: boolean;
+          widget_enabled?: boolean;
           widget_position_preset?: string;
           widget_position_bottom?: number;
           widget_position_right?: number;
           faq_page_url?: string | null;
           service_base_prices?: Record<string, number>;
+          website_url?: string | null;
+          website_learned_content?: string | null;
+          website_learned_at?: string | null;
+          last_learn_attempt_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

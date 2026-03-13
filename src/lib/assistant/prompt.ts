@@ -15,6 +15,9 @@ export type BusinessSettingsContext = {
   phone?: string | null;
   faq?: FaqItem[] | null;
   faq_page_url?: string | null;
+  website_url?: string | null;
+  website_learned_content?: string | null;
+  website_learned_at?: string | null;
 };
 
 export function buildBusinessContext(settings?: BusinessSettingsContext | null): string {
@@ -70,6 +73,11 @@ export function buildBusinessContext(settings?: BusinessSettingsContext | null):
   }
   if (settings.faq_page_url) {
     parts.push(`FAQ page URL (direct users here for more questions): ${settings.faq_page_url}`);
+  }
+  if (settings.website_learned_content && settings.website_learned_content.trim()) {
+    parts.push(
+      `Additional context learned from the business website:\n${settings.website_learned_content.trim()}`
+    );
   }
 
   if (parts.length === 0) {

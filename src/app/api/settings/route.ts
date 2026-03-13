@@ -30,8 +30,10 @@ export async function PUT(request: Request) {
       widgetLogoUrl,
       widgetLabelOverride,
       showWidgetLabel,
+      widgetEnabled,
       faqPageUrl,
       serviceBasePrices,
+      websiteUrl,
     } = body;
 
     const updatePayload: Record<string, unknown> = {
@@ -51,7 +53,9 @@ export async function PUT(request: Request) {
       widget_logo_url: sanitizeText(widgetLogoUrl, 2000) || null,
       widget_label_override: sanitizeText(widgetLabelOverride, 200) || null,
       show_widget_label: typeof showWidgetLabel === 'boolean' ? showWidgetLabel : false,
+      widget_enabled: typeof widgetEnabled === 'boolean' ? widgetEnabled : true,
       faq_page_url: typeof faqPageUrl === 'string' ? sanitizeText(faqPageUrl, 2000) || null : null,
+      website_url: typeof websiteUrl === 'string' ? sanitizeText(websiteUrl, 2000) || null : null,
     };
     if (serviceBasePrices != null && typeof serviceBasePrices === 'object' && !Array.isArray(serviceBasePrices)) {
       const cleaned: Record<string, number> = {};

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Send, MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
 
 function isLightColor(hex: string) {
   const value = hex.replace('#', '');
@@ -170,6 +170,11 @@ function WidgetChat({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
+    if (!bottomRef.current) return;
+    bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, loading]);
+
+  useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
@@ -210,15 +215,17 @@ function WidgetChat({
 
   return (
     <>
-      <div className="min-h-0 max-h-[280px] flex-shrink-0 overflow-y-auto bg-white px-4 pt-4 pb-1 space-y-4">
+      <div className="min-h-[320px] max-h-[400px] flex-shrink-0 overflow-y-auto bg-white px-4 pt-4 pb-1 space-y-4">
         {messages.length === 0 && (
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
               <MessageCircle className="h-4 w-4" strokeWidth={2} />
             </div>
-            <p className="pt-1 text-[15px] leading-relaxed text-slate-600">
-              {welcomeMessage}
-            </p>
+            <div className="max-w-[85%] rounded-2xl bg-slate-100 px-4 py-2.5 text-slate-900 shadow-sm">
+              <p className="text-[15px] leading-relaxed">
+                {welcomeMessage}
+              </p>
+            </div>
           </div>
         )}
         {messages.map((msg, i) => (
@@ -279,22 +286,9 @@ function WidgetChat({
             }}
             placeholder="Type a message..."
             rows={1}
-            className="min-h-[42px] max-h-[120px] flex-1 resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition-shadow focus:ring-2 focus:ring-offset-0 focus:border-transparent overflow-y-auto placeholder:text-slate-400"
+            className="min-h-[42px] max-h-[120px] w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-shadow focus:ring-2 focus:ring-offset-0 focus:border-transparent overflow-y-auto placeholder:text-slate-500"
             style={{ ['--tw-ring-color' as string]: primaryBrandColor }}
           />
-          <button
-            type="submit"
-            disabled={loading}
-            aria-label="Send"
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl transition-opacity disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-offset-0"
-            style={{
-              backgroundColor: primaryBrandColor,
-              color: accentColor,
-              ['--tw-ring-color' as string]: primaryBrandColor,
-            }}
-          >
-            <Send className="h-4 w-4" strokeWidth={2.25} />
-          </button>
         </form>
       </div>
     </>

@@ -12,7 +12,9 @@ export default async function SettingsPage() {
 
   const { data: settings } = await supabase
     .from('business_settings')
-    .select('*')
+    .select(
+      'business_name, industry, company_description, services_offered, pricing_notes, service_base_prices, tone_of_voice, contact_email, phone, lead_notification_email, primary_brand_color, chatbot_name, chatbot_welcome_message, widget_logo_url, widget_enabled, website_url, website_learned_at'
+    )
     .eq('organization_id', orgId)
     .single();
 

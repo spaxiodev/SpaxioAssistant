@@ -39,7 +39,7 @@
 
   var pageLanguage = detectLanguage();
 
-  function mount() {
+  function mount(initialConfig) {
     if (!document.body) return;
     if (document.querySelector('[data-spaxio="1"]')) return;
     var host = document.createElement('div');
@@ -51,15 +51,16 @@
     var sheet = document.createElement('style');
     sheet.textContent = [
     ':host{all:initial;display:block;position:fixed;inset:0;pointer-events:none;z-index:2147483647}',
-    '.spaxio-wrap{pointer-events:auto;position:fixed;z-index:2147483647}',
+    '.spaxio-wrap{pointer-events:auto;position:fixed;z-index:2147483647;opacity:0;transform:scale(0.92);transition:opacity 0.35s ease,transform 0.35s ease}',
+    '.spaxio-wrap.spaxio-wrap-ready{opacity:1;transform:scale(1)}',
     '.spaxio-bubble{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12),0 8px 24px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.06);transition:transform 0.2s ease,box-shadow 0.25s ease;color:#fff;background:linear-gradient(165deg,#1e293b 0%,#0f172a 50%,#0c1322 100%);pointer-events:auto;overflow:hidden}',
     '.spaxio-bubble svg{width:24px;height:24px;stroke:currentColor;stroke-width:2.25;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.2))}',
     '.spaxio-bubble img{width:115%;height:115%;object-fit:cover;display:block;border-radius:50%}',
     '.spaxio-bubble:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.14),0 12px 32px rgba(0,0,0,0.22),0 0 0 1px rgba(0,0,0,0.08)}',
     '.spaxio-bubble:focus{outline:2px solid currentColor;outline-offset:2px}',
-    '.spaxio-teaser{position:fixed;z-index:2147483647;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:18px;background:#ffffff;color:#0f172a;box-shadow:0 0 0 1px rgba(15,23,42,0.06),0 12px 32px rgba(15,23,42,0.16);font:500 14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:0;visibility:hidden;transform-origin:bottom right;pointer-events:none;transition:opacity 0.22s ease,visibility 0s linear 0.22s;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box}',
-    '.spaxio-teaser.visible{opacity:1;visibility:visible;transition:opacity 0.22s ease}',
-    '.spaxio-panel{position:absolute;right:0;bottom:72px;width:380px;max-width:min(380px,calc(100vw - 32px));height:320px;max-height:80vh;border:none;border-radius:24px 24px 0 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.06),0 8px 24px rgba(0,0,0,0.1),0 24px 64px rgba(0,0,0,0.16);background:#fff;pointer-events:none;opacity:0;transform:translateY(12px) scale(0.98);transition:opacity 0.25s ease,transform 0.25s ease}',
+    '.spaxio-teaser{position:fixed;z-index:2147483647;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:18px;background:#ffffff;color:#0f172a;box-shadow:0 0 0 1px rgba(15,23,42,0.06),0 12px 32px rgba(15,23,42,0.16);font:500 14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:0;visibility:hidden;transform-origin:bottom right;transform:scale(0.4) translateY(12px);pointer-events:none;transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1),visibility 0s linear 0.35s;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box}',
+    '.spaxio-teaser.visible{opacity:1;visibility:visible;transform:scale(1) translateY(0);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1)}',
+    '.spaxio-panel{position:absolute;right:0;bottom:72px;width:380px;max-width:min(380px,calc(100vw - 32px));height:480px;max-height:85vh;border:none;border-radius:24px 24px 0 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.06),0 8px 24px rgba(0,0,0,0.1),0 24px 64px rgba(0,0,0,0.16);background:#fff;pointer-events:none;opacity:0;transform:translateY(12px) scale(0.98);transition:opacity 0.25s ease,transform 0.25s ease}',
     '.spaxio-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}',
     '.spaxio-bubble.hidden{display:none !important}',
     '@media (max-width: 480px){.spaxio-wrap{left:0;right:0;bottom:0;top:auto;width:100%}.spaxio-panel{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:70vh;max-height:70vh;border-radius:24px 24px 0 0}.spaxio-bubble{position:fixed;bottom:16px;right:16px;width:56px;height:56px}.spaxio-teaser{position:fixed;right:16px;bottom:88px;max-width:min(280px,calc(100vw - 32px))}.spaxio-label{right:16px;bottom:88px}}'
@@ -291,31 +292,46 @@
     var open = false;
     var teaserTimer = null;
     var teaserShown = false;
+    var followUpScheduled = false;
+    var WELCOME_TEASER_MS = 5000;
+    var FOLLOWUP_TEASER_MS = 4000;
+    var followUpByLang = { en: 'Ask me anything!', fr: 'Posez-moi une question !' };
 
-    function hideTeaser() {
+    function hideTeaser(skipFollowUp) {
       teaser.classList.remove('visible');
       if (teaserTimer) {
         clearTimeout(teaserTimer);
         teaserTimer = null;
       }
+      teaserShown = false;
+      if (!skipFollowUp && !followUpScheduled) {
+        followUpScheduled = true;
+        teaserTimer = setTimeout(function() {
+          teaserTimer = null;
+          var followUp = followUpByLang[pageLanguage] || followUpByLang.en;
+          showTeaser(followUp, FOLLOWUP_TEASER_MS);
+        }, 400);
+      }
     }
 
-    function showTeaser(message) {
-      if (!message || open || teaserShown) return;
+    function showTeaser(message, durationMs) {
+      if (!message || open) return;
+      if (teaserShown && durationMs !== FOLLOWUP_TEASER_MS) return;
       teaser.textContent = message;
       teaser.classList.add('visible');
       teaserShown = true;
       if (teaserTimer) clearTimeout(teaserTimer);
+      var duration = durationMs || WELCOME_TEASER_MS;
       teaserTimer = setTimeout(function() {
-        hideTeaser();
-      }, 3000);
+        hideTeaser(duration === FOLLOWUP_TEASER_MS);
+      }, duration);
     }
 
     function toggle() {
       open = !open;
       iframe.classList.toggle('open', open);
       bubble.classList.toggle('hidden', open);
-      if (open) hideTeaser();
+      if (open) hideTeaser(true);
     }
 
     bubble.addEventListener('click', function() { toggle(); });
@@ -350,12 +366,18 @@
       setPositionFromPreset(c.positionPreset || 'bottom-right');
       setTeaserFromPreset(c.positionPreset || 'bottom-right');
       setPanelFromPreset(c.positionPreset || 'bottom-right');
+      wrap.classList.add('spaxio-wrap-ready');
       showTeaser(c.welcomeMessage || 'Hi! How can I help you today?');
     }
 
-    setPositionFromPreset('bottom-right');
-    setTeaserFromPreset('bottom-right');
-    setPanelFromPreset('bottom-right');
+    if (initialConfig) {
+      applyConfig(initialConfig);
+    } else {
+      setPositionFromPreset('bottom-right');
+      setTeaserFromPreset('bottom-right');
+      setPanelFromPreset('bottom-right');
+      loadConfig();
+    }
 
     function loadConfig(retriesLeft) {
       retriesLeft = typeof retriesLeft === 'number' ? retriesLeft : 2;
@@ -392,13 +414,25 @@
         };
       } catch (e) {}
     }
+  }
 
-    loadConfig();
+  function tryMount() {
+    fetch(base + '/api/widget/config?widgetId=' + encodeURIComponent(widgetId), {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit'
+    })
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('Config failed')); })
+      .then(function(config) {
+        if (config && config.enabled === false) return;
+        mount(config);
+      })
+      .catch(function() { mount(); });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount);
+    document.addEventListener('DOMContentLoaded', tryMount);
   } else {
-    mount();
+    tryMount();
   }
 })();

@@ -51,12 +51,15 @@ export async function GET(request: Request) {
 
   const { data: settings } = await supabase
     .from('business_settings')
-    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_position_preset')
+    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_enabled, widget_position_preset')
     .eq('organization_id', widget.organization_id)
     .single();
 
+  const enabled = settings?.widget_enabled !== false;
+
   return NextResponse.json(
     {
+      enabled,
       welcomeMessage: settings?.chatbot_welcome_message ?? 'Hi! How can I help you today?',
       chatbotName: settings?.chatbot_name ?? settings?.business_name ?? 'Assistant',
       primaryBrandColor: settings?.primary_brand_color ?? '#0f172a',

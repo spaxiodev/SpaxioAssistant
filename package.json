@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:no-deprecation": "set NODE_OPTIONS=--no-deprecation&& next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
@@ -81,6 +82,13 @@ export default async function InstallPage() {
           />
           <p className="text-xs text-muted-foreground">
             {t('optionalCustomUrl')}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Add your website URL in{' '}
+            <Link href="/dashboard/settings" className="underline hover:text-foreground">
+              Settings
+            </Link>{' '}
+            and click &quot;Learn from my website&quot; so the assistant already knows your site.
           </p>
         </CardContent>
       </Card>

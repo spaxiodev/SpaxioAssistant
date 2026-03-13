@@ -5,7 +5,7 @@ import { routing } from '@/i18n/routing';
 
 const handleI18nRouting = createIntlMiddleware(routing);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 1. Run next-intl (locale detection, redirect / to /en or /fr, etc.)
   let response = handleI18nRouting(request);
 
@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
     }
   } catch (err) {
-    console.error('[middleware] Supabase auth error:', err instanceof Error ? err.message : err);
+    console.error('[proxy] Supabase auth error:', err instanceof Error ? err.message : err);
     // Allow the request through so the app can show login or handle the error
   }
 

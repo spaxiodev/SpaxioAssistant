@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Mail, Palette } from 'lucide-react';
+import { MessageSquare, Mail, Palette, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WidgetLogoImageCropDialog } from '@/components/widget-logo-image-crop';
 import type { BusinessSettings } from '@/lib/supabase/database.types';
+
+const WidgetLogoImageCropDialog = dynamic(
+  () => import('@/components/widget-logo-image-crop').then((m) => m.WidgetLogoImageCropDialog),
+  { ssr: false }
+);
 
 function normalizeServices(value: string | string[]) {
   const rawServices = Array.isArray(value) ? value : value.split('\n');
@@ -28,7 +33,7 @@ function normalizeServices(value: string | string[]) {
 export function BusinessSettingsForm({
   initial,
 }: {
-  initial?: BusinessSettings | null;
+  initial?: Partial<BusinessSettings> | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -49,6 +54,7 @@ export function BusinessSettingsForm({
     initial?.chatbot_welcome_message ?? 'Hi! How can I help you today?'
   );
   const [widgetLogoUrl, setWidgetLogoUrl] = useState(initial?.widget_logo_url ?? '');
+  const [widgetEnabled, setWidgetEnabled] = useState(initial?.widget_enabled !== false);
   const [serviceBasePrices, setServiceBasePrices] = useState<Record<string, string>>(() => {
     const raw = initial?.service_base_prices;
     if (!raw || typeof raw !== 'object') return {};
@@ -60,6 +66,11 @@ export function BusinessSettingsForm({
     }
     return out;
   });
+  const [websiteUrl, setWebsiteUrl] = useState(initial?.website_url ?? '');
+  const [learnLoading, setLearnLoading] = useState(false);
+  const [websiteLearnedAt, setWebsiteLearnedAt] = useState<string | null>(
+    initial?.website_learned_at ?? null
+  );
   const [logoCropDialogOpen, setLogoCropDialogOpen] = useState(false);
   const [logoCropImageSrc, setLogoCropImageSrc] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +104,9 @@ export function BusinessSettingsForm({
         chatbotName: chatbotName || null,
         chatbotWelcomeMessage: chatbotWelcomeMessage || null,
         widgetLogoUrl: widgetLogoUrl || null,
+        widgetEnabled,
         serviceBasePrices: basePricesPayload,
+        websiteUrl: websiteUrl || null,
       }),
     });
     setLoading(false);
@@ -141,6 +154,43 @@ export function BusinessSettingsForm({
     },
     [toast, closeLogoCropDialog]
   );
+
+  async function handleLearnWebsite() {
+    const urlToUse = websiteUrl.trim();
+    if (!urlToUse) {
+      toast({
+        title: 'Website URL required',
+        description: 'Enter your website URL above and save, then click Learn.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setLearnLoading(true);
+    try {
+      const res = await fetch('/api/settings/learn-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlToUse }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({
+          title: 'Learning failed',
+          description: data?.error ?? 'Could not learn from website. Try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setWebsiteLearnedAt(new Date().toISOString());
+      toast({
+        title: 'Website learned',
+        description: `Saved ${data?.learnedLength ?? 0} characters from your site. The assistant can use this.`,
+      });
+      router.refresh();
+    } finally {
+      setLearnLoading(false);
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -245,6 +295,57 @@ export function BusinessSettingsForm({
 
       <Card className="overflow-hidden border border-border-soft shadow-sm">
         <CardHeader className="border-b border-border-soft bg-muted/30 pb-6">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Globe className="h-5 w-5 text-muted-foreground" />
+            Website learning
+          </CardTitle>
+          <CardDescription className="mt-1.5">
+            Add your website URL and click &quot;Learn from my website&quot; so the assistant already knows your site content.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-6">
+          <div className="space-y-2">
+            <Label htmlFor="websiteUrl">Website URL</Label>
+            <Input
+              id="websiteUrl"
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="rounded-lg"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your homepage or main page. Save settings first if you change this, then click Learn.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleLearnWebsite}
+              disabled={learnLoading}
+              className="rounded-lg"
+            >
+              {learnLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Learning...
+                </>
+              ) : (
+                'Learn from my website'
+              )}
+            </Button>
+            {websiteLearnedAt && (
+              <span className="text-sm text-muted-foreground">
+                Last learned: {new Date(websiteLearnedAt).toLocaleString()}
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden border border-border-soft shadow-sm">
+        <CardHeader className="border-b border-border-soft bg-muted/30 pb-6">
           <CardTitle className="text-xl">Assistant & contact</CardTitle>
           <CardDescription className="mt-1.5">
             Tone, welcome message, and contact details.
@@ -342,6 +443,23 @@ export function BusinessSettingsForm({
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Palette className="h-4 w-4 text-muted-foreground" />
               Branding
+            </div>
+            <div className="flex items-center gap-3 rounded-xl border border-border-soft bg-muted/20 p-4">
+              <input
+                type="checkbox"
+                id="widgetEnabled"
+                checked={widgetEnabled}
+                onChange={(e) => setWidgetEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-border-soft"
+              />
+              <div className="flex-1">
+                <Label htmlFor="widgetEnabled" className="cursor-pointer font-medium text-foreground">
+                  Show chatbot on my website
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Turn off to hide the chat bubble and widget on your client&apos;s site. The install code can stay in place; visitors will not see the chatbot until you turn this back on.
+                </p>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="primaryBrandColor" className="text-muted-foreground">Primary brand color</Label>
