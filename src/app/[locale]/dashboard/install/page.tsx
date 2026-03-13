@@ -40,7 +40,11 @@ export default async function InstallPage() {
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.spaxio.ai';
+  const envBaseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const baseUrl =
+    envBaseUrl && !envBaseUrl.includes('localhost')
+      ? envBaseUrl
+      : 'https://app.spaxio.ai';
 
   const widgetId = widget?.id ?? 'YOUR_WIDGET_ID';
   const scriptTag = `<script src="${baseUrl}/widget.js" data-widget-id="${widgetId}"></script>`;
