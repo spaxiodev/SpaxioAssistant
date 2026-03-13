@@ -49,6 +49,7 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // Only dashboard (including install) requires sign-in; rest of site is public
     const isDashboard =
       path === `/${locale}/dashboard` || path.startsWith(`/${locale}/dashboard/`);
     const isAuthPage =

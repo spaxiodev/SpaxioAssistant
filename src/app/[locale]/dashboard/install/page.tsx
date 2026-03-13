@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
@@ -17,7 +18,9 @@ export default async function InstallPage({ params }: Props) {
   const widgetLocale = (routing.locales.includes(locale as 'en' | 'fr') ? locale : routing.defaultLocale) as 'en' | 'fr';
 
   const orgId = await getOrganizationId();
-  if (!orgId) return null;
+  if (!orgId) {
+    redirect(`/${locale}/login?redirectTo=/${locale}/dashboard/install`);
+  }
 
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');

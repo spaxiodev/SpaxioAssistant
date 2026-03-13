@@ -68,21 +68,51 @@ export async function POST(request: Request) {
     const priceId = process.env.STRIPE_PRICE_ID;
     if (!priceId) return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing?success=1`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing`,
-      subscription_data: {
-        trial_period_days: 7,
+    const createSession = (customer: string) =>
+      stripe.checkout.sessions.create({
+        customer: customer,
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing?success=1`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing`,
+        subscription_data: {
+          trial_period_days: 7,
+          metadata: { organization_id: organizationId },
+        },
         metadata: { organization_id: organizationId },
-      },
-      metadata: { organization_id: organizationId },
-    });
+      });
+
+    let session;
+    try {
+      session = await createSession(customerId!);
+    } catch (sessionErr: unknown) {
+      const stripeErr = sessionErr as { code?: string; message?: string };
+      const isInvalidCustomer =
+        stripeErr?.message?.includes('No such customer') || stripeErr?.code === 'resource_missing';
+      if (!isInvalidCustomer || !customerId) throw sessionErr;
+
+      // Stored customer was deleted in Stripe (or wrong account). Create new and retry.
+      const customer = await stripe.customers.create({
+        metadata: { organization_id: organizationId },
+      });
+      customerId = customer.id;
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .upsert(
+          { organization_id: organizationId, stripe_customer_id: customerId, status: 'trialing' },
+          { onConflict: 'organization_id' }
+        );
+      if (updateError) {
+        console.error('[API Error] billing/checkout: update customer id after invalid customer', updateError);
+        throw updateError;
+      }
+      session = await createSession(customerId);
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
+    // Log full error for debugging (Stripe/Supabase/auth issues)
+    console.error('[API Error] billing/checkout:', err);
     return handleApiError(err, 'billing/checkout');
   }
 }

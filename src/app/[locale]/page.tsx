@@ -33,12 +33,15 @@ export default async function HomePage({ params }: Props) {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" className="rounded-full px-7">
-              <Link href="/dashboard">{t('openDashboard')}</Link>
+              <Link href="/signup">{t('getStarted')}</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full px-7">
-              <Link href="/signup">{t('createAccount')}</Link>
+              <Link href="/login">{t('logIn')}</Link>
             </Button>
           </div>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {t('browseNoAccount')}
+          </p>
         </div>
 
         <div className="mx-auto mt-16 flex max-w-5xl flex-wrap justify-center gap-3 text-sm text-muted-foreground">

@@ -46,6 +46,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: { url: '/icon.png', type: 'image/png' },
+  },
 };
 
 export default async function RootLayout({

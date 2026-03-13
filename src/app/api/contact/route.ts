@@ -49,21 +49,45 @@ export async function POST(request: Request) {
     }
 
     const resend = getResend();
-    if (resend) {
-      const from = process.env.RESEND_FROM_EMAIL || 'Spaxio Assistant <onboarding@resend.dev>';
-      const subjectLine = subject
-        ? `[Spaxio Contact] ${subject}`
-        : `[Spaxio Contact] Message from ${name}`;
-      await resend.emails.send({
-        from,
-        to: [CONTACT_EMAIL],
-        replyTo: email,
-        subject: subjectLine,
-        text: `Name: ${name}\nEmail: ${email}\n\nSubject: ${subject || '(none)'}\n\nMessage:\n${message}`,
-      });
+    if (!resend) {
+      return NextResponse.json(
+        { error: 'Email is not configured. Please email us directly.' },
+        { status: 503 }
+      );
     }
 
-    return NextResponse.json({ success: true });
+    // From must be a verified domain in Resend (e.g. contact@yourdomain.com) or the default below.
+    // Gmail/Yahoo/etc. cannot be used as sender — Resend requires a verified domain.
+    const rawFrom = process.env.RESEND_FROM_EMAIL || '';
+    const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com'];
+    const fromDomain = rawFrom.includes('@') ? rawFrom.split('@')[1]?.toLowerCase() : '';
+    const isFreeEmail = fromDomain ? freeEmailDomains.some((d) => fromDomain === d || fromDomain.endsWith('.' + d)) : false;
+    const from = rawFrom && !isFreeEmail ? rawFrom : 'Spaxio Assistant <onboarding@resend.dev>';
+    const subjectLine = subject
+      ? `[Spaxio Contact] ${subject}`
+      : `[Spaxio Contact] Message from ${name}`;
+
+    const { data, error } = await resend.emails.send({
+      from,
+      to: [CONTACT_EMAIL],
+      replyTo: email,
+      subject: subjectLine,
+      text: `Name: ${name}\nEmail: ${email}\n\nSubject: ${subject || '(none)'}\n\nMessage:\n${message}`,
+    });
+
+    if (error) {
+      console.error('[contact] Resend error:', error);
+      return NextResponse.json(
+        {
+          error:
+            error.message ||
+            'Failed to send message. Please try again or email us directly.',
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, id: data?.id });
   } catch {
     return NextResponse.json(
       { error: 'Failed to send message. Please try again or email us directly.' },
