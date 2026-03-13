@@ -11,12 +11,7 @@ function isProductionHost(host: string): boolean {
 }
 
 export function getPublicAppUrl(options?: { request?: Request; headers?: Headers }): string {
-  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (fromEnv && !fromEnv.includes('localhost')) {
-    return fromEnv.replace(/\/$/, '');
-  }
-
-  // Prefer the actual request host so the widget works at your deployed domain (e.g. spaxioassistant.com)
+  // Prefer the actual request host so the widget uses the same origin as the page (avoids CORS and postMessage origin mismatch for www vs non-www).
   if (options?.request) {
     try {
       const url = new URL(options.request.url);
@@ -35,6 +30,11 @@ export function getPublicAppUrl(options?: { request?: Request; headers?: Headers
       const scheme = proto === 'https' ? 'https' : 'http';
       return `${scheme}://${host}`.replace(/\/$/, '');
     }
+  }
+
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (fromEnv && !fromEnv.includes('localhost')) {
+    return fromEnv.replace(/\/$/, '');
   }
 
   const vercel = process.env.VERCEL_URL?.trim();

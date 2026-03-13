@@ -11,6 +11,18 @@
     } catch (e) {}
   }
   var baseOrigin = (function() { try { return new URL(base).origin; } catch (e) { return ''; } })();
+  if (typeof window !== 'undefined' && window.location && window.location.origin && baseOrigin) {
+    try {
+      var cur = new URL(window.location.origin);
+      var baseUrl = new URL(base);
+      var curHost = cur.hostname.replace(/^www\./i, '');
+      var baseHost = baseUrl.hostname.replace(/^www\./i, '');
+      if (curHost === baseHost && cur.protocol === baseUrl.protocol) {
+        base = window.location.origin;
+        baseOrigin = window.location.origin;
+      }
+    } catch (e) {}
+  }
 
   function detectLanguage() {
     function normalizeLang(value) {

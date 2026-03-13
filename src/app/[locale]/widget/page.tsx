@@ -40,7 +40,9 @@ function WidgetContent() {
 
   useEffect(() => {
     if (!widgetId) return;
-    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    // Use current origin so preview on www.spaxioassistant.com fetches from www (avoids CORS).
+    const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
+    if (!base) return;
     fetch(`${base}/api/widget/config?widgetId=${encodeURIComponent(widgetId)}`)
       .then((r) => r.json())
       .then((d) => setConfig(d))
