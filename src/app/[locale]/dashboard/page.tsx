@@ -6,6 +6,7 @@ import { Users, MessageSquare, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { CheckoutButton } from '@/app/dashboard/billing/checkout-button';
 
 export default async function DashboardOverviewPage() {
   const orgId = await getOrganizationId();
@@ -34,6 +35,10 @@ export default async function DashboardOverviewPage() {
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
   const isTrialing = !adminAllowed && subscription?.status === 'trialing';
+  const isActive =
+    adminAllowed ||
+    subscription?.status === 'active' ||
+    subscription?.status === 'trialing';
 
   return (
     <div className="space-y-8">
@@ -42,7 +47,24 @@ export default async function DashboardOverviewPage() {
         <p className="text-muted-foreground">{t('overviewDescription')}</p>
       </div>
 
-      {isTrialing && trialEnd && (
+      {!isActive && (
+        <Card className="border-2 border-primary bg-primary/5 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-xl">{t('upgradeCtaTitle')}</CardTitle>
+            <CardDescription className="text-base">{t('upgradeCtaDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CheckoutButton
+              organizationId={orgId}
+              subscribeLabel={t('upgrade')}
+              redirectingLabel={t('redirecting')}
+              className="rounded-lg px-6 py-6 text-base font-semibold"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {isTrialing && trialEnd && isActive && (
         <Card className="border-primary/50 bg-primary/5">
           <CardContent className="flex items-center justify-between pt-6">
             <p className="text-sm text-muted-foreground">

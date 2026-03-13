@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { setRequestLocale } from 'next-intl/server';
+import { Button } from '@/components/ui/button';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -7,6 +9,7 @@ export default async function PrivacyPolicyPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('legal');
+  const tCommon = await getTranslations('common');
 
   const lastUpdated = new Date().toLocaleDateString(locale, {
     year: 'numeric',
@@ -16,6 +19,9 @@ export default async function PrivacyPolicyPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
+      <Button variant="ghost" className="mb-6 -ml-2" asChild>
+        <Link href={`/${locale}`}>{tCommon('backToHome')}</Link>
+      </Button>
       <h1 className="text-3xl font-bold tracking-tight">
         {t('pageTitlePrivacy')}
       </h1>
