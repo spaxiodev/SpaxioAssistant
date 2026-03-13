@@ -14,7 +14,7 @@ type Props = { params: Promise<{ locale: string }> };
 
 export default async function InstallPage({ params }: Props) {
   const { locale } = await params;
-  const widgetLocale = routing.locales.includes(locale) ? locale : routing.defaultLocale;
+  const widgetLocale = (routing.locales.includes(locale as 'en' | 'fr') ? locale : routing.defaultLocale) as 'en' | 'fr';
 
   const orgId = await getOrganizationId();
   if (!orgId) return null;
