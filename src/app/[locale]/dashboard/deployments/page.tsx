@@ -12,11 +12,17 @@ export default async function DeploymentsPage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
 
-  const { data: configs } = await supabase
-    .from('deployment_configs')
-    .select('id, agent_id, deployment_type, created_at, agents(name)')
-    .eq('organization_id', orgId)
-    .order('created_at', { ascending: false });
+  const [{ data: configs }, { data: agents }] = await Promise.all([
+    supabase
+      .from('deployment_configs')
+      .select('id, agent_id, deployment_type, created_at, agents(name)')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false }),
+    supabase.from('agents').select('id, name').eq('organization_id', orgId).order('name'),
+  ]);
+
+  const hasAgents = (agents?.length ?? 0) > 0;
+  const hasConfigs = (configs?.length ?? 0) > 0;
 
   return (
     <div className="space-y-8">
@@ -33,19 +39,40 @@ export default async function DeploymentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!configs?.length ? (
+          {!hasConfigs ? (
             <div className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-8 text-center">
               <Code className="mx-auto h-10 w-10 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">No deployments yet.</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Create an agent, then add a deployment from the agent&apos;s deployment tab.
+              <p className="mt-2 text-sm text-muted-foreground">
+                {hasAgents ? t('deploymentsNoConfigsWithAgents') : t('deploymentsNoConfigsNoAgents')}
               </p>
-              <Link
-                href="/dashboard/agents"
-                className="mt-4 inline-block text-sm font-medium text-primary underline"
-              >
-                Go to Agents
-              </Link>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hasAgents ? t('deploymentsAddFromAgentTab') : t('deploymentsCreateAgentFirst')}
+              </p>
+              {hasAgents ? (
+                <ul className="mt-4 space-y-2">
+                  {(agents ?? []).map((agent) => (
+                    <li key={agent.id}>
+                      <Link
+                        href={`/dashboard/agents/${agent.id}`}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-primary underline"
+                      >
+                        <Bot className="h-4 w-4" />
+                        {agent.name}
+                      </Link>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {t('deploymentsOpenAgentDeploymentTab')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Link
+                  href="/dashboard/agents/new"
+                  className="mt-4 inline-block text-sm font-medium text-primary underline"
+                >
+                  {t('createAgent')}
+                </Link>
+              )}
             </div>
           ) : (
             <ul className="divide-y divide-border">

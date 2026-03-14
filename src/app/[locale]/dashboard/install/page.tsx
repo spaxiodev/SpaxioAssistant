@@ -9,6 +9,7 @@ import { getPublicAppUrl } from '@/lib/app-url';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CopyScript } from '@/app/dashboard/install/copy-script';
 import { WidgetPreviewWithPreset } from '@/app/dashboard/install/widget-preview-with-preset';
+import { WidgetAgentLink } from '@/app/dashboard/install/widget-agent-link';
 import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 
@@ -28,11 +29,17 @@ export default async function InstallPage({ params }: Props) {
 
   const { data: widget } = await supabase
     .from('widgets')
-    .select('id')
+    .select('id, agent_id, agents(name)')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  const { data: agents } = await supabase
+    .from('agents')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .order('name');
 
   const { data: settings } = await supabase
     .from('business_settings')
@@ -100,6 +107,20 @@ export default async function InstallPage({ params }: Props) {
             </Link>{' '}
             so the assistant can use your site content when answering.
           </p>
+          {agents && agents.length > 0 && widget?.id && (
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-sm">
+              <WidgetAgentLink
+                widgetId={widget.id}
+                currentAgentId={widget.agent_id}
+                agents={agents}
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                <Link href="/dashboard/agents" className="text-primary underline">
+                  {t('installEditAgents')}
+                </Link>
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

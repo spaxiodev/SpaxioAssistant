@@ -95,6 +95,22 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    const agent = result.data;
+    if (agent?.id) {
+      const { data: unlinkedWidget } = await supabase
+        .from('widgets')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .is('agent_id', null)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (unlinkedWidget) {
+        await supabase.from('widgets').update({ agent_id: agent.id }).eq('id', unlinkedWidget.id);
+      }
+    }
+
     return NextResponse.json(result.data);
   } catch (err) {
     return handleApiError(err, 'agents/POST');
