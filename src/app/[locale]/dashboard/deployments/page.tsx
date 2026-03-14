@@ -76,7 +76,7 @@ export default async function DeploymentsPage() {
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {configs.map((c) => (
+              {(configs ?? []).map((c) => (
                 <li key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                   <div className="flex items-center gap-3">
                     <Bot className="h-5 w-5 text-muted-foreground" />
