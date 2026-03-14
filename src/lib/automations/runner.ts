@@ -1,7 +1,6 @@
 /**
  * Automation execution foundation.
- * Creates runs, executes actions (placeholders where needed), updates status.
- * TODO: n8n integration — call_webhook can POST to n8n webhook URL from action_config.
+ * Creates runs, executes actions, updates status. All execution is native to Spaxio.
  */
 
 import { Resend } from 'resend';
@@ -245,6 +244,17 @@ async function executeSteps(
           input,
           supabase
         );
+      } else if (step.step_type === 'delay') {
+        const cfg = (step.config_json as Record<string, unknown>) ?? {};
+        const seconds = typeof cfg.delay_seconds === 'number' && cfg.delay_seconds > 0
+          ? Math.min(cfg.delay_seconds, 300)
+          : typeof cfg.delay_minutes === 'number' && cfg.delay_minutes > 0
+            ? Math.min(cfg.delay_minutes * 60, 300)
+            : 0;
+        if (seconds > 0) {
+          await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+        }
+        stepOutput = { action_executed: 'delay', delay_seconds: seconds };
       } else if (step.step_type === 'branch_if') {
         const cond = (step.condition_json as Record<string, unknown>) ?? {};
         const path = String(cond.path ?? '').trim();
@@ -294,6 +304,18 @@ async function executeSteps(
 
     if (step.step_type === 'human_approval') break;
     if (stepStatus === 'failed') break;
+  }
+
+  // After all steps succeed, run the automation's main action (e.g. send email, webhook).
+  if (status === 'success') {
+    try {
+      const actionOutput = await executeAction(automation, input, supabase);
+      lastOutput = { ...lastOutput, ...actionOutput };
+    } catch (err) {
+      status = 'failed';
+      errorMessage = err instanceof Error ? err.message : 'Final action failed';
+      lastOutput = { ...lastOutput, success: false, message: errorMessage };
+    }
   }
 
   return { output: lastOutput, status, errorMessage };
@@ -394,7 +416,7 @@ async function executeAction(
     }
 
     case 'call_webhook':
-    case 'n8n_workflow': {
+    case 'call_external_url': {
       const url = typeof config.url === 'string' ? config.url.trim() : null;
       if (!url) {
         return {
@@ -415,7 +437,7 @@ async function executeAction(
         : 15_000;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(automation.action_type === 'n8n_workflow' && { 'X-Spaxio-Source': 'automation' }),
+        'X-Spaxio-Source': 'automation',
         ...(config.headers && typeof config.headers === 'object'
           ? Object.fromEntries(
               Object.entries(config.headers).filter(

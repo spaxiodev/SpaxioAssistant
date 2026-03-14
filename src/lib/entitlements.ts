@@ -103,8 +103,8 @@ export async function getPlanForOrg(
     return plan ?? null;
   }
 
-  // Default: Free plan
-  const { data: freePlan } = await supabase.from('plans').select('*').eq('slug', 'free').single();
+  // Default: Free plan (use maybeSingle so missing row doesn't throw)
+  const { data: freePlan } = await supabase.from('plans').select('*').eq('slug', 'free').maybeSingle();
   return freePlan ?? null;
 }
 

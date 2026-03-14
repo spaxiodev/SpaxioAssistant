@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   LayoutDashboard,
   Bot,
-  MessageSquare,
   Users,
   MessageCircle,
   BookOpen,
@@ -18,6 +17,8 @@ import {
   Settings,
   LogOut,
   UserPlus,
+  FileText,
+  Webhook,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -103,6 +104,27 @@ const Menu = ({
   );
 };
 
+function NavSection({
+  labelKey,
+  children,
+}: {
+  labelKey: string;
+  children: React.ReactNode;
+}) {
+  const t = useTranslations('dashboard');
+  return (
+    <div className="space-y-1">
+      <p
+        className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80"
+        aria-hidden
+      >
+        {t(labelKey)}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 type SidebarWithSubmenuProps = {
   organizationId?: string;
   showUpgradeButton?: boolean;
@@ -135,22 +157,31 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
   const displayName = userDisplay?.fullName?.trim() || userDisplay?.email || t('account');
   const initials = getInitials(userDisplay?.fullName ?? null, userDisplay?.email ?? null);
 
-  const topLevelNav = [
+  const workspaceNav = [
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
-    { href: '/dashboard/assistant', key: 'assistant', icon: MessageSquare },
+    { href: '/dashboard/automations', key: 'automations', icon: Workflow },
+    { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
   ];
 
-  const leadsSubmenu: SubmenuItem[] = [
+  const crmSubmenu: SubmenuItem[] = [
     { nameKey: 'leads', href: '/dashboard/leads' },
+    { nameKey: 'contacts', href: '/dashboard/contacts' },
+    { nameKey: 'companies', href: '/dashboard/companies' },
+    { nameKey: 'deals', href: '/dashboard/deals' },
+    { nameKey: 'tickets', href: '/dashboard/tickets' },
     { nameKey: 'quoteRequests', href: '/dashboard/quote-requests' },
   ];
 
-  const singleNav = [
+  const activityNav = [
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
-    { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
-    { href: '/dashboard/automations', key: 'automations', icon: Workflow },
+    { href: '/dashboard/documents', key: 'documents', icon: FileText },
     { href: '/dashboard/analytics', key: 'analytics', icon: BarChart3 },
+  ];
+
+  const developersNav = [
+    { href: '/dashboard/deployments', key: 'deployments', icon: Code },
+    { href: '/dashboard/webhooks', key: 'webhooks', icon: Webhook },
     { href: '/dashboard/integrations', key: 'integrations', icon: Plug },
   ];
 
@@ -225,79 +256,104 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
           </DropdownMenu>
         </div>
       )}
-      <nav className="flex flex-1 flex-col gap-1 overflow-auto p-3">
-        <div className="flex-1 space-y-1">
-          {/* Top-level links */}
-          {topLevelNav.map((item) => {
-            const isActive =
-              pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                    : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
-                )}
-              >
-                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
-                {t(item.key)}
-              </Link>
-            );
-          })}
+      <nav className="flex flex-1 flex-col overflow-auto p-3" aria-label={t('navAriaLabel')}>
+        <div className="flex flex-1 flex-col gap-6">
+          <NavSection labelKey="navSectionWorkspace">
+            {workspaceNav.map((item) => {
+              const isActive =
+                pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                    isActive
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
+                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+          </NavSection>
 
-          {/* Leads & quote requests submenu */}
-          <Menu items={leadsSubmenu} labelKey="leads" icon={Users} />
+          <NavSection labelKey="navSectionCrm">
+            <Menu items={crmSubmenu} labelKey="crm" icon={Users} />
+          </NavSection>
 
-          {/* Single links */}
-          {singleNav.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                    : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
-                )}
-              >
-                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
-                {t(item.key)}
-              </Link>
-            );
-          })}
+          <NavSection labelKey="navSectionActivity">
+            {activityNav.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                    isActive
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
+                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+          </NavSection>
 
-          {/* Billing */}
-          <Link
-            href="/dashboard/billing"
-            className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-              pathname === '/dashboard/billing' || pathname.startsWith('/dashboard/billing/')
-                ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
-            )}
-          >
-            <CreditCard className={cn('h-5 w-5 shrink-0', pathname.startsWith('/dashboard/billing') && 'text-primary')} />
-            {t('billingTitle')}
-          </Link>
+          <NavSection labelKey="navSectionDevelopers">
+            {developersNav.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                    isActive
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
+                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+          </NavSection>
 
-          {/* Setup: Install & Settings submenu */}
-          <Menu items={setupSubmenu} labelKey="install" icon={Code} />
+          <NavSection labelKey="navSectionAccount">
+            <Link
+              href="/dashboard/billing"
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                pathname === '/dashboard/billing' || pathname.startsWith('/dashboard/billing/')
+                  ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
+                  : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+              )}
+            >
+              <CreditCard className={cn('h-5 w-5 shrink-0', pathname.startsWith('/dashboard/billing') && 'text-primary')} />
+              {t('billingTitle')}
+            </Link>
+            <Menu items={setupSubmenu} labelKey="installAndSettings" icon={Settings} />
+          </NavSection>
 
-          {/* Upgrade CTA — bottom of sidebar */}
           {showUpgradeButton && organizationId && (
-            <CheckoutButton
-              organizationId={organizationId}
-              subscribeLabel={t('upgrade')}
-              redirectingLabel={t('redirecting')}
-              className="w-full rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:opacity-95 hover:shadow-xl"
-            />
+            <div className="pt-2">
+              <CheckoutButton
+                organizationId={organizationId}
+                subscribeLabel={t('upgrade')}
+                redirectingLabel={t('redirecting')}
+                className="w-full rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:opacity-95 hover:shadow-xl"
+              />
+            </div>
           )}
         </div>
       </nav>

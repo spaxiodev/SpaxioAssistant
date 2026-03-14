@@ -15,11 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/components/ui/use-toast';
-import { Copy, RefreshCw } from 'lucide-react';
+import { Copy, RefreshCw, Workflow } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AUTOMATION_TEMPLATES, getTemplateByKey } from '@/lib/automations/templates';
 import { TRIGGER_TYPES, ACTION_TYPES } from '@/lib/automations/types';
 import { getTriggerLabel, getActionLabel } from '@/lib/automations/labels';
 import type { Automation } from '@/lib/supabase/database.types';
+import { AutomationWorkflowEditor } from './automation-workflow-editor';
 
 const WEBHOOK_SAMPLE_PAYLOAD = `{
   "event": "order.created",
@@ -60,6 +62,7 @@ export function CreateAutomationModal({
   const [webhookUrl, setWebhookUrl] = useState('');
   const [showCreatedSuccess, setShowCreatedSuccess] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'workflow'>('details');
 
   const isEdit = !!editAutomation?.id;
   const automationWithWebhook = editAutomation as (Automation & { webhook_url?: string }) | null;
@@ -275,17 +278,204 @@ export function CreateAutomationModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-lg" showClose>
+      <DialogContent
+        className={`flex max-h-[90vh] flex-col overflow-hidden ${isEdit && activeTab === 'workflow' ? 'sm:max-w-4xl' : 'sm:max-w-lg'}`}
+        showClose
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEdit ? t('editAutomationTitle') : t('createAutomationTitle')}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Update trigger, action, and linked agent.'
+              ? 'Update trigger, action, and build your workflow with blocks.'
               : 'Choose a template or configure from scratch.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pt-2 pr-1">
+        {isEdit ? (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'details' | 'workflow')} className="flex min-h-0 flex-1 flex-col">
+            <TabsList className="shrink-0">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="workflow">
+                <Workflow className="mr-2 h-4 w-4" />
+                Workflow
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="mt-3 min-h-0 flex-1 overflow-y-auto">
+              <form onSubmit={handleSubmit} className="flex flex-col">
+                <div className="space-y-4 pt-2 pr-1">
+          <div>
+            <Label htmlFor="automation-name">{t('automationNameLabel')}</Label>
+            <Input
+              id="automation-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('automationNamePlaceholder')}
+              className="mt-1"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="automation-desc">{t('automationDescriptionLabel')}</Label>
+            <Input
+              id="automation-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          {!isEdit && (
+            <div>
+              <Label htmlFor="automation-template">{t('selectTemplate')}</Label>
+              <select
+                id="automation-template"
+                value={templateKey}
+                onChange={(e) => handleTemplateChange(e.target.value)}
+                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">From scratch</option>
+                {AUTOMATION_TEMPLATES.map((tmpl) => (
+                  <option key={tmpl.key} value={tmpl.key}>
+                    {tmpl.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <Label htmlFor="automation-agent">{t('selectAgent')}</Label>
+            <select
+              id="automation-agent"
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value)}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">{t('noAgent')}</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="automation-trigger">{t('triggerType')}</Label>
+            <select
+              id="automation-trigger"
+              value={triggerType}
+              onChange={(e) => setTriggerType(e.target.value)}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {TRIGGER_TYPES.map((tt) => (
+                <option key={tt} value={tt}>
+                  {getTriggerLabel(tt)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="automation-action">{t('actionType')}</Label>
+            <select
+              id="automation-action"
+              value={actionType}
+              onChange={(e) => setActionType(e.target.value)}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {ACTION_TYPES.map((at) => (
+                <option key={at} value={at}>
+                  {getActionLabel(at)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {actionType === 'send_email_notification' && (
+            <div>
+              <Label htmlFor="automation-to-email">Notification email (optional)</Label>
+              <Input
+                id="automation-to-email"
+                type="email"
+                value={notificationEmail}
+                onChange={(e) => setNotificationEmail(e.target.value)}
+                placeholder="Leave empty to use Contact / Lead email from Settings"
+                className="mt-1"
+              />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="automation-status">Status</Label>
+            <select
+              id="automation-status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'draft' | 'active' | 'paused')}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="draft">{t('automationStatusDraft')}</option>
+              <option value="active">{t('automationStatusActive')}</option>
+              <option value="paused">{t('automationStatusPaused')}</option>
+            </select>
+          </div>
+          {triggerType === 'webhook_received' && (
+            <div className="space-y-3 rounded-lg border border-border/50 bg-muted/30 p-3">
+              <Label className="text-sm font-medium">Webhook URL</Label>
+              {displayWebhookUrl ? (
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={displayWebhookUrl}
+                    className="font-mono text-xs"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={handleCopyWebhookUrl} title="Copy URL">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {isEdit && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRegenerateWebhook}
+                      disabled={regenerating}
+                      title="Regenerate webhook URL"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Save the automation to generate your webhook URL.</p>
+              )}
+              <div>
+                <Label className="text-xs text-muted-foreground">Sample payload (POST JSON body)</Label>
+                <pre className="mt-1 max-h-32 overflow-auto rounded border border-border/50 bg-background p-2 text-xs">
+                  {WEBHOOK_SAMPLE_PAYLOAD}
+                </pre>
+                <Button type="button" variant="ghost" size="sm" className="mt-1" onClick={handleCopySamplePayload}>
+                  <Copy className="mr-1 h-3 w-3" />
+                  Copy sample
+                </Button>
+              </div>
+            </div>
+          )}
+                </div>
+                <DialogFooter className="shrink-0 gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={onClose}>
+                    {t('cancel')}
+                  </Button>
+                  <Button type="submit" disabled={loading || !name.trim()}>
+                    {loading ? '…' : t('save')}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+            <TabsContent value="workflow" className="mt-3 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+              {editAutomation && (
+                <AutomationWorkflowEditor
+                  automationId={editAutomation.id}
+                  triggerType={triggerType}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pt-2 pr-1">
           <div>
             <Label htmlFor="automation-name">{t('automationNameLabel')}</Label>
             <Input
@@ -447,6 +637,7 @@ export function CreateAutomationModal({
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

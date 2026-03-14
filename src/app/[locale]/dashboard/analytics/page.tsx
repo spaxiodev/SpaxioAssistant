@@ -2,7 +2,7 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
-import { BarChart3, MessageSquare, Users, FileText } from 'lucide-react';
+import { BarChart3, MessageSquare, Users, FileText, Workflow, Ticket } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 
 export default async function AnalyticsPage() {
@@ -19,12 +19,19 @@ export default async function AnalyticsPage() {
     { count: leadsCount },
     { count: conversationsCount },
     { count: quoteRequestsCount },
+    { count: automationRunsCount },
+    { count: ticketsCount },
   ] = await Promise.all([
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     widgetIds.length
       ? supabase.from('conversations').select('*', { count: 'exact', head: true }).in('widget_id', widgetIds)
       : { count: 0 },
     supabase.from('quote_requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+    supabase
+      .from('automation_runs')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId),
+    supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
   ]);
 
   let messagesCount: number | null = 0;
@@ -42,6 +49,13 @@ export default async function AnalyticsPage() {
       messagesCount = count;
     }
   }
+
+  const { data: recentRuns } = await supabase
+    .from('automation_runs')
+    .select('id, status, started_at, automations(name)')
+    .eq('organization_id', orgId)
+    .order('started_at', { ascending: false })
+    .limit(10);
 
   return (
     <div className="space-y-8">
@@ -99,11 +113,63 @@ export default async function AnalyticsPage() {
         </Card>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Automation runs</CardTitle>
+            <Workflow className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{automationRunsCount ?? 0}</p>
+            <p className="text-xs text-muted-foreground">
+              <Link href="/dashboard/automations" className="underline">View automations</Link>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('tickets')}</CardTitle>
+            <Ticket className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{ticketsCount ?? 0}</p>
+            <p className="text-xs text-muted-foreground">
+              <Link href="/dashboard/tickets" className="underline">{t('viewAllTickets')}</Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {recentRuns && recentRuns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent automation runs</CardTitle>
+            <CardDescription>Latest workflow executions across your automations.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {recentRuns.map((r) => (
+                <li key={r.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                  <span className="text-sm font-medium">
+                    {(Array.isArray(r.automations)
+                      ? (r.automations[0] as { name?: string } | undefined)?.name
+                      : (r.automations as { name?: string } | null)?.name) ?? 'Automation'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {r.status} · {new Date(r.started_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Usage overview</CardTitle>
           <CardDescription>
-            Token usage, tool calls, and per-agent metrics will appear here in a future update.
+            Agent runs, token usage, and per-agent metrics will appear here as you use agents and automations.
           </CardDescription>
         </CardHeader>
       </Card>

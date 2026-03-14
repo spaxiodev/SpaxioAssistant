@@ -211,7 +211,34 @@ export async function POST(request: Request) {
     );
   }
 
+  const runStartedAt = new Date();
+  let agentRunId: string | null = null;
+
   try {
+    if (agent) {
+      const { data: runRow } = await supabase
+        .from('agent_runs')
+        .insert({
+          organization_id: widget.organization_id,
+          agent_id: agent.id,
+          status: 'running',
+          trigger_type: 'chat',
+          trigger_metadata: { conversation_id: convId, widget_id: widgetId },
+          conversation_id: convId,
+          model_used: modelId,
+        })
+        .select('id')
+        .single();
+      agentRunId = runRow?.id ?? null;
+      if (agentRunId) {
+        await supabase.from('agent_messages').insert({
+          agent_run_id: agentRunId,
+          role: 'user',
+          content: message,
+        });
+      }
+    }
+
     let reply: string;
 
     const enabledTools = agent?.enabled_tools ?? [];
@@ -240,15 +267,30 @@ export async function POST(request: Request) {
           content: m.content,
         }));
         reply = await runChatWithToolsLoop({
-        openai,
-        modelId,
-        messages: messagesParam,
-        tools: toolsSchema,
-        toolContext,
-        maxTokens: 500,
-        temperature,
-        onToolRun: () => recordAiActionUsage(supabase, widget.organization_id),
-      });
+          openai,
+          modelId,
+          messages: messagesParam,
+          tools: toolsSchema,
+          toolContext,
+          maxTokens: 500,
+          temperature,
+          onToolRun: () => recordAiActionUsage(supabase, widget.organization_id),
+          onToolInvocation: agentRunId
+            ? async (params) => {
+                const outputJson =
+                  typeof params.output === 'object' && params.output !== null
+                    ? params.output
+                    : { value: String(params.output) };
+                await supabase.from('agent_tool_invocations').insert({
+                  agent_run_id: agentRunId,
+                  tool_name: params.toolName,
+                  input_json: params.input,
+                  output_json: outputJson as Record<string, unknown>,
+                  status: params.status,
+                });
+              }
+            : undefined,
+        });
       }
     } else {
       const result = await getChatCompletion(provider, modelId, messagesForApi, {
@@ -256,6 +298,24 @@ export async function POST(request: Request) {
         temperature,
       });
       reply = result.content || 'Sorry, I could not generate a response.';
+    }
+
+    if (agentRunId) {
+      await supabase.from('agent_messages').insert({
+        agent_run_id: agentRunId,
+        role: 'assistant',
+        content: reply,
+      });
+      const completedAt = new Date();
+      const durationMs = Math.round(completedAt.getTime() - runStartedAt.getTime());
+      await supabase
+        .from('agent_runs')
+        .update({
+          status: 'success',
+          completed_at: completedAt.toISOString(),
+          duration_ms: durationMs,
+        })
+        .eq('id', agentRunId);
     }
 
     await supabase.from('messages').insert({
@@ -423,6 +483,16 @@ export async function POST(request: Request) {
       { headers: corsHeaders }
     );
   } catch (err) {
+    if (agentRunId) {
+      await supabase
+        .from('agent_runs')
+        .update({
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error_message: (err instanceof Error ? err.message : 'Unknown error').slice(0, 500),
+        })
+        .eq('id', agentRunId);
+    }
     console.error('OpenAI error:', err);
     return NextResponse.json(
       { error: 'Failed to get response', reply: 'Something went wrong. Please try again.' },

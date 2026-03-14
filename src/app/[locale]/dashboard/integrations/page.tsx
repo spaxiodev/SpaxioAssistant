@@ -16,14 +16,14 @@ export default async function IntegrationsPage() {
         <CardHeader>
           <CardTitle>{t('integrations')}</CardTitle>
           <CardDescription>
-            Connect SpaxioAssistant to n8n, CRMs, and other tools. Incoming and outbound webhooks will be configurable per agent.
+            Connect APIs and external tools to your workflows. Webhooks, API keys, and CRM connectors are configured per workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-8 text-center">
             <Plug className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">Integrations coming soon.</p>
-            <p className="mt-1 text-xs text-muted-foreground">Planned: n8n, webhooks, CRM connectors.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Integrations</p>
+            <p className="mt-1 text-xs text-muted-foreground">Webhooks and API keys are available in Automations and Settings.</p>
           </div>
         </CardContent>
       </Card>

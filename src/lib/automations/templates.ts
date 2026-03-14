@@ -135,7 +135,7 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     key: 'webhook_to_crm_sync',
     title: 'Webhook to CRM sync',
-    description: 'When an external system sends a webhook, forward to your CRM or n8n.',
+    description: 'When an external system sends a webhook, forward to your CRM or another URL.',
     icon: Webhook,
     trigger_type: 'webhook_received',
     default_trigger_config: {},

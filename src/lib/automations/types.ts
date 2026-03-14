@@ -1,6 +1,6 @@
 /**
  * Automation trigger and action types.
- * Structured for event-driven and n8n/webhook integration.
+ * Event-driven and webhook-native; all execution runs inside Spaxio.
  */
 
 /** Event types that can trigger automations (subscription targets). */
@@ -45,7 +45,7 @@ export const ACTION_TYPES = [
   'qualify_lead_with_agent',
   'send_email_notification',
   'call_webhook',
-  'n8n_workflow',
+  'call_external_url',
   'handoff_to_human',
   'save_lead_record',
   'send_follow_up_message',
@@ -99,7 +99,6 @@ export interface AutomationRunOutput {
   action_executed?: string;
   success?: boolean;
   message?: string;
-  /** For future n8n: external execution id */
   external_id?: string;
   [key: string]: unknown;
 }

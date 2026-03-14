@@ -96,7 +96,7 @@ register({
 register({
   id: 'call_webhook',
   name: 'Call webhook',
-  description: 'Send a POST request to an external webhook URL with a JSON body. Use for CRM, n8n, or custom integrations.',
+  description: 'Send a POST request to an external webhook URL with a JSON body. Use for CRM or custom integrations.',
   parameters: [
     { name: 'url', type: 'string', description: 'Webhook URL (must be https in production)', required: true },
     { name: 'payload', type: 'object', description: 'JSON object to send in the body', required: false },

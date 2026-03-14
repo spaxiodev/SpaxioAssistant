@@ -24,12 +24,19 @@ export const ACTION_LABELS: Record<string, string> = {
   qualify_lead_with_agent: 'Qualify lead with agent',
   send_email_notification: 'Send email notification',
   call_webhook: 'Call webhook',
-  n8n_workflow: 'Run n8n workflow',
+  call_external_url: 'Call external URL',
   handoff_to_human: 'Handoff to human',
   save_lead_record: 'Save lead record',
   send_follow_up_message: 'Send follow-up message',
   crm_create_contact: 'CRM: Create contact',
   crm_add_note: 'CRM: Add note',
+};
+
+export const STEP_TYPE_LABELS: Record<string, string> = {
+  action: 'Action',
+  branch_if: 'Condition (if/else)',
+  delay: 'Delay',
+  human_approval: 'Human approval',
 };
 
 export function getTriggerLabel(triggerType: string): string {
@@ -38,4 +45,8 @@ export function getTriggerLabel(triggerType: string): string {
 
 export function getActionLabel(actionType: string): string {
   return ACTION_LABELS[actionType] ?? actionType;
+}
+
+export function getStepTypeLabel(stepType: string): string {
+  return STEP_TYPE_LABELS[stepType] ?? stepType;
 }

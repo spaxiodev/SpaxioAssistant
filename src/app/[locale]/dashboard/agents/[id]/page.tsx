@@ -8,6 +8,8 @@ import { Link } from '@/i18n/navigation';
 import { notFound } from 'next/navigation';
 import { Bot } from 'lucide-react';
 import { AgentEnabledTools } from '@/app/dashboard/agents/agent-enabled-tools';
+import { AgentDetailTabs } from '@/app/dashboard/agents/agent-detail-tabs';
+import { AgentDeleteButton } from '@/app/dashboard/agents/agent-delete-button';
 
 const ROLE_LABELS: Record<string, string> = {
   website_chatbot: 'Website Chat',
@@ -15,6 +17,11 @@ const ROLE_LABELS: Record<string, string> = {
   lead_qualification: 'Lead qualification',
   internal_knowledge: 'Internal knowledge',
   workflow_agent: 'Workflow',
+  sales_agent: 'Sales',
+  booking_agent: 'Booking',
+  quote_assistant: 'Quote Assistant',
+  faq_agent: 'FAQ',
+  follow_up_agent: 'Follow-up',
   custom: 'Custom',
 };
 
@@ -37,6 +44,14 @@ export default async function AgentDetailPage({ params }: Props) {
 
   if (error || !agent) notFound();
 
+  const { data: runsData } = await supabase
+    .from('agent_runs')
+    .select('id, status, started_at, trigger_type, duration_ms')
+    .eq('agent_id', id)
+    .order('started_at', { ascending: false })
+    .limit(20);
+  const runs = runsData ?? [];
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -44,56 +59,67 @@ export default async function AgentDetailPage({ params }: Props) {
           <h1 className="text-2xl font-bold tracking-tight">{agent.name}</h1>
           <p className="text-muted-foreground">{t('agentsDescription')}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/agents">Back to agents</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <AgentDeleteButton agentId={agent.id} agentName={agent.name} />
+          <Button asChild variant="outline">
+            <Link href="/dashboard/agents">Back to agents</Link>
+          </Button>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Bot className="h-6 w-6" />
-            </div>
-            <div>
-              <CardTitle>{agent.name}</CardTitle>
-              <CardDescription>
-                <Badge variant="secondary">{ROLE_LABELS[agent.role_type] ?? agent.role_type}</Badge>
-                {' · '}
-                {agent.model_provider} / {agent.model_id}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {agent.description && (
-            <p className="text-sm text-muted-foreground">{agent.description}</p>
-          )}
-          <dl className="grid gap-2 text-sm">
-            <div>
-              <dt className="font-medium text-muted-foreground">Temperature</dt>
-              <dd>{agent.temperature}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">Widget enabled</dt>
-              <dd>{agent.widget_enabled ? 'Yes' : 'No'}</dd>
-            </div>
-          <div>
-            <dt className="font-medium text-muted-foreground">Webhook enabled</dt>
-            <dd>{agent.webhook_enabled ? 'Yes' : 'No'}</dd>
-          </div>
-          </dl>
-          <div className="border-t border-border pt-4">
-            <AgentEnabledTools
-              agentId={agent.id}
-              initialEnabledIds={Array.isArray(agent.enabled_tools) ? agent.enabled_tools : []}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Your website chatbot uses this agent. Configure welcome message and branding in Settings and Install.
-          </p>
-        </CardContent>
-      </Card>
+      <AgentDetailTabs
+        agentId={agent.id}
+        agent={agent}
+        defaultTab="overview"
+        overviewContent={
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Bot className="h-6 w-6" />
+                </div>
+                <div>
+                  <CardTitle>{agent.name}</CardTitle>
+                  <CardDescription>
+                    <Badge variant="secondary">{ROLE_LABELS[agent.role_type] ?? agent.role_type}</Badge>
+                    {' · '}
+                    {agent.model_provider} / {agent.model_id}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {agent.description && (
+                <p className="text-sm text-muted-foreground">{agent.description}</p>
+              )}
+              <dl className="grid gap-2 text-sm">
+                <div>
+                  <dt className="font-medium text-muted-foreground">Temperature</dt>
+                  <dd>{agent.temperature}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-muted-foreground">Widget enabled</dt>
+                  <dd>{agent.widget_enabled ? 'Yes' : 'No'}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-muted-foreground">Webhook enabled</dt>
+                  <dd>{agent.webhook_enabled ? 'Yes' : 'No'}</dd>
+                </div>
+              </dl>
+              <div className="border-t border-border pt-4">
+                <AgentEnabledTools
+                  agentId={agent.id}
+                  initialEnabledIds={Array.isArray(agent.enabled_tools) ? agent.enabled_tools : []}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Configure welcome message and branding in Settings and Deployments.
+              </p>
+            </CardContent>
+          </Card>
+        }
+        runs={runs ?? []}
+      />
     </div>
   );
 }

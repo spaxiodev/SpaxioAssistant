@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 function WidgetPreviewContent() {
   const searchParams = useSearchParams();
   const widgetId = searchParams.get('widgetId');
+  const positionPreset = searchParams.get('positionPreset');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,12 +16,15 @@ function WidgetPreviewContent() {
     const script = document.createElement('script');
     script.src = `${base}/widget.js`;
     script.setAttribute('data-widget-id', widgetId);
+    if (positionPreset && positionPreset.trim()) {
+      script.setAttribute('data-position-preset', positionPreset.trim());
+    }
     script.async = true;
     containerRef.current.appendChild(script);
     return () => {
       script.remove();
     };
-  }, [widgetId]);
+  }, [widgetId, positionPreset]);
 
   return (
     <div ref={containerRef} className="h-full w-full min-h-[400px]" />

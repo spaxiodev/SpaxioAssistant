@@ -59,7 +59,7 @@ export function WidgetPreviewWithPreset({ widgetId, baseUrl, locale, initialPres
     });
   };
 
-  const previewUrl = `${baseUrl}/${locale}/widget-preview?widgetId=${encodeURIComponent(widgetId)}&preview=${previewNonce}`;
+  const previewUrl = `${baseUrl}/${locale}/widget-preview?widgetId=${encodeURIComponent(widgetId)}&positionPreset=${encodeURIComponent(preset)}&preview=${previewNonce}`;
 
   return (
     <div className="space-y-4">

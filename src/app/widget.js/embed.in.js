@@ -3,6 +3,7 @@
   var script = document.currentScript || [].slice.call(document.querySelectorAll('script[data-widget-id], script[data-agent-id]')).pop();
   var widgetId = script && script.getAttribute('data-widget-id');
   var agentId = script && script.getAttribute('data-agent-id');
+  var positionPresetOverride = (script && script.getAttribute('data-position-preset')) || null;
   if (!widgetId && !agentId) return;
 
   var base = (script && script.getAttribute('data-base-url')) || "__SPAXIO_BASE_URL__";
@@ -145,43 +146,52 @@
         case 'top-left':
           wrap.style.top = edgeOffset + 'px';
           wrap.style.left = edgeOffset + 'px';
+          wrap.style.right = 'auto';
           break;
         case 'top-center':
           wrap.style.top = edgeOffset + 'px';
           wrap.style.left = '50%';
+          wrap.style.right = 'auto';
           wrap.style.transform = 'translateX(-50%)';
           break;
         case 'top-right':
           wrap.style.top = edgeOffset + 'px';
+          wrap.style.left = 'auto';
           wrap.style.right = edgeOffset + 'px';
           break;
         case 'middle-left':
           wrap.style.top = '50%';
           wrap.style.left = edgeOffset + 'px';
+          wrap.style.right = 'auto';
           wrap.style.transform = 'translateY(-50%)';
           break;
         case 'middle-right':
           wrap.style.top = '50%';
+          wrap.style.left = 'auto';
           wrap.style.right = edgeOffset + 'px';
           wrap.style.transform = 'translateY(-50%)';
           break;
         case 'middle-center':
           wrap.style.top = '50%';
           wrap.style.left = '50%';
+          wrap.style.right = 'auto';
           wrap.style.transform = 'translate(-50%, -50%)';
           break;
         case 'bottom-left':
           wrap.style.bottom = edgeOffset + 'px';
           wrap.style.left = edgeOffset + 'px';
+          wrap.style.right = 'auto';
           break;
         case 'bottom-center':
           wrap.style.bottom = edgeOffset + 'px';
           wrap.style.left = '50%';
+          wrap.style.right = 'auto';
           wrap.style.transform = 'translateX(-50%)';
           break;
         case 'bottom-right':
         default:
           wrap.style.bottom = edgeOffset + 'px';
+          wrap.style.left = 'auto';
           wrap.style.right = edgeOffset + 'px';
           break;
       }
@@ -231,7 +241,7 @@
 
     function setPanelFromPreset(preset) {
       iframe.style.left = '';
-      iframe.style.right = '0';
+      iframe.style.right = '';
       iframe.style.transform = '';
       iframe.style.borderRadius = '20px 20px 0 20px';
       var presetValue = (preset || '').toLowerCase();
@@ -240,7 +250,7 @@
         case 'middle-left':
         case 'bottom-left':
           iframe.style.left = '0';
-          iframe.style.right = '';
+          iframe.style.right = 'auto';
           iframe.style.transform = '';
           iframe.style.borderRadius = '20px 20px 20px 0';
           break;
@@ -248,12 +258,13 @@
         case 'middle-center':
         case 'bottom-center':
           iframe.style.left = '50%';
-          iframe.style.right = '';
+          iframe.style.right = 'auto';
           iframe.style.transform = 'translateX(-50%)';
           iframe.style.borderRadius = '20px 20px 0 0';
           break;
         default:
-          // keep default right-aligned styles
+          iframe.style.left = 'auto';
+          iframe.style.right = '0';
           break;
       }
     }
@@ -270,43 +281,52 @@
         case 'top-left':
           bubble.style.top = mobileEdgeOffset + 'px';
           bubble.style.left = mobileEdgeOffset + 'px';
+          bubble.style.right = 'auto';
           break;
         case 'top-center':
           bubble.style.top = mobileEdgeOffset + 'px';
           bubble.style.left = '50%';
+          bubble.style.right = 'auto';
           bubble.style.transform = 'translateX(-50%)';
           break;
         case 'top-right':
           bubble.style.top = mobileEdgeOffset + 'px';
+          bubble.style.left = 'auto';
           bubble.style.right = mobileEdgeOffset + 'px';
           break;
         case 'middle-left':
           bubble.style.top = '50%';
           bubble.style.left = mobileEdgeOffset + 'px';
+          bubble.style.right = 'auto';
           bubble.style.transform = 'translateY(-50%)';
           break;
         case 'middle-right':
           bubble.style.top = '50%';
+          bubble.style.left = 'auto';
           bubble.style.right = mobileEdgeOffset + 'px';
           bubble.style.transform = 'translateY(-50%)';
           break;
         case 'middle-center':
           bubble.style.top = '50%';
           bubble.style.left = '50%';
+          bubble.style.right = 'auto';
           bubble.style.transform = 'translate(-50%, -50%)';
           break;
         case 'bottom-left':
           bubble.style.bottom = mobileEdgeOffset + 'px';
           bubble.style.left = mobileEdgeOffset + 'px';
+          bubble.style.right = 'auto';
           break;
         case 'bottom-center':
           bubble.style.bottom = mobileEdgeOffset + 'px';
           bubble.style.left = '50%';
+          bubble.style.right = 'auto';
           bubble.style.transform = 'translateX(-50%)';
           break;
         case 'bottom-right':
         default:
           bubble.style.bottom = mobileEdgeOffset + 'px';
+          bubble.style.left = 'auto';
           bubble.style.right = mobileEdgeOffset + 'px';
           break;
       }
@@ -461,7 +481,8 @@
 
     function applyConfig(config) {
       var c = config || {};
-      currentPositionPreset = c.positionPreset || 'bottom-right';
+      var override = positionPresetOverride && String(positionPresetOverride).trim();
+      currentPositionPreset = override || c.positionPreset || 'bottom-right';
       setBubbleColor(c.primaryBrandColor);
       if (c && c.widgetLogoUrl) {
         try {
@@ -483,9 +504,11 @@
     if (initialConfig) {
       applyConfig(initialConfig);
     } else {
-      setPositionFromPreset('bottom-right');
-      setTeaserFromPreset('bottom-right');
-      setPanelFromPreset('bottom-right');
+      var initialPreset = (positionPresetOverride && String(positionPresetOverride).trim()) || 'bottom-right';
+      setPositionFromPreset(initialPreset);
+      setTeaserFromPreset(initialPreset);
+      setPanelFromPreset(initialPreset);
+      currentPositionPreset = initialPreset;
       applyPositionForViewport();
       loadConfig();
     }
