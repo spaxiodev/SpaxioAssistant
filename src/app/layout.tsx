@@ -7,9 +7,12 @@ import { SetLocaleAttr } from '@/components/set-locale-attr';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TermsGate } from '@/components/terms-gate';
 import { JsonLd } from '@/components/seo/json-ld';
-
-const SITE_URL = 'https://www.spaxioassistant.com';
-const SITE_NAME = 'Spaxio Assistant';
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_TITLE_TEMPLATE,
+  DEFAULT_META_DESCRIPTION,
+} from '@/lib/seo';
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -21,10 +24,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_NAME,
-    template: `%s | ${SITE_NAME}`,
+    template: DEFAULT_TITLE_TEMPLATE,
   },
-  description:
-    'Spaxio Assistant is a premium AI chatbot for your website that learns from your content, answers questions instantly, and turns visitors into qualified leads.',
+  description: DEFAULT_META_DESCRIPTION,
   alternates: {
     canonical: '/',
   },
@@ -33,14 +35,12 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: SITE_NAME,
     title: SITE_NAME,
-    description:
-      'Create a custom AI chatbot for your website, train it on your content, and embed it with a single line of code.',
+    description: DEFAULT_META_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
     title: SITE_NAME,
-    description:
-      'Custom AI chatbot for your website that captures leads and automates customer support.',
+    description: DEFAULT_META_DESCRIPTION,
   },
   robots: {
     index: true,
@@ -70,7 +70,7 @@ export default async function RootLayout({
           <ThemeProvider>
             <div className="flex min-h-screen flex-col">
               <JsonLd
-                id="spaxio-organization-and-software"
+                id="spaxio-organization-software-website"
                 data={[
                   {
                     '@context': 'https://schema.org',
@@ -78,6 +78,7 @@ export default async function RootLayout({
                     name: SITE_NAME,
                     url: SITE_URL,
                     logo: `${SITE_URL}/icon.png`,
+                    description: DEFAULT_META_DESCRIPTION,
                   },
                   {
                     '@context': 'https://schema.org',
@@ -86,8 +87,15 @@ export default async function RootLayout({
                     applicationCategory: 'BusinessApplication',
                     operatingSystem: 'Web',
                     url: SITE_URL,
-                    description:
-                      'Custom AI chatbot widget for websites that learns from your content and captures leads.',
+                    description: DEFAULT_META_DESCRIPTION,
+                  },
+                  {
+                    '@context': 'https://schema.org',
+                    '@type': 'WebSite',
+                    name: SITE_NAME,
+                    url: SITE_URL,
+                    description: DEFAULT_META_DESCRIPTION,
+                    publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
                   },
                 ]}
               />
