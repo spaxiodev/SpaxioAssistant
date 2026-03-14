@@ -1,8 +1,9 @@
 (function() {
   'use strict';
-  var script = document.currentScript || [].slice.call(document.querySelectorAll('script[data-widget-id]')).pop();
+  var script = document.currentScript || [].slice.call(document.querySelectorAll('script[data-widget-id], script[data-agent-id]')).pop();
   var widgetId = script && script.getAttribute('data-widget-id');
-  if (!widgetId) return;
+  var agentId = script && script.getAttribute('data-agent-id');
+  if (!widgetId && !agentId) return;
 
   var base = (script && script.getAttribute('data-base-url')) || "__SPAXIO_BASE_URL__";
   if (!base || base === '__SPAXIO_BASE_URL__' || base.indexOf('localhost') !== -1) {
@@ -56,6 +57,21 @@
 
   var pageLanguage = detectLanguage();
 
+  function resolveWidgetId(done) {
+    if (widgetId) {
+      done(widgetId);
+      return;
+    }
+    if (!agentId || !base) {
+      done(null);
+      return;
+    }
+    fetch(base + '/api/widget/by-agent?agentId=' + encodeURIComponent(agentId), { method: 'GET', mode: 'cors', credentials: 'omit' })
+      .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('No widget')); })
+      .then(function(data) { done(data && data.widgetId ? data.widgetId : null); })
+      .catch(function() { done(null); });
+  }
+
   function mount(initialConfig) {
     if (!document.body) return;
     if (document.querySelector('[data-spaxio="1"]')) return;
@@ -80,7 +96,7 @@
     '.spaxio-panel{position:absolute;right:0;bottom:72px;width:380px;max-width:min(380px,calc(100vw - 32px));height:480px;max-height:85vh;border:none;border-radius:24px 24px 0 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.06),0 8px 24px rgba(0,0,0,0.1),0 24px 64px rgba(0,0,0,0.16);background:#fff;pointer-events:none;opacity:0;transform:translateY(12px) scale(0.98);transition:opacity 0.25s ease,transform 0.25s ease}',
     '.spaxio-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}',
     '.spaxio-bubble.hidden{display:none !important}',
-    '@media (max-width: 480px){.spaxio-wrap{left:0;right:0;bottom:0;top:auto;width:100%}.spaxio-panel{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:70vh;max-height:70vh;border-radius:24px 24px 0 0}.spaxio-bubble{position:fixed;bottom:16px;right:16px;width:56px;height:56px}.spaxio-teaser{position:fixed;right:16px;bottom:88px;max-width:min(280px,calc(100vw - 32px))}.spaxio-label{right:16px;bottom:88px}}'
+    '@media (max-width: 480px){.spaxio-wrap{left:0;right:0;bottom:0;top:auto;width:100%}.spaxio-panel{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:70vh;max-height:70vh;border-radius:24px 24px 0 0}.spaxio-bubble{position:fixed;width:56px;height:56px}.spaxio-teaser{position:fixed;max-width:min(280px,calc(100vw - 32px))}.spaxio-label{right:16px;bottom:88px}}'
     ].join('');
     shadow.appendChild(sheet);
 
@@ -89,7 +105,8 @@
     iframe.id = 'spaxio-widget-iframe';
     iframe.title = 'Chat';
     var localeSegment = (pageLanguage && (pageLanguage === 'fr' || pageLanguage === 'en')) ? pageLanguage : 'en';
-    var iframeSrc = base + '/' + localeSegment + '/widget?widgetId=' + encodeURIComponent(widgetId) + '&lang=' + encodeURIComponent(localeSegment);
+    var effectiveWidgetId = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
+    var iframeSrc = base + '/' + localeSegment + '/widget?widgetId=' + encodeURIComponent(effectiveWidgetId) + '&lang=' + encodeURIComponent(localeSegment);
     iframeSrc += '&_=' + Date.now();
     iframe.src = iframeSrc;
 
@@ -241,6 +258,69 @@
       }
     }
 
+    var mobileEdgeOffset = 16;
+    function setBubblePositionFromPreset(preset) {
+      bubble.style.position = 'fixed';
+      bubble.style.top = '';
+      bubble.style.bottom = '';
+      bubble.style.left = '';
+      bubble.style.right = '';
+      var presetValue = (preset || '').toLowerCase();
+      switch (presetValue) {
+        case 'top-left':
+          bubble.style.top = mobileEdgeOffset + 'px';
+          bubble.style.left = mobileEdgeOffset + 'px';
+          break;
+        case 'top-center':
+          bubble.style.top = mobileEdgeOffset + 'px';
+          bubble.style.left = '50%';
+          bubble.style.transform = 'translateX(-50%)';
+          break;
+        case 'top-right':
+          bubble.style.top = mobileEdgeOffset + 'px';
+          bubble.style.right = mobileEdgeOffset + 'px';
+          break;
+        case 'middle-left':
+          bubble.style.top = '50%';
+          bubble.style.left = mobileEdgeOffset + 'px';
+          bubble.style.transform = 'translateY(-50%)';
+          break;
+        case 'middle-right':
+          bubble.style.top = '50%';
+          bubble.style.right = mobileEdgeOffset + 'px';
+          bubble.style.transform = 'translateY(-50%)';
+          break;
+        case 'middle-center':
+          bubble.style.top = '50%';
+          bubble.style.left = '50%';
+          bubble.style.transform = 'translate(-50%, -50%)';
+          break;
+        case 'bottom-left':
+          bubble.style.bottom = mobileEdgeOffset + 'px';
+          bubble.style.left = mobileEdgeOffset + 'px';
+          break;
+        case 'bottom-center':
+          bubble.style.bottom = mobileEdgeOffset + 'px';
+          bubble.style.left = '50%';
+          bubble.style.transform = 'translateX(-50%)';
+          break;
+        case 'bottom-right':
+        default:
+          bubble.style.bottom = mobileEdgeOffset + 'px';
+          bubble.style.right = mobileEdgeOffset + 'px';
+          break;
+      }
+    }
+
+    function clearBubblePosition() {
+      bubble.style.position = '';
+      bubble.style.top = '';
+      bubble.style.bottom = '';
+      bubble.style.left = '';
+      bubble.style.right = '';
+      bubble.style.transform = '';
+    }
+
     function setBubbleColor(color) {
       function parseColorToRgb(c) {
         if (!c) return null;
@@ -353,9 +433,10 @@
 
     bubble.addEventListener('click', function() { toggle(); });
 
+    var effectiveWidgetIdForPost = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
     iframe.addEventListener('load', function() {
       try {
-        iframe.contentWindow.postMessage({ type: 'spaxio-init', widgetId: widgetId }, baseOrigin || '*');
+        iframe.contentWindow.postMessage({ type: 'spaxio-init', widgetId: effectiveWidgetIdForPost }, baseOrigin || '*');
       } catch (e) {}
     });
 
@@ -368,8 +449,19 @@
       }
     });
 
+    var currentPositionPreset = 'bottom-right';
+    function applyPositionForViewport() {
+      var isMobile = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
+      if (isMobile) {
+        setBubblePositionFromPreset(currentPositionPreset);
+      } else {
+        clearBubblePosition();
+      }
+    }
+
     function applyConfig(config) {
       var c = config || {};
+      currentPositionPreset = c.positionPreset || 'bottom-right';
       setBubbleColor(c.primaryBrandColor);
       if (c && c.widgetLogoUrl) {
         try {
@@ -380,9 +472,10 @@
           bubble.appendChild(img);
         } catch (e) {}
       }
-      setPositionFromPreset(c.positionPreset || 'bottom-right');
-      setTeaserFromPreset(c.positionPreset || 'bottom-right');
-      setPanelFromPreset(c.positionPreset || 'bottom-right');
+      setPositionFromPreset(currentPositionPreset);
+      setTeaserFromPreset(currentPositionPreset);
+      setPanelFromPreset(currentPositionPreset);
+      applyPositionForViewport();
       wrap.classList.add('spaxio-wrap-ready');
       showTeaser(c.welcomeMessage || 'Hi! How can I help you today?');
     }
@@ -393,12 +486,22 @@
       setPositionFromPreset('bottom-right');
       setTeaserFromPreset('bottom-right');
       setPanelFromPreset('bottom-right');
+      applyPositionForViewport();
       loadConfig();
+    }
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      var mql = window.matchMedia && window.matchMedia('(max-width: 480px)');
+      if (mql && mql.addEventListener) {
+        mql.addEventListener('change', function() { applyPositionForViewport(); });
+      }
     }
 
     function loadConfig(retriesLeft) {
       retriesLeft = typeof retriesLeft === 'number' ? retriesLeft : 2;
-      fetch(base + '/api/widget/config?widgetId=' + encodeURIComponent(widgetId), {
+      var wid = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
+      if (!wid) { applyConfig(null); return; }
+      fetch(base + '/api/widget/config?widgetId=' + encodeURIComponent(wid), {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit'
@@ -407,7 +510,10 @@
           if (!r.ok) throw new Error('Config failed');
           return r.json();
         })
-        .then(function(config) { applyConfig(config); })
+        .then(function(config) {
+          if (config && wid) config._widgetId = wid;
+          applyConfig(config);
+        })
         .catch(function(err) {
           if (retriesLeft > 0) {
             setTimeout(function() { loadConfig(retriesLeft - 1); }, 1000);
@@ -434,17 +540,23 @@
   }
 
   function tryMount() {
-    fetch(base + '/api/widget/config?widgetId=' + encodeURIComponent(widgetId), {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit'
-    })
-      .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('Config failed')); })
-      .then(function(config) {
-        if (config && config.enabled === false) return;
-        mount(config);
+    function doMount(resolvedWidgetId) {
+      if (!resolvedWidgetId) return;
+      widgetId = resolvedWidgetId;
+      fetch(base + '/api/widget/config?widgetId=' + encodeURIComponent(resolvedWidgetId), {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit'
       })
-      .catch(function() { mount(); });
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('Config failed')); })
+        .then(function(config) {
+          if (config && config.enabled === false) return;
+          if (config) config._widgetId = resolvedWidgetId;
+          mount(config);
+        })
+        .catch(function() { mount({ _widgetId: resolvedWidgetId }); });
+    }
+    resolveWidgetId(doMount);
   }
 
   if (document.readyState === 'loading') {

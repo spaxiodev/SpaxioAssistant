@@ -4,6 +4,9 @@ import { Resend } from 'resend';
 import { getClientIp, isUuid, normalizeUuid } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
+import { emitAutomationEvent } from '@/lib/automations/engine';
+import { canUseAutomation } from '@/lib/entitlements';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,6 +106,33 @@ export async function POST(request: Request) {
       return withCors({ error: 'Failed to save lead' }, 500);
     }
 
+    // Event-driven automations: emit lead_form_submitted so active automations can run
+    const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
+    const automationsAllowed = await canUseAutomation(supabase, widget.organization_id, adminAllowed);
+    if (automationsAllowed) {
+      const traceId = `lead-${lead.id}`;
+      emitAutomationEvent(supabase, {
+        organization_id: widget.organization_id,
+        event_type: 'lead_form_submitted',
+        payload: {
+          trigger_type: 'lead_form_submitted',
+          conversation_id: conversationId ?? undefined,
+          lead: {
+            name,
+            email,
+            phone: phone || undefined,
+            message: message || undefined,
+          },
+          lead_id: lead.id,
+        },
+        trace_id: traceId,
+        source: 'widget_lead',
+        actor: { type: 'lead', id: lead.id, email },
+      }).catch((err) => {
+        console.error('[widget/lead] automation emit failed', err);
+      });
+    }
+
     const { data: settings } = await supabase
       .from('business_settings')
       .select('lead_notification_email, contact_email, business_name')
@@ -112,13 +142,22 @@ export async function POST(request: Request) {
     const to = settings?.lead_notification_email || settings?.contact_email;
     const resend = getResend();
     if (to && resend) {
-      const from = process.env.RESEND_FROM_EMAIL || 'Spaxio Assistant <onboarding@resend.dev>';
-      await resend.emails.send({
+      // Resend does not allow sending FROM Gmail/Yahoo etc. — only verified domains. Use fallback if needed.
+      const rawFrom = process.env.RESEND_FROM_EMAIL || '';
+      const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com'];
+      const fromDomain = rawFrom.includes('@') ? rawFrom.split('@')[1]?.toLowerCase() : '';
+      const isFreeEmail = fromDomain ? freeEmailDomains.some((d) => fromDomain === d || fromDomain.endsWith('.' + d)) : false;
+      const from = rawFrom && !isFreeEmail ? rawFrom : 'Spaxio Assistant <onboarding@resend.dev>';
+
+      const { error: sendError } = await resend.emails.send({
         from,
         to: [to],
         subject: `New lead from ${settings?.business_name || 'your website'}: ${name}`,
         text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || '—'}\nService: ${requestedService || '—'}\nTimeline: ${requestedTimeline || '—'}\nProject details: ${projectDetails || '—'}\nLocation: ${location || '—'}\n\nMessage:\n${message || '—'}\n\nTranscript snippet:\n${transcriptSnippet || '—'}`,
       });
+      if (sendError) {
+        console.error('[widget/lead] Resend error:', sendError);
+      }
     }
 
     return withCors({ success: true, leadId: lead.id }, 200);

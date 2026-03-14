@@ -16,6 +16,7 @@ function sanitize(s: unknown, max = 2000): string {
 }
 
 export async function POST(request: Request) {
+  console.log('[contact] POST /api/contact hit');
   try {
     const ip = getClientIp(request);
     const { allowed } = rateLimit({
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
       windowMs: 60 * 1000,
     });
     if (!allowed) {
+      console.log('[contact] Blocked: rate limit (429)');
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
     const message = sanitize(body.message).trim();
 
     if (!name || !email || !message) {
+      console.log('[contact] Blocked: validation (400) name/email/message');
       return NextResponse.json(
         { error: 'Name, email, and message are required.' },
         { status: 400 }
@@ -45,11 +48,13 @@ export async function POST(request: Request) {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log('[contact] Blocked: invalid email (400)');
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 
     const resend = getResend();
     if (!resend) {
+      console.log('[contact] Blocked: no RESEND_API_KEY (503) — requests never reach Resend');
       return NextResponse.json(
         { error: 'Email is not configured. Please email us directly.' },
         { status: 503 }
@@ -86,7 +91,7 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
+    console.log('[contact] Email sent to', CONTACT_EMAIL, 'id:', data?.id);
     return NextResponse.json({ success: true, id: data?.id });
   } catch {
     return NextResponse.json(

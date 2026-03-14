@@ -26,7 +26,7 @@ export function getPublicAppUrl(options?: { request?: Request; headers?: Headers
   if (options?.headers) {
     const host = options.headers.get('host')?.trim();
     const proto = options.headers.get('x-forwarded-proto')?.trim() || 'https';
-    if (host && isProductionHost(host)) {
+    if (host) {
       const scheme = proto === 'https' ? 'https' : 'http';
       return `${scheme}://${host}`.replace(/\/$/, '');
     }

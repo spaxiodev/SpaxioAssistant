@@ -5,6 +5,7 @@ import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 import { Footer } from '@/components/footer';
 import { FooterGate } from '@/components/footer-gate';
+import { PublicHeaderGate } from '@/components/public-header-gate';
 
 type Props = {
   children: React.ReactNode;
@@ -32,6 +33,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
   return (
     <>
+      <PublicHeaderGate />
       {children}
       <FooterGate>
         <Footer />

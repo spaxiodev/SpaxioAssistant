@@ -3,8 +3,10 @@
 import { useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Mail, Palette, Globe, Loader2 } from 'lucide-react';
+import { MessageSquare, Mail, Palette, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +39,7 @@ export function BusinessSettingsForm({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations('dashboard');
   const [loading, setLoading] = useState(false);
 
   const [businessName, setBusinessName] = useState(initial?.business_name ?? '');
@@ -66,11 +69,6 @@ export function BusinessSettingsForm({
     }
     return out;
   });
-  const [websiteUrl, setWebsiteUrl] = useState(initial?.website_url ?? '');
-  const [learnLoading, setLearnLoading] = useState(false);
-  const [websiteLearnedAt, setWebsiteLearnedAt] = useState<string | null>(
-    initial?.website_learned_at ?? null
-  );
   const [logoCropDialogOpen, setLogoCropDialogOpen] = useState(false);
   const [logoCropImageSrc, setLogoCropImageSrc] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +104,6 @@ export function BusinessSettingsForm({
         widgetLogoUrl: widgetLogoUrl || null,
         widgetEnabled,
         serviceBasePrices: basePricesPayload,
-        websiteUrl: websiteUrl || null,
       }),
     });
     setLoading(false);
@@ -154,43 +151,6 @@ export function BusinessSettingsForm({
     },
     [toast, closeLogoCropDialog]
   );
-
-  async function handleLearnWebsite() {
-    const urlToUse = websiteUrl.trim();
-    if (!urlToUse) {
-      toast({
-        title: 'Website URL required',
-        description: 'Enter your website URL above and save, then click Learn.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setLearnLoading(true);
-    try {
-      const res = await fetch('/api/settings/learn-website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlToUse }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast({
-          title: 'Learning failed',
-          description: data?.error ?? 'Could not learn from website. Try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setWebsiteLearnedAt(new Date().toISOString());
-      toast({
-        title: 'Website learned',
-        description: `Saved ${data?.learnedLength ?? 0} characters from your site. The assistant can use this.`,
-      });
-      router.refresh();
-    } finally {
-      setLearnLoading(false);
-    }
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -295,57 +255,6 @@ export function BusinessSettingsForm({
 
       <Card className="overflow-hidden border border-border-soft shadow-sm">
         <CardHeader className="border-b border-border-soft bg-muted/30 pb-6">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Globe className="h-5 w-5 text-muted-foreground" />
-            Website learning
-          </CardTitle>
-          <CardDescription className="mt-1.5">
-            Add your website URL and click &quot;Learn from my website&quot; so the assistant already knows your site content.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-6">
-          <div className="space-y-2">
-            <Label htmlFor="websiteUrl">Website URL</Label>
-            <Input
-              id="websiteUrl"
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="rounded-lg"
-            />
-            <p className="text-xs text-muted-foreground">
-              Your homepage or main page. Save settings first if you change this, then click Learn.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleLearnWebsite}
-              disabled={learnLoading}
-              className="rounded-lg"
-            >
-              {learnLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Learning...
-                </>
-              ) : (
-                'Learn from my website'
-              )}
-            </Button>
-            {websiteLearnedAt && (
-              <span className="text-sm text-muted-foreground">
-                Last learned: {new Date(websiteLearnedAt).toLocaleString()}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="overflow-hidden border border-border-soft shadow-sm">
-        <CardHeader className="border-b border-border-soft bg-muted/30 pb-6">
           <CardTitle className="text-xl">Assistant & contact</CardTitle>
           <CardDescription className="mt-1.5">
             Tone, welcome message, and contact details.
@@ -392,6 +301,17 @@ export function BusinessSettingsForm({
                   className="h-10 rounded-lg"
                 />
               </div>
+            </div>
+            <div className="flex flex-col gap-2 rounded-xl border border-border-soft bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                {t('installPromptInSettings')}
+              </p>
+              <Button type="button" variant="default" className="shrink-0 rounded-lg" asChild>
+                <Link href="/dashboard/install" className="inline-flex items-center gap-2">
+                  <Code className="h-4 w-4" />
+                  {t('getInstallCode')}
+                </Link>
+              </Button>
             </div>
           </div>
 

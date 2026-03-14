@@ -17,7 +17,7 @@ export async function Footer() {
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
           <Link
-            href="/#contact"
+            href="/contact"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
             {t('contact')}
@@ -43,7 +43,7 @@ export async function Footer() {
             {t('terms')}
           </Link>
           <Button asChild size="sm" variant="outline" className="rounded-full">
-            <Link href="/dashboard/billing">{t('pricing')}</Link>
+            <Link href="/pricing">{t('pricing')}</Link>
           </Button>
         </nav>
       </div>

@@ -1,8 +1,9 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { hasActiveSubscription } from '@/lib/entitlements';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, MessageSquare, FileText } from 'lucide-react';
+import { Users, MessageSquare, FileText, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
@@ -23,6 +24,7 @@ export default async function DashboardOverviewPage() {
     { count: conversationsCount },
     { count: quoteRequestsCount },
     { data: subscription },
+    { count: agentsCount },
   ] = await Promise.all([
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     widgetIds.length
@@ -30,21 +32,28 @@ export default async function DashboardOverviewPage() {
       : { count: 0 },
     supabase.from('quote_requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     supabase.from('subscriptions').select('status, trial_ends_at').eq('organization_id', orgId).single(),
+    supabase.from('agents').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
   ]);
 
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  const isTrialing = !adminAllowed && subscription?.status === 'trialing';
-  const isActive =
-    adminAllowed ||
-    subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+  const activeSub = await hasActiveSubscription(supabase, orgId, adminAllowed);
+  const isTrialing = !adminAllowed && subscription?.status === 'trialing' && activeSub;
+  const isActive = activeSub;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t('overview')}</h1>
-        <p className="text-muted-foreground">{t('overviewDescription')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('overview')}</h1>
+          <p className="text-muted-foreground">{t('overviewDescription')}</p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="gap-2">
+          <Link href="/">
+            <Home className="h-4 w-4" aria-hidden />
+            {t('backToHome')}
+          </Link>
+        </Button>
       </div>
 
       {!isActive && (
@@ -95,7 +104,7 @@ export default async function DashboardOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('conversations')}</CardTitle>
-            <div className="rounded-full bg-cyan-500/10 p-2 text-cyan-600 dark:text-cyan-300">
+            <div className="rounded-full bg-muted p-2 text-muted-foreground">
               <MessageSquare className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -109,7 +118,7 @@ export default async function DashboardOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('quoteRequests')}</CardTitle>
-            <div className="rounded-full bg-amber-500/10 p-2 text-amber-600 dark:text-amber-300">
+            <div className="rounded-full bg-muted p-2 text-muted-foreground">
               <FileText className="h-4 w-4" />
             </div>
           </CardHeader>

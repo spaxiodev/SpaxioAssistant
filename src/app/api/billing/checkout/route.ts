@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { isUuid, normalizeUuid } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
+import { getStripePriceIdForPlan } from '@/lib/billing/price-to-plan';
 
 export async function POST(request: Request) {
   try {
@@ -65,14 +66,25 @@ export async function POST(request: Request) {
       }
     }
 
-    const priceId = process.env.STRIPE_PRICE_ID;
+    // Resolve price: body.priceId > body.planId (slug) > STRIPE_PRICE_ID (legacy)
+    let priceId =
+      typeof body.priceId === 'string' && body.priceId
+        ? body.priceId
+        : typeof body.planId === 'string' && body.planId
+          ? await getStripePriceIdForPlan(supabase, body.planId)
+          : process.env.STRIPE_PRICE_ID;
+    if (!priceId) {
+      priceId = await getStripePriceIdForPlan(supabase, 'starter');
+    }
+    // Fallback to legacy single price when plans table / per-plan env are not set
+    if (!priceId) priceId = process.env.STRIPE_PRICE_ID ?? null;
     if (!priceId) return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });
 
     const createSession = (customer: string) =>
       stripe.checkout.sessions.create({
         customer: customer,
         mode: 'subscription',
-        line_items: [{ price: priceId, quantity: 1 }],
+        line_items: [{ price: priceId!, quantity: 1 }],
         success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing?success=1`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing`,
         subscription_data: {

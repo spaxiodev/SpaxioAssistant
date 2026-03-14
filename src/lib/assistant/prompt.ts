@@ -122,3 +122,21 @@ Business context:
 ${businessContext}`;
 }
 
+/**
+ * Build system prompt for an agent. When agent has custom system_prompt, use it and append business context.
+ * Otherwise use the default website-chatbot prompt (buildSystemPrompt) for backward compatibility.
+ */
+export function buildSystemPromptForAgent(
+  agent: { system_prompt?: string | null; role_type?: string },
+  settings?: BusinessSettingsContext | null
+): string {
+  const businessContext = buildBusinessContext(settings);
+  if (agent.system_prompt && agent.system_prompt.trim()) {
+    return `${agent.system_prompt.trim()}
+
+Business context (use this to answer questions about the company):
+${businessContext}`;
+  }
+  return buildSystemPrompt(settings);
+}
+

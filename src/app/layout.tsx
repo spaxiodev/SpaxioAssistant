@@ -59,7 +59,7 @@ export default async function RootLayout({
   const messages = await getMessages();
   return (
     <html lang="en" className={plusJakarta.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-black font-sans antialiased text-slate-100">
+      <body className="min-h-screen bg-background font-sans antialiased text-foreground">
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem('spaxio-theme');document.documentElement.classList.toggle('dark',t!=='light');})();`,

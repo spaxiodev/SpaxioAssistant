@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { hasActiveSubscription } from '@/lib/entitlements';
 import { getPublicAppUrl } from '@/lib/app-url';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CopyScript } from '@/app/dashboard/install/copy-script';
@@ -46,10 +47,7 @@ export default async function InstallPage({ params }: Props) {
     .single();
 
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const isActive =
-    adminAllowed ||
-    subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+  const isActive = await hasActiveSubscription(supabase, orgId, adminAllowed);
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
   const headersList = await headers();
   const baseUrl = getPublicAppUrl({ headers: headersList });
@@ -65,9 +63,9 @@ export default async function InstallPage({ params }: Props) {
       </div>
 
       {!isActive && trialEnd && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
+        <Card className="border-border bg-muted/50">
           <CardContent className="pt-6">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
+            <p className="text-sm text-muted-foreground">
               {t('installTrialNote', { date: trialEnd.toLocaleDateString() })}
             </p>
           </CardContent>
@@ -96,11 +94,11 @@ export default async function InstallPage({ params }: Props) {
             {t('optionalCustomUrl')}
           </p>
           <p className="text-xs text-muted-foreground">
-            Add your website URL in{' '}
-            <Link href="/dashboard/settings" className="underline hover:text-foreground">
-              Settings
+            Add URLs and documents in{' '}
+            <Link href="/dashboard/knowledge" className="underline hover:text-foreground">
+              Knowledge
             </Link>{' '}
-            and click &quot;Learn from my website&quot; so the assistant already knows your site.
+            so the assistant can use your site content when answering.
           </p>
         </CardContent>
       </Card>

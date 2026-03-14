@@ -1,10 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { buildSystemPrompt, type BusinessSettingsContext } from '@/lib/assistant/prompt';
+import { buildSystemPrompt, buildSystemPromptForAgent, type BusinessSettingsContext } from '@/lib/assistant/prompt';
+import { getChatCompletion } from '@/lib/ai/provider';
+import { buildOpenAIToolsSchema, runChatWithToolsLoop } from '@/lib/ai/chat-with-tools';
 import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
+import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions } from '@/lib/entitlements';
+import type { Agent } from '@/lib/supabase/database.types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,7 +68,7 @@ export async function POST(request: Request) {
 
   const { data: widget, error: widgetError } = await supabase
     .from('widgets')
-    .select('id, organization_id')
+    .select('id, organization_id, agent_id')
     .eq('id', widgetId)
     .single();
 
@@ -71,19 +76,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Widget not found' }, { status: 404, headers: corsHeaders });
   }
 
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('status, trial_ends_at')
-    .eq('organization_id', widget.organization_id)
-    .single();
-
-  const status = subscription?.status;
-  const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  let allowed = status === 'active' || (status === 'trialing' && trialEnd && trialEnd > new Date());
-  if (!allowed) {
-    const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
-    if (adminAllowed) allowed = true;
+  // Resolve effective agent when widget is linked to one (backward compat: agent_id can be null)
+  let agent: Agent | null = null;
+  if (widget.agent_id) {
+    const { data: agentRow } = await supabase
+      .from('agents')
+      .select('*')
+      .eq('id', widget.agent_id)
+      .single();
+    agent = agentRow ?? null;
   }
+
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
+  const allowed = await hasActiveSubscription(supabase, widget.organization_id, adminAllowed);
   if (!allowed) {
     return NextResponse.json(
       {
@@ -91,6 +96,17 @@ export async function POST(request: Request) {
         error: 'subscription_required',
       },
       { headers: corsHeaders }
+    );
+  }
+
+  const messageLimitExceeded = await hasExceededMonthlyMessages(supabase, widget.organization_id, adminAllowed);
+  if (messageLimitExceeded) {
+    return NextResponse.json(
+      {
+        reply: "This month's message limit has been reached. Please upgrade your plan or try again next month.",
+        error: 'message_limit_reached',
+      },
+      { status: 403, headers: corsHeaders }
     );
   }
 
@@ -163,7 +179,10 @@ export async function POST(request: Request) {
     .order('created_at', { ascending: true })
     .limit(30);
 
-  const systemContent = buildSystemPrompt(settings as BusinessSettingsContext | null);
+  const systemContent =
+    agent != null
+      ? buildSystemPromptForAgent(agent, settings as BusinessSettingsContext | null)
+      : buildSystemPrompt(settings as BusinessSettingsContext | null);
 
   const messagesForApi: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     ...(language
@@ -181,23 +200,63 @@ export async function POST(request: Request) {
     })),
   ];
 
+  const provider = agent?.model_provider ?? 'openai';
+  const modelId = agent?.model_id ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+  const temperature = agent?.temperature ?? 0.7;
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!apiKey && provider === 'openai') {
     return NextResponse.json(
       { error: 'OpenAI not configured', reply: 'Assistant is not configured. Please try again later.' },
       { status: 503, headers: corsHeaders }
     );
   }
-  const openai = new OpenAI({ apiKey });
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      messages: messagesForApi,
-      max_tokens: 500,
-    });
+    let reply: string;
 
-    const reply = completion.choices[0]?.message?.content?.trim() ?? 'Sorry, I could not generate a response.';
+    const enabledTools = agent?.enabled_tools ?? [];
+    const useTools = Array.isArray(enabledTools) && enabledTools.length > 0;
+
+    if (useTools && provider === 'openai') {
+      const aiActionLimitExceeded = await hasExceededMonthlyAiActions(supabase, widget.organization_id, adminAllowed);
+      if (aiActionLimitExceeded) {
+        const result = await getChatCompletion(provider, modelId, messagesForApi, {
+          max_tokens: 500,
+          temperature,
+        });
+        reply = result.content || 'Sorry, I could not generate a response.';
+      } else {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+        const toolsSchema = buildOpenAIToolsSchema(enabledTools);
+        const toolContext = {
+          organizationId: widget.organization_id,
+          supabase,
+          conversationId: convId,
+          agentId: agent?.id ?? null,
+          widgetId,
+        };
+        const messagesParam = messagesForApi.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+        reply = await runChatWithToolsLoop({
+        openai,
+        modelId,
+        messages: messagesParam,
+        tools: toolsSchema,
+        toolContext,
+        maxTokens: 500,
+        temperature,
+        onToolRun: () => recordAiActionUsage(supabase, widget.organization_id),
+      });
+      }
+    } else {
+      const result = await getChatCompletion(provider, modelId, messagesForApi, {
+        max_tokens: 500,
+        temperature,
+      });
+      reply = result.content || 'Sorry, I could not generate a response.';
+    }
 
     await supabase.from('messages').insert({
       conversation_id: convId,
@@ -210,6 +269,7 @@ export async function POST(request: Request) {
     // Extract quote request from conversation if user asked for a quote
     const fullHistory = [...(history ?? []), { role: 'user' as const, content: message }, { role: 'assistant' as const, content: reply }];
     const transcript = fullHistory.map((m) => `${m.role}: ${m.content}`).join('\n');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     try {
       const extractCompletion = await openai.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -279,7 +339,8 @@ export async function POST(request: Request) {
         .join('\n')
         .slice(0, 4000);
 
-      const leadCompletion = await openai.chat.completions.create({
+      const openaiLead = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+      const leadCompletion = await openaiLead.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         messages: [
           {
@@ -354,6 +415,8 @@ export async function POST(request: Request) {
     } catch (_) {
       // Non-fatal: lead extraction failed
     }
+
+    await recordMessageUsage(supabase, widget.organization_id);
 
     return NextResponse.json(
       { conversationId: convId, reply },

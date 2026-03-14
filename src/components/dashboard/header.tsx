@@ -25,6 +25,12 @@ export function Header() {
         <LocaleSwitcher />
         <ThemeToggle />
         <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/billing">{t('billing')}</Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/pricing">{t('pricing')}</Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
           <Link href="/dashboard/settings">{t('settings')}</Link>
         </Button>
         <Button variant="ghost" size="sm" asChild>

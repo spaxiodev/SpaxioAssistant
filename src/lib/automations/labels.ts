@@ -1,0 +1,41 @@
+/**
+ * Single source of truth for trigger and action display labels.
+ * Used by dashboard list, create/edit modal, and run detail.
+ */
+
+export const TRIGGER_LABELS: Record<string, string> = {
+  new_chat_started: 'New chat started',
+  lead_form_submitted: 'Lead form submitted',
+  conversation_completed: 'Conversation completed',
+  contact_info_captured: 'Contact info captured',
+  manual_test: 'Manual test',
+  webhook_received: 'Webhook received',
+  form_submitted: 'Form submitted',
+  cta_clicked: 'CTA clicked',
+  schedule_triggered: 'Schedule triggered',
+  document_uploaded: 'Document uploaded',
+  lead_created: 'Lead created',
+  support_requested: 'Support requested',
+  knowledge_query_failed: 'Knowledge query failed',
+  agent_confidence_low: 'Agent confidence low',
+};
+
+export const ACTION_LABELS: Record<string, string> = {
+  qualify_lead_with_agent: 'Qualify lead with agent',
+  send_email_notification: 'Send email notification',
+  call_webhook: 'Call webhook',
+  n8n_workflow: 'Run n8n workflow',
+  handoff_to_human: 'Handoff to human',
+  save_lead_record: 'Save lead record',
+  send_follow_up_message: 'Send follow-up message',
+  crm_create_contact: 'CRM: Create contact',
+  crm_add_note: 'CRM: Add note',
+};
+
+export function getTriggerLabel(triggerType: string): string {
+  return TRIGGER_LABELS[triggerType] ?? triggerType;
+}
+
+export function getActionLabel(actionType: string): string {
+  return ACTION_LABELS[actionType] ?? actionType;
+}

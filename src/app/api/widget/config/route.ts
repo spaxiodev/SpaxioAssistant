@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { getClientIp, isUuid, normalizeUuid } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
+import { canRemoveBranding } from '@/lib/entitlements';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,6 +57,9 @@ export async function GET(request: Request) {
     .single();
 
   const enabled = settings?.widget_enabled !== false;
+  const brandingAllowed = await canRemoveBranding(supabase, widget.organization_id, false);
+  const showWidgetLabel = brandingAllowed ? (settings?.show_widget_label ?? false) : true;
+  const widgetLabel = brandingAllowed ? (settings?.widget_label_override ?? null) : null;
 
   return NextResponse.json(
     {
@@ -65,8 +69,8 @@ export async function GET(request: Request) {
       primaryBrandColor: settings?.primary_brand_color ?? '#0f172a',
       businessName: settings?.business_name ?? null,
       widgetLogoUrl: settings?.widget_logo_url ?? null,
-      widgetLabel: settings?.widget_label_override ?? null,
-      showWidgetLabel: settings?.show_widget_label ?? false,
+      widgetLabel,
+      showWidgetLabel,
       positionPreset: settings?.widget_position_preset ?? 'bottom-right',
     },
     { headers: corsHeaders }

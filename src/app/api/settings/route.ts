@@ -3,6 +3,8 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { NextResponse } from 'next/server';
 import { sanitizeText, sanitizeFaq } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
+import { canRemoveBranding } from '@/lib/entitlements';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
 
 export async function PUT(request: Request) {
   try {
@@ -12,6 +14,8 @@ export async function PUT(request: Request) {
     const body = await request.json().catch(() => ({}));
 
     const supabase = createAdminClient();
+    const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
+    const brandingAllowed = await canRemoveBranding(supabase, organizationId, adminAllowed);
 
     const {
       businessName,
@@ -51,8 +55,8 @@ export async function PUT(request: Request) {
       chatbot_name: sanitizeText(chatbotName, 200) || null,
       chatbot_welcome_message: sanitizeText(chatbotWelcomeMessage, 500) || null,
       widget_logo_url: sanitizeText(widgetLogoUrl, 2000) || null,
-      widget_label_override: sanitizeText(widgetLabelOverride, 200) || null,
-      show_widget_label: typeof showWidgetLabel === 'boolean' ? showWidgetLabel : false,
+      widget_label_override: brandingAllowed ? (sanitizeText(widgetLabelOverride, 200) || null) : null,
+      show_widget_label: brandingAllowed && typeof showWidgetLabel === 'boolean' ? showWidgetLabel : true,
       widget_enabled: typeof widgetEnabled === 'boolean' ? widgetEnabled : true,
       faq_page_url: typeof faqPageUrl === 'string' ? sanitizeText(faqPageUrl, 2000) || null : null,
       website_url: typeof websiteUrl === 'string' ? sanitizeText(websiteUrl, 2000) || null : null,
