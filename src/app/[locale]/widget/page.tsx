@@ -1,23 +1,38 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
 import { WidgetVoiceUI } from '@/components/widget-voice-ui';
+import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations';
+import type { CustomTranslations } from '@/lib/widget/translations';
+
+type WidgetConfig = {
+  welcomeMessage?: string;
+  chatbotName?: string;
+  primaryBrandColor?: string;
+  businessName?: string | null;
+  widgetLogoUrl?: string | null;
+  defaultLanguage?: string;
+  supportedLanguages?: string[];
+  autoDetectWebsiteLanguage?: boolean;
+  fallbackLanguage?: string;
+  matchAIResponseToWebsiteLanguage?: boolean;
+  showLanguageSwitcher?: boolean;
+  customTranslations?: CustomTranslations | null;
+};
 
 function WidgetContent() {
   const searchParams = useSearchParams();
   const widgetId = searchParams.get('widgetId');
-  const lang = searchParams.get('lang') || 'en';
+  const initialLang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<'chat' | 'voice'>('chat');
-  const [config, setConfig] = useState<{
-    welcomeMessage?: string;
-    chatbotName?: string;
-    primaryBrandColor?: string;
-    businessName?: string | null;
-    widgetLogoUrl?: string | null;
-  } | null>(null);
+  const [config, setConfig] = useState<WidgetConfig | null>(null);
+  /** Active UI/API language: from URL, then postMessage, or manual override. */
+  const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(initialLang));
+  /** Manual override from language switcher (session-only). */
+  const [manualLanguageOverride, setManualLanguageOverride] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input, setInput] = useState('');
@@ -34,16 +49,42 @@ function WidgetContent() {
       .catch(() => setConfig({}));
   }, [widgetId]);
 
+  // Live language switching: listen for spaxio-lang-change from embed script
   useEffect(() => {
-    if (!widgetId) return;
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'spaxio-init' && e.data.widgetId === widgetId) {
         (window as unknown as { __spaxioReady?: boolean }).__spaxioReady = true;
+      }
+      if (e.data?.type === 'spaxio-lang-change' && typeof e.data.language === 'string') {
+        const next = normalizeLocale(e.data.language);
+        setActiveLocale((prev) => (prev === next ? prev : next));
+        // Do not clear manualLanguageOverride; parent may be syncing after setLanguage()
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, [widgetId]);
+
+  // Effective locale: manual override wins, then active (from URL/postMessage)
+  const effectiveLocale = manualLanguageOverride
+    ? normalizeLocale(manualLanguageOverride)
+    : activeLocale;
+  const supportedLangs = config?.supportedLanguages?.length
+    ? config.supportedLanguages
+    : ['en', 'fr', 'es', 'de', 'pt', 'it'];
+  const defaultLang = config?.defaultLanguage ?? 'en';
+  const fallbackLang = config?.fallbackLanguage ?? 'en';
+  const resolvedLocale = supportedLangs.includes(effectiveLocale)
+    ? effectiveLocale
+    : supportedLangs.includes(defaultLang)
+      ? defaultLang
+      : supportedLangs[0] ?? 'en';
+
+  const t = useCallback(
+    (key: Parameters<typeof getWidgetTranslation>[1]) =>
+      getWidgetTranslation(resolvedLocale, key, config?.customTranslations),
+    [resolvedLocale, config?.customTranslations]
+  );
 
   useEffect(() => {
     const el = contentRef.current;
@@ -53,17 +94,19 @@ function WidgetContent() {
       window.parent?.postMessage?.({ type: 'spaxio-widget-height', height }, '*');
     };
     sendHeight();
-    const t = setTimeout(sendHeight, 150);
+    const tId = setTimeout(sendHeight, 150);
     const ro = new ResizeObserver(sendHeight);
     ro.observe(el);
     return () => {
-      clearTimeout(t);
+      clearTimeout(tId);
       ro.disconnect();
     };
-  }, [config]);
+  }, [config, resolvedLocale]);
 
   const color = config?.primaryBrandColor || '#0f172a';
-  const welcome = config?.welcomeMessage || 'Hi! How can I help you today?';
+  const welcome =
+    config?.welcomeMessage?.trim() ||
+    getWidgetTranslation(resolvedLocale, 'welcomeMessage', config?.customTranslations);
   const chatbotName = config?.chatbotName?.trim() || config?.businessName?.trim() || 'Assistant';
 
   const aiMessages: AIChatMessage[] =
@@ -88,7 +131,14 @@ function WidgetContent() {
           widgetId,
           conversationId,
           message: text.trim(),
-          language: lang,
+          language: resolvedLocale,
+          detectedLocale: activeLocale,
+          activeLocale: resolvedLocale,
+          supportedLanguages: supportedLangs,
+          pageUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          browserLocale:
+            typeof navigator !== 'undefined' && navigator.language ? navigator.language : undefined,
+          manualLanguageOverride: manualLanguageOverride ?? undefined,
         }),
       });
       const data = await res.json();
@@ -97,12 +147,22 @@ function WidgetContent() {
         setMessages((m) => [...m, { role: 'assistant', content: data.reply }]);
       }
       if (data.error) {
-        setMessages((m) => [...m, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }]);
+        setMessages((m) => [
+          ...m,
+          { role: 'assistant', content: data.reply || t('errorMessage') },
+        ]);
       }
     } finally {
       setLoading(false);
     }
   }
+
+  const handleLanguageSelect = useCallback((lang: string) => {
+    const next = normalizeLocale(lang);
+    setManualLanguageOverride(next);
+    setActiveLocale(next);
+    window.parent?.postMessage?.({ type: 'spaxio-lang-change', language: next }, '*');
+  }, []);
 
   return (
     <div
@@ -118,14 +178,14 @@ function WidgetContent() {
               onClick={() => setMode('chat')}
               className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Chat
+              {t('chatTab')}
             </button>
             <button
               type="button"
               onClick={() => setMode('voice')}
               className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
             >
-              Voice
+              {t('voiceTab')}
             </button>
           </div>
           <WidgetVoiceUI
@@ -138,21 +198,37 @@ function WidgetContent() {
         </div>
       ) : (
         <>
-          <div className="mb-2 flex w-full max-w-[360px] rounded-lg border border-border bg-muted/30 p-1">
-            <button
-              type="button"
-              onClick={() => setMode('chat')}
-              className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('voice')}
-              className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Voice
-            </button>
+          <div className="mb-2 flex w-full max-w-[360px] items-center gap-2">
+            <div className="flex flex-1 rounded-lg border border-border bg-muted/30 p-1">
+              <button
+                type="button"
+                onClick={() => setMode('chat')}
+                className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
+              >
+                {t('chatTab')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('voice')}
+                className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                {t('voiceTab')}
+              </button>
+            </div>
+            {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
+              <select
+                aria-label="Language"
+                value={resolvedLocale}
+                onChange={(e) => handleLanguageSelect(e.target.value)}
+                className="rounded-md border border-border bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {supportedLangs.map((l) => (
+                  <option key={l} value={l}>
+                    {l.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <AIChatCard
             className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
@@ -164,9 +240,12 @@ function WidgetContent() {
             isTyping={loading}
             input={input}
             onInputChange={setInput}
-            placeholder="Type a message..."
+            placeholder={t('placeholder')}
             onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
             showPoweredBy
+            ariaLabelSend={t('send')}
+            ariaLabelClose={t('close')}
+            poweredByText={t('poweredBy')}
           />
         </>
       )}
@@ -176,7 +255,13 @@ function WidgetContent() {
 
 export default function WidgetPage() {
   return (
-    <Suspense fallback={<div className="flex h-full min-h-[460px] items-center justify-center bg-black/90 text-white">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full min-h-[460px] items-center justify-center bg-black/90 text-white">
+          Loading...
+        </div>
+      }
+    >
       <WidgetContent />
     </Suspense>
   );

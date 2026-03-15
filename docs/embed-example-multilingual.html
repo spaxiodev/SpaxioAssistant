@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spaxio Assistant – Multilingual embed example</title>
+</head>
+<body>
+  <h1>Multilingual widget example</h1>
+  <p>Optional: set <code>SpaxioAssistantConfig</code> before the script to override locale or chatbot ID.</p>
+
+  <!-- Optional: force widget language (otherwise auto-detected from html lang, URL, or navigator) -->
+  <script>
+    window.SpaxioAssistantConfig = {
+      chatbotId: "YOUR_WIDGET_UUID",
+      locale: "fr",                    // optional; if omitted, language is auto-detected
+      supportedLanguages: ["en", "fr"],
+      autoDetectWebsiteLanguage: true
+    };
+  </script>
+  <script src="https://your-app.com/widget.js" data-widget-id="YOUR_WIDGET_UUID"></script>
+
+  <p>Developer API (after widget loads):</p>
+  <ul>
+    <li><code>SpaxioAssistant.setLanguage('es')</code> – switch widget language</li>
+    <li><code>SpaxioAssistant.getLanguage()</code> – current language code</li>
+    <li><code>SpaxioAssistant.onLanguageChange(function(lang) { ... })</code> – listen for changes</li>
+  </ul>
+</body>
+</html>

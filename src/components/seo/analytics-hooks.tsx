@@ -1,11 +1,11 @@
 /**
- * Optional analytics. No scripts load unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set (e.g. G-XXXXXXXXXX).
+ * Google Analytics (gtag.js). Uses NEXT_PUBLIC_GA_MEASUREMENT_ID if set, otherwise G-SJZT0QJX54.
  * Google Search Console verification is set via layout metadata (NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION).
  */
 
 import Script from 'next/script';
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || 'G-SJZT0QJX54';
 
 export function AnalyticsHooks() {
   if (!GA_ID) return null;

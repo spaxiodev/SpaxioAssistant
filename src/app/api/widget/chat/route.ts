@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { buildSystemPrompt, buildSystemPromptForAgent, type BusinessSettingsContext } from '@/lib/assistant/prompt';
+import { buildSystemPrompt, buildSystemPromptForAgent, buildLanguageInstruction, type BusinessSettingsContext } from '@/lib/assistant/prompt';
 import { getChatCompletion } from '@/lib/ai/provider';
 import { buildOpenAIToolsSchema, runChatWithToolsLoop } from '@/lib/ai/chat-with-tools';
 import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validation';
@@ -40,6 +40,14 @@ export async function POST(request: Request) {
   const message = sanitizeText(body.message, 8000);
   const languageRaw = typeof body.language === 'string' ? body.language : null;
   const language = languageRaw ? String(languageRaw).slice(0, 16) : null;
+  const detectedLocale = typeof body.detectedLocale === 'string' ? body.detectedLocale.slice(0, 16) : null;
+  const activeLocale = typeof body.activeLocale === 'string' ? body.activeLocale.slice(0, 16) : language;
+  const supportedLanguages = Array.isArray(body.supportedLanguages)
+    ? (body.supportedLanguages as unknown[]).filter((l: unknown): l is string => typeof l === 'string').map((l) => l.slice(0, 8))
+    : undefined;
+  const pageUrl = typeof body.pageUrl === 'string' ? body.pageUrl.slice(0, 2048) : undefined;
+  const browserLocale = typeof body.browserLocale === 'string' ? body.browserLocale.slice(0, 32) : undefined;
+  const manualLanguageOverride = typeof body.manualLanguageOverride === 'string' ? body.manualLanguageOverride.slice(0, 16) : undefined;
 
   if (!rawWidgetId || !message) {
     return NextResponse.json({ error: 'Missing widgetId or message' }, { status: 400, headers: corsHeaders });
@@ -126,6 +134,8 @@ export async function POST(request: Request) {
     .eq('organization_id', widget.organization_id)
     .single();
 
+  const matchAIResponseToWebsiteLanguage = (settings as { match_ai_response_to_website_language?: boolean } | null)?.match_ai_response_to_website_language !== false;
+
   // Ensure conversation, and ensure any reused conversation belongs to this widget
   if (convId) {
     const { data: existingConv } = await supabase
@@ -194,15 +204,19 @@ export async function POST(request: Request) {
       ? buildSystemPromptForAgent(agent, settings as BusinessSettingsContext | null)
       : buildSystemPrompt(settings as BusinessSettingsContext | null);
 
+  const effectiveLocale = activeLocale || language;
+  const languageInstruction = effectiveLocale && matchAIResponseToWebsiteLanguage
+    ? buildLanguageInstruction({
+        activeLocale: effectiveLocale,
+        supportedLanguages: supportedLanguages?.length ? supportedLanguages : undefined,
+        matchAIResponseToWebsiteLanguage,
+      })
+    : language
+      ? `The website visitor is currently viewing the site in "${language}". Always respond in this language unless they clearly ask to switch.`
+      : null;
+
   const messagesForApi: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-    ...(language
-      ? [
-          {
-            role: 'system' as const,
-            content: `The website visitor is currently viewing the site in "${language}". Always respond in this language unless they clearly ask to switch.`,
-          },
-        ]
-      : []),
+    ...(languageInstruction ? [{ role: 'system' as const, content: languageInstruction }] : []),
     { role: 'system', content: systemContent },
     ...(history ?? []).map((m) => ({
       role: m.role as 'user' | 'assistant',

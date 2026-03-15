@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
   const { data: settings } = await supabase
     .from('business_settings')
-    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_enabled, widget_position_preset')
+    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_enabled, widget_position_preset, default_language, supported_languages, auto_detect_website_language, fallback_language, match_ai_response_to_website_language, show_language_switcher, custom_translations')
     .eq('organization_id', widget.organization_id)
     .single();
 
@@ -60,6 +60,19 @@ export async function GET(request: Request) {
   const brandingAllowed = await canRemoveBranding(supabase, widget.organization_id, false);
   const showWidgetLabel = brandingAllowed ? (settings?.show_widget_label ?? false) : true;
   const widgetLabel = brandingAllowed ? (settings?.widget_label_override ?? null) : null;
+
+  const supportedLanguages = Array.isArray(settings?.supported_languages) && settings.supported_languages.length > 0
+    ? settings.supported_languages
+    : ['en', 'fr', 'es', 'de', 'pt', 'it'];
+  const defaultLanguage = typeof settings?.default_language === 'string' && settings.default_language.trim()
+    ? settings.default_language.trim().toLowerCase().slice(0, 2)
+    : 'en';
+  const fallbackLanguage = typeof settings?.fallback_language === 'string' && settings.fallback_language.trim()
+    ? settings.fallback_language.trim().toLowerCase().slice(0, 2)
+    : 'en';
+  const customTranslations = (settings?.custom_translations && typeof settings.custom_translations === 'object')
+    ? (settings.custom_translations as Record<string, Record<string, string>>)
+    : undefined;
 
   return NextResponse.json(
     {
@@ -72,6 +85,13 @@ export async function GET(request: Request) {
       widgetLabel,
       showWidgetLabel,
       positionPreset: settings?.widget_position_preset ?? 'bottom-right',
+      defaultLanguage,
+      supportedLanguages,
+      autoDetectWebsiteLanguage: settings?.auto_detect_website_language !== false,
+      fallbackLanguage,
+      matchAIResponseToWebsiteLanguage: settings?.match_ai_response_to_website_language !== false,
+      showLanguageSwitcher: settings?.show_language_switcher === true,
+      customTranslations: customTranslations ?? undefined,
     },
     { headers: corsHeaders }
   );

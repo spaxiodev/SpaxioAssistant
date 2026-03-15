@@ -140,3 +140,36 @@ ${businessContext}`;
   return buildSystemPrompt(settings);
 }
 
+export type LanguageInstructionOptions = {
+  activeLocale: string;
+  supportedLanguages?: string[];
+  matchAIResponseToWebsiteLanguage?: boolean;
+};
+
+/**
+ * Build the language instruction block for the chat system prompt.
+ * Enforces: respond in active language; never outside supportedLanguages unless requested;
+ * allow mid-conversation switch if user clearly switches language.
+ */
+export function buildLanguageInstruction(options: LanguageInstructionOptions): string | null {
+  const {
+    activeLocale,
+    supportedLanguages = ['en', 'fr', 'es', 'de', 'pt', 'it'],
+    matchAIResponseToWebsiteLanguage = true,
+  } = options;
+
+  const lang = String(activeLocale).trim().toLowerCase().slice(0, 2);
+  if (!lang) return null;
+  if (!matchAIResponseToWebsiteLanguage) return null;
+
+  const supported = Array.isArray(supportedLanguages) ? supportedLanguages : [];
+  const list = supported.length > 0 ? supported.join(', ') : 'en, fr, es, de, pt, it';
+
+  return `Language rules (follow strictly):
+- The website visitor is viewing the site in "${lang}". You MUST respond in this language.
+- If the user clearly switches to another language mid-conversation (e.g. they write a full message in a different language), you may adapt and respond in that language.
+- Supported languages for this chatbot are: ${list}. Prefer the active language (${lang}) but you may respond in another supported language if the user explicitly uses it.
+- NEVER answer in a language outside the supported list unless the user explicitly asks you to (e.g. "reply in Spanish" when Spanish is supported).
+- If active language is French, respond in French. If active language is English, respond in English. Same for any other supported language.`.trim();
+}
+

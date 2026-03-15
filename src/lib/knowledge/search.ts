@@ -18,6 +18,8 @@ export type SearchKnowledgeOptions = {
   query: string;
   matchCount?: number;
   matchThreshold?: number;
+  /** When set, chunks/documents with metadata.lang matching this (e.g. 'en', 'fr') are prioritized. */
+  preferredLanguage?: string;
 };
 
 /**
@@ -27,18 +29,23 @@ export async function searchKnowledge(
   supabase: SupabaseClient,
   options: SearchKnowledgeOptions
 ): Promise<KnowledgeMatch[]> {
-  const { organizationId, query, matchCount = 5, matchThreshold = 0.5 } = options;
+  const { organizationId, query, matchCount = 5, matchThreshold = 0.5, preferredLanguage } = options;
   const trimmed = query.trim().slice(0, 2000);
   if (!trimmed) return [];
 
   const embedding = await getEmbedding(trimmed);
 
-  const { data, error } = await supabase.rpc('match_knowledge_chunks', {
+  const rpcParams: Record<string, unknown> = {
     query_embedding: embedding,
     p_organization_id: organizationId,
     match_count: Math.min(matchCount, 20),
     match_threshold: matchThreshold,
-  });
+  };
+  if (preferredLanguage && preferredLanguage.trim().length > 0) {
+    rpcParams.preferred_language = preferredLanguage.trim().toLowerCase().slice(0, 8);
+  }
+
+  const { data, error } = await supabase.rpc('match_knowledge_chunks', rpcParams);
 
   if (error) {
     console.error('[knowledge/search] RPC error:', error);

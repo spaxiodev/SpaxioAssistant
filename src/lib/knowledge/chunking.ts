@@ -52,7 +52,8 @@ export function chunkText(
     }
 
     if (slice.trim()) chunks.push(slice.trim());
-    start = end - overlap;
+    const nextStart = Math.max(0, end - overlap);
+    start = nextStart <= start ? end : nextStart; // never reuse start (avoids infinite loop)
     if (start >= normalized.length) break;
   }
 

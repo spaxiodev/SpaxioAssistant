@@ -46,6 +46,12 @@ function stripHtmlToText(html: string): string {
  */
 export async function POST(request: Request) {
   try {
+    if (!process.env.OPENAI_API_KEY?.trim()) {
+      return NextResponse.json(
+        { error: 'Embedding service is not configured (OPENAI_API_KEY missing). Contact support.' },
+        { status: 503 }
+      );
+    }
     const organizationId = await getOrganizationId();
     if (!organizationId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
@@ -188,6 +194,25 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error('[API] knowledge/ingest-url', err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('OPENAI_API_KEY')) {
+      return NextResponse.json(
+        { error: 'Embedding service is not configured. Contact support.' },
+        { status: 503 }
+      );
+    }
+    if (message.includes('Invalid embedding') || message.includes('embedding')) {
+      return NextResponse.json(
+        { error: 'Embedding service returned an invalid response. Try again later.' },
+        { status: 502 }
+      );
+    }
+    if (message.includes('Failed to create document') || message.includes('knowledge_')) {
+      return NextResponse.json(
+        { error: 'Failed to save document to knowledge base. Check your plan limits or try again.' },
+        { status: 500 }
+      );
+    }
     return handleApiError(err, 'knowledge/ingest-url');
   }
 }

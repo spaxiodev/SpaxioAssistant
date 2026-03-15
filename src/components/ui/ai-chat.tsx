@@ -31,6 +31,12 @@ export type AIChatCardProps = {
   onClose?: () => void;
   /** Show "Powered by" footer (e.g. in widget). */
   showPoweredBy?: boolean;
+  /** Aria-label for send button (e.g. for i18n). */
+  ariaLabelSend?: string;
+  /** Aria-label for close button (e.g. for i18n). */
+  ariaLabelClose?: string;
+  /** Override "Powered by" text (e.g. for i18n). */
+  poweredByText?: string;
 };
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -80,6 +86,9 @@ export default function AIChatCard({
   placeholder = "Type a message...",
   onClose,
   showPoweredBy = false,
+  ariaLabelSend = "Send",
+  ariaLabelClose = "Close",
+  poweredByText = "Powered by Spaxio Assistant",
 }: AIChatCardProps) {
   const [demoMessages, setDemoMessages] = useState<AIChatMessage[]>([
     { sender: "ai", text: welcomeMessage },
@@ -191,7 +200,7 @@ export default function AIChatCard({
           {onClose && (
             <button
               type="button"
-              aria-label="Close"
+              aria-label={ariaLabelClose}
               onClick={onClose}
               className="shrink-0 rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors focus:outline-none focus:ring-1 focus:ring-white/30"
             >
@@ -264,6 +273,7 @@ export default function AIChatCard({
           <button
             type="button"
             onClick={handleSend}
+            aria-label={ariaLabelSend}
             className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             style={
               primaryBrandColor
@@ -277,7 +287,7 @@ export default function AIChatCard({
 
         {showPoweredBy && (
           <div className="px-4 py-1.5 border-t border-white/5 flex items-center justify-center gap-1.5 relative z-10">
-            <span className="text-[10px] text-white/40">Powered by Spaxio Assistant</span>
+            <span className="text-[10px] text-white/40">{poweredByText}</span>
           </div>
         )}
       </div>

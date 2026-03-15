@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
     "db:generate": "npx supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "db:seed": "tsx src/scripts/seed-demo.ts"
   },
@@ -53,6 +54,7 @@
     "supabase": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
   }
 }

@@ -26,25 +26,39 @@
     } catch (e) {}
   }
 
-  function detectLanguage() {
-    function normalizeLang(value) {
-      if (!value) return null;
-      var v = String(value).trim().toLowerCase();
-      if (!v) return null;
-      if (v.length > 2 && v.indexOf('-') === 2) {
-        v = v.slice(0, 2);
-      }
-      return v;
+  function normalizeLang(value) {
+    if (!value) return null;
+    var v = String(value).trim().toLowerCase();
+    if (!v) return null;
+    if (v.length > 2 && v.indexOf('-') === 2) {
+      v = v.slice(0, 2);
     }
+    return v;
+  }
 
+  function detectLanguage(opts) {
+    opts = opts || {};
+    var skipDoc = opts.skipDoc;
     var attrLang = script && (script.getAttribute('data-language') || script.getAttribute('data-lang'));
     var normalized = normalizeLang(attrLang);
     if (normalized) return normalized;
 
-    if (document.documentElement) {
+    if (!skipDoc && document.documentElement) {
       var docLangAttr = document.documentElement.getAttribute('lang');
       var docLang = docLangAttr || (document.documentElement && document.documentElement.lang);
       normalized = normalizeLang(docLang);
+      if (normalized) return normalized;
+    }
+
+    if (typeof window !== 'undefined' && window.__SPAXIO_LANG__ != null) {
+      normalized = normalizeLang(String(window.__SPAXIO_LANG__));
+      if (normalized) return normalized;
+    }
+
+    var pathname = typeof window !== 'undefined' && window.location && window.location.pathname ? window.location.pathname : '';
+    var pathMatch = pathname.match(/\/(en|fr|es|de|pt|it|ja|zh|nl|ru|pl)(?:\/|$)/i);
+    if (pathMatch) {
+      normalized = pathMatch[1].toLowerCase().slice(0, 2);
       if (normalized) return normalized;
     }
 
@@ -56,7 +70,10 @@
     return null;
   }
 
-  var pageLanguage = detectLanguage();
+  var userConfig = (typeof window !== 'undefined' && window.SpaxioAssistantConfig) ? window.SpaxioAssistantConfig : {};
+  if (userConfig.chatbotId) widgetId = String(userConfig.chatbotId).trim() || widgetId;
+  var detected = detectLanguage();
+  var pageLanguage = (userConfig.locale && normalizeLang(userConfig.locale)) || detected || 'en';
 
   function resolveWidgetId(done) {
     if (widgetId) {
@@ -76,6 +93,18 @@
   function mount(initialConfig) {
     if (!document.body) return;
     if (document.querySelector('[data-spaxio="1"]')) return;
+    var langCallbacks = [];
+    function notifyLang(l) {
+      if (!l) return;
+      pageLanguage = l;
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({ type: 'spaxio-lang-change', language: l }, baseOrigin || '*');
+        } catch (e) {}
+      }
+      langCallbacks.forEach(function(c) { try { c(l); } catch (e) {} });
+    }
+
     var host = document.createElement('div');
     host.id = 'spaxio-widget-host';
     host.setAttribute('data-spaxio', '1');
@@ -105,7 +134,7 @@
     iframe.className = 'spaxio-panel';
     iframe.id = 'spaxio-widget-iframe';
     iframe.title = 'Chat';
-    var localeSegment = (pageLanguage && (pageLanguage === 'fr' || pageLanguage === 'en')) ? pageLanguage : 'en';
+    var localeSegment = (pageLanguage && /^[a-z]{2}$/.test(pageLanguage)) ? pageLanguage : 'en';
     var effectiveWidgetId = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
     var iframeSrc = base + '/' + localeSegment + '/widget?widgetId=' + encodeURIComponent(effectiveWidgetId) + '&lang=' + encodeURIComponent(localeSegment);
     iframeSrc += '&_=' + Date.now();
@@ -460,6 +489,23 @@
       } catch (e) {}
     });
 
+    if (typeof document.documentElement !== 'undefined' && window.MutationObserver) {
+      var langObserver = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          if (mutations[i].attributeName === 'lang') {
+            var newLang = document.documentElement.getAttribute('lang');
+            var norm = normalizeLang(newLang);
+            if (norm && norm !== pageLanguage) {
+              pageLanguage = norm;
+              notifyLang(norm);
+            }
+            break;
+          }
+        }
+      });
+      langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    }
+
     window.addEventListener('message', function(e) {
       if (baseOrigin && e.origin !== baseOrigin) return;
       if (e.data && e.data.type === 'spaxio-close') toggle();
@@ -481,6 +527,13 @@
 
     function applyConfig(config) {
       var c = config || {};
+      if (c.autoDetectWebsiteLanguage === false && c.defaultLanguage) {
+        var def = normalizeLang(c.defaultLanguage);
+        if (def && def !== pageLanguage) {
+          pageLanguage = def;
+          notifyLang(def);
+        }
+      }
       var override = positionPresetOverride && String(positionPresetOverride).trim();
       currentPositionPreset = override || c.positionPreset || 'bottom-right';
       setBubbleColor(c.primaryBrandColor);
@@ -550,13 +603,14 @@
       try {
         window.spaxioSetLanguage = function(lang) {
           if (!lang || typeof lang !== 'string') return;
-          var next = String(lang).trim().toLowerCase();
-          pageLanguage = next || null;
-          if (iframe && iframe.contentWindow && pageLanguage) {
-            try {
-              iframe.contentWindow.postMessage({ type: 'spaxio-lang-change', language: pageLanguage }, baseOrigin || '*');
-            } catch (e) {}
-          }
+          var next = normalizeLang(lang);
+          if (next) notifyLang(next);
+        };
+        window.SpaxioAssistant = window.SpaxioAssistant || {};
+        window.SpaxioAssistant.setLanguage = window.spaxioSetLanguage;
+        window.SpaxioAssistant.getLanguage = function() { return pageLanguage || 'en'; };
+        window.SpaxioAssistant.onLanguageChange = function(cb) {
+          if (typeof cb === 'function') langCallbacks.push(cb);
         };
       } catch (e) {}
     }

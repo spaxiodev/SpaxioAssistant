@@ -38,6 +38,13 @@ export async function PUT(request: Request) {
       faqPageUrl,
       serviceBasePrices,
       websiteUrl,
+      defaultLanguage,
+      supportedLanguages,
+      autoDetectWebsiteLanguage,
+      fallbackLanguage,
+      matchAIResponseToWebsiteLanguage,
+      showLanguageSwitcher,
+      customTranslations,
     } = body;
 
     const updatePayload: Record<string, unknown> = {
@@ -60,7 +67,32 @@ export async function PUT(request: Request) {
       widget_enabled: typeof widgetEnabled === 'boolean' ? widgetEnabled : true,
       faq_page_url: typeof faqPageUrl === 'string' ? sanitizeText(faqPageUrl, 2000) || null : null,
       website_url: typeof websiteUrl === 'string' ? sanitizeText(websiteUrl, 2000) || null : null,
+      default_language: typeof defaultLanguage === 'string' ? sanitizeText(defaultLanguage, 16) || 'en' : undefined,
+      fallback_language: typeof fallbackLanguage === 'string' ? sanitizeText(fallbackLanguage, 16) || 'en' : undefined,
+      auto_detect_website_language: typeof autoDetectWebsiteLanguage === 'boolean' ? autoDetectWebsiteLanguage : undefined,
+      match_ai_response_to_website_language: typeof matchAIResponseToWebsiteLanguage === 'boolean' ? matchAIResponseToWebsiteLanguage : undefined,
+      show_language_switcher: typeof showLanguageSwitcher === 'boolean' ? showLanguageSwitcher : undefined,
     };
+    if (Array.isArray(supportedLanguages)) {
+      const langs = supportedLanguages
+        .filter((l): l is string => typeof l === 'string')
+        .map((l) => sanitizeText(l, 8).toLowerCase())
+        .filter(Boolean);
+      if (langs.length > 0) updatePayload.supported_languages = langs;
+    }
+    if (customTranslations != null && typeof customTranslations === 'object' && !Array.isArray(customTranslations)) {
+      const cleaned: Record<string, Record<string, string>> = {};
+      for (const [lang, dict] of Object.entries(customTranslations)) {
+        if (typeof dict === 'object' && dict !== null && !Array.isArray(dict)) {
+          const inner: Record<string, string> = {};
+          for (const [k, v] of Object.entries(dict)) {
+            if (typeof v === 'string') inner[k] = sanitizeText(v, 500);
+          }
+          cleaned[sanitizeText(lang, 8)] = inner;
+        }
+      }
+      updatePayload.custom_translations = cleaned;
+    }
     if (serviceBasePrices != null && typeof serviceBasePrices === 'object' && !Array.isArray(serviceBasePrices)) {
       const cleaned: Record<string, number> = {};
       for (const [k, v] of Object.entries(serviceBasePrices)) {
