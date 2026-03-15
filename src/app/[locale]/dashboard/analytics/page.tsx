@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { BarChart3, MessageSquare, Users, FileText, Workflow, Ticket } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 
 export default async function AnalyticsPage() {
   const orgId = await getOrganizationId();

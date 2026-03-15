@@ -3,8 +3,10 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
-import { canAddKnowledgeSource } from '@/lib/entitlements';
+import { canAddKnowledgeSource, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 
 /** GET /api/knowledge/sources - list knowledge sources for the organization */
 export async function GET() {
@@ -39,10 +41,14 @@ export async function POST(request: Request) {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const allowed = await canAddKnowledgeSource(supabase, organizationId, adminAllowed);
     if (!allowed) {
-      return NextResponse.json(
-        { error: 'Knowledge source limit reached', code: 'plan_limit', message: 'Upgrade your plan to add more knowledge sources.' },
-        { status: 403 }
-      );
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'Knowledge source limit reached. Upgrade your plan to add more sources.',
+        currentPlan: currentSlug,
+        requiredPlan: getNextPlanSlug(currentSlug),
+        feature: 'knowledge_sources',
+      });
     }
 
     const body = await request.json().catch(() => ({}));

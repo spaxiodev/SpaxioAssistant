@@ -2,11 +2,12 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { Button } from '@/components/ui/button';
-import { canUseAiActions } from '@/lib/entitlements';
+import { getPlanAccess } from '@/lib/plan-access';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { getAllActions } from '@/lib/actions/registry';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,24 @@ export default async function ActionsPage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const actionsEnabled = await canUseAiActions(supabase, orgId, adminAllowed);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  const actionsEnabled = planAccess.featureAccess.ai_actions;
+
+  if (!actionsEnabled) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('aiActions')}</h1>
+          <p className="text-muted-foreground">{t('aiActionsDescription')}</p>
+        </div>
+        <UpgradeRequiredCard
+          featureKey="ai_actions"
+          currentPlanName={planAccess.planName}
+          from="actions"
+        />
+      </div>
+    );
+  }
 
   const actions = getAllActions();
 
@@ -32,14 +50,6 @@ export default async function ActionsPage() {
           <Button variant="outline">{t('actionLogs')}</Button>
         </Link>
       </div>
-
-      {!actionsEnabled && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
-          <CardContent className="py-4 text-sm text-amber-800 dark:text-amber-200">
-            AI Actions are not enabled on your current plan. Upgrade to run create_lead, schedule_booking, send_email, and other actions from chat.
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>

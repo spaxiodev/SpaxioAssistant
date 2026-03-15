@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getTranslations } from 'next-intl/server';
 import { ProfileForm } from '@/app/dashboard/account/profile-form';
 import { BusinessSettingsForm } from '@/app/dashboard/settings/business-settings-form';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { Settings } from 'lucide-react';
 
 export default async function AccountPage() {

@@ -3,7 +3,7 @@
  import { useEffect, useState } from 'react';
  import { usePathname } from 'next/navigation';
  import { useTranslations } from 'next-intl';
- import { Link } from '@/i18n/navigation';
+ import { Link } from '@/components/intl-link';
  import { Button } from '@/components/ui/button';
 
  const STORAGE_KEY = 'spaxio-accepted-terms-v1';

@@ -1,5 +1,5 @@
 import { getOrganizationId } from '@/lib/auth-server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription, getPlanForOrg, getEntitlements, getCurrentUsage } from '@/lib/entitlements';

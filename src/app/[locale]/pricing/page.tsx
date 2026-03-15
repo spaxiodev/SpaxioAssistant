@@ -4,7 +4,7 @@ import { PricingCard } from "@/components/ui/dark-gradient-pricing";
 import { getOrganizationId } from "@/lib/auth-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanForOrg } from "@/lib/entitlements";
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import type { Metadata } from 'next';
 
 type Props = { params: Promise<{ locale: string }> };

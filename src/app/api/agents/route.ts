@@ -3,8 +3,10 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
-import { canCreateAgent } from '@/lib/entitlements';
+import { canCreateAgent, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 
 /** GET /api/agents – list agents for the current organization */
 export async function GET() {
@@ -39,10 +41,14 @@ export async function POST(request: Request) {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const allowed = await canCreateAgent(supabase, organizationId, adminAllowed);
     if (!allowed) {
-      return NextResponse.json(
-        { error: 'Agent limit reached', code: 'plan_limit', message: 'Upgrade your plan to create more agents.' },
-        { status: 403 }
-      );
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'Agent limit reached. Upgrade your plan to create more agents.',
+        currentPlan: currentSlug,
+        requiredPlan: getNextPlanSlug(currentSlug),
+        feature: 'agents',
+      });
     }
 
     const body = await request.json().catch(() => ({}));

@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 
 export default async function AssistantPage() {
   const orgId = await getOrganizationId();

@@ -2,8 +2,9 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTranslations } from 'next-intl/server';
 import { InboxListClient } from '@/app/dashboard/inbox/inbox-list-client';
-import { canUseInbox } from '@/lib/entitlements';
+import { getPlanAccess } from '@/lib/plan-access';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,22 @@ export default async function InboxPage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const inboxEnabled = await canUseInbox(supabase, orgId, adminAllowed);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  if (!planAccess.featureAccess.inbox) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('inbox')}</h1>
+          <p className="text-muted-foreground">{t('inboxDescription')}</p>
+        </div>
+        <UpgradeRequiredCard
+          featureKey="inbox"
+          currentPlanName={planAccess.planName}
+          from="inbox"
+        />
+      </div>
+    );
+  }
 
   const { data: widgets } = await supabase.from('widgets').select('id, agent_id').eq('organization_id', orgId);
   const widgetIds = (widgets ?? []).map((w) => w.id);
@@ -78,12 +94,6 @@ export default async function InboxPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t('inbox')}</h1>
         <p className="text-muted-foreground">{t('inboxDescription')}</p>
       </div>
-
-      {!inboxEnabled && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-          Inbox is not enabled on your current plan. Upgrade to use assignment, notes, and human takeover.
-        </div>
-      )}
 
       <InboxListClient
         initialConversations={list}

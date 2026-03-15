@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { notFound } from 'next/navigation';
 import { Bot } from 'lucide-react';
 import { AgentEnabledTools } from '@/app/dashboard/agents/agent-enabled-tools';
 import { AgentDetailTabs } from '@/app/dashboard/agents/agent-detail-tabs';
 import { AgentDeleteButton } from '@/app/dashboard/agents/agent-delete-button';
+import { getPlanAccess } from '@/lib/plan-access';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
 
 const ROLE_LABELS: Record<string, string> = {
   website_chatbot: 'Website Chat',
@@ -43,6 +45,10 @@ export default async function AgentDetailPage({ params }: Props) {
     .single();
 
   if (error || !agent) notFound();
+
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  const toolCallingEnabled = planAccess.featureAccess.tool_calling;
 
   const [runsRes, widgetRes] = await Promise.all([
     supabase
@@ -81,6 +87,8 @@ export default async function AgentDetailPage({ params }: Props) {
         agentId={agent.id}
         agent={agent}
         defaultTab="overview"
+        toolCallingEnabled={toolCallingEnabled}
+        planName={planAccess.planName}
         overviewContent={
           <Card>
             <CardHeader>
@@ -121,12 +129,14 @@ export default async function AgentDetailPage({ params }: Props) {
                   <dd>{agent.webhook_enabled ? 'Yes' : 'No'}</dd>
                 </div>
               </dl>
-              <div className="border-t border-border pt-4">
-                <AgentEnabledTools
-                  agentId={agent.id}
-                  initialEnabledIds={Array.isArray(agent.enabled_tools) ? agent.enabled_tools : []}
-                />
-              </div>
+              {toolCallingEnabled && (
+                <div className="border-t border-border pt-4">
+                  <AgentEnabledTools
+                    agentId={agent.id}
+                    initialEnabledIds={Array.isArray(agent.enabled_tools) ? agent.enabled_tools : []}
+                  />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 Configure welcome message and branding in Settings and Deployments.
               </p>

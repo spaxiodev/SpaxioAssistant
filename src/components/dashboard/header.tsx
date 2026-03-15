@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 

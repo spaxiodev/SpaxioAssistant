@@ -4,8 +4,10 @@ import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
 import { isUuid, normalizeUuid } from '@/lib/validation';
-import { hasWebhookAccess } from '@/lib/entitlements';
+import { hasWebhookAccess, canUseToolCalling, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getUpgradePlanForFeature, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -77,15 +79,35 @@ export async function PATCH(request: Request, context: RouteContext) {
       updatePayload.enabled_tools = Array.isArray(body.enabled_tools) ? body.enabled_tools.filter((t: unknown) => typeof t === 'string').slice(0, 32) : [];
     }
     if (typeof body.widget_enabled === 'boolean') updatePayload.widget_enabled = body.widget_enabled;
+    const supabase = createAdminClient();
+    const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
+    if (body.enabled_tools !== undefined) {
+      const tools = Array.isArray(body.enabled_tools) ? body.enabled_tools.filter((t: unknown) => typeof t === 'string').slice(0, 32) : [];
+      if (tools.length > 0) {
+        const toolAllowed = await canUseToolCalling(supabase, organizationId, adminAllowed);
+        if (!toolAllowed) {
+          const plan = await getPlanForOrg(supabase, organizationId);
+          const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+          return planUpgradeRequiredResponse({
+            message: 'Tool calling is not available on your current plan. Upgrade to Pro or above.',
+            currentPlan: currentSlug,
+            requiredPlan: getUpgradePlanForFeature('tool_calling'),
+            feature: 'tool_calling',
+          });
+        }
+      }
+    }
     if (typeof body.webhook_enabled === 'boolean') {
-      const supabase = createAdminClient();
-      const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
       const allowed = await hasWebhookAccess(supabase, organizationId, adminAllowed);
       if (body.webhook_enabled && !allowed) {
-        return NextResponse.json(
-          { error: 'Webhook access is not available on your plan', code: 'plan_limit', message: 'Upgrade your plan to enable webhooks.' },
-          { status: 403 }
-        );
+        const plan = await getPlanForOrg(supabase, organizationId);
+        const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+        return planUpgradeRequiredResponse({
+          message: 'Webhook access is not available on your plan. Upgrade to Pro or above.',
+          currentPlan: currentSlug,
+          requiredPlan: getUpgradePlanForFeature('webhooks'),
+          feature: 'webhooks',
+        });
       }
       updatePayload.webhook_enabled = body.webhook_enabled;
     }
@@ -93,12 +115,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (typeof body.memory_long_term_enabled === 'boolean') updatePayload.memory_long_term_enabled = body.memory_long_term_enabled;
 
     if (Object.keys(updatePayload).length === 0) {
-      const supabase = createAdminClient();
       const { data } = await supabase.from('agents').select('*').eq('id', agentId).eq('organization_id', organizationId).single();
       return NextResponse.json(data ?? { error: 'Agent not found' }, { status: data ? 200 : 404 });
     }
 
-    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('agents')
       .update(updatePayload)

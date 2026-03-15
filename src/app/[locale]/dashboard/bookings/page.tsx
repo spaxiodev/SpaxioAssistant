@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { BookingsClient } from '@/app/dashboard/bookings/bookings-client';
+import { getPlanAccess } from '@/lib/plan-access';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +16,23 @@ export default async function BookingsPage() {
 
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  if (!planAccess.featureAccess.bookings) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('bookings')}</h1>
+          <p className="text-muted-foreground">{t('bookingsDescription')}</p>
+        </div>
+        <UpgradeRequiredCard
+          featureKey="bookings"
+          currentPlanName={planAccess.planName}
+          from="bookings"
+        />
+      </div>
+    );
+  }
 
   const { data: bookings } = await supabase
     .from('bookings')

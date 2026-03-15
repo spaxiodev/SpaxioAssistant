@@ -7,8 +7,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getOrganizationId } from '@/lib/auth-server';
 import { NextResponse } from 'next/server';
 import { handleApiError } from '@/lib/api-error';
-import { hasApiAccess } from '@/lib/entitlements';
+import { hasApiAccess, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getUpgradePlanForFeature, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 import { createOrganizationApiKey } from '@/lib/api-key-auth';
 import { sanitizeText } from '@/lib/validation';
 
@@ -22,7 +24,14 @@ export async function GET() {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const allowed = await hasApiAccess(supabase, organizationId, adminAllowed);
     if (!allowed) {
-      return NextResponse.json({ error: 'API access not available on your plan', code: 'plan_limit' }, { status: 403 });
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'API access is not available on your plan. Upgrade to Business or above.',
+        currentPlan: currentSlug,
+        requiredPlan: getUpgradePlanForFeature('api_access'),
+        feature: 'api_access',
+      });
     }
 
     const { data, error } = await supabase
@@ -51,7 +60,14 @@ export async function POST(request: Request) {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const allowed = await hasApiAccess(supabase, organizationId, adminAllowed);
     if (!allowed) {
-      return NextResponse.json({ error: 'API access not available on your plan', code: 'plan_limit' }, { status: 403 });
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'API access is not available on your plan. Upgrade to Business or above.',
+        currentPlan: currentSlug,
+        requiredPlan: getUpgradePlanForFeature('api_access'),
+        feature: 'api_access',
+      });
     }
 
     const body = await request.json().catch(() => ({}));

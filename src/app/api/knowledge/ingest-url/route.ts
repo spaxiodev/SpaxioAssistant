@@ -4,8 +4,10 @@ import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
 import { ingestDocumentBatchEmbed } from '@/lib/knowledge/ingest';
-import { canAddKnowledgeSource, canAddDocumentUpload } from '@/lib/entitlements';
+import { canAddKnowledgeSource, canAddDocumentUpload, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_BODY_BYTES = 500_000;
@@ -73,10 +75,14 @@ export async function POST(request: Request) {
     if (!sourceId) {
       const allowed = await canAddKnowledgeSource(supabase, organizationId, adminAllowed);
       if (!allowed) {
-        return NextResponse.json(
-          { error: 'Knowledge source limit reached', code: 'plan_limit', message: 'Upgrade your plan to add more knowledge sources.' },
-          { status: 403 }
-        );
+        const plan = await getPlanForOrg(supabase, organizationId);
+        const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+        return planUpgradeRequiredResponse({
+          message: 'Knowledge source limit reached. Upgrade your plan to add more sources.',
+          currentPlan: currentSlug,
+          requiredPlan: getNextPlanSlug(currentSlug),
+          feature: 'knowledge_sources',
+        });
       }
       const { data: newSource, error: createErr } = await supabase
         .from('knowledge_sources')

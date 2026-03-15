@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { WebhooksClient } from '@/app/dashboard/webhooks/webhooks-client';
+import { getPlanAccess } from '@/lib/plan-access';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export default async function WebhooksPage() {
   const orgId = await getOrganizationId();
@@ -10,6 +13,23 @@ export default async function WebhooksPage() {
 
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  if (!planAccess.featureAccess.webhooks) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('webhooks')}</h1>
+          <p className="text-muted-foreground">{t('webhooksDescription')}</p>
+        </div>
+        <UpgradeRequiredCard
+          featureKey="webhooks"
+          currentPlanName={planAccess.planName}
+          from="webhooks"
+        />
+      </div>
+    );
+  }
 
   const [
     { data: endpointsRaw },

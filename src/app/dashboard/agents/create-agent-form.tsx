@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 
 const ROLE_TYPES = [
   { value: 'website_chatbot', label: 'Website chatbot' },
@@ -78,9 +78,12 @@ export function CreateAgentForm() {
       });
       const data = await res.json();
       if (!res.ok) {
+        const isUpgradeRequired = data.code === 'PLAN_UPGRADE_REQUIRED' || data.code === 'plan_limit';
         toast({
-          title: 'Could not create agent',
-          description: data.error ?? data.message ?? 'Something went wrong.',
+          title: isUpgradeRequired ? 'Plan limit reached' : 'Could not create agent',
+          description: isUpgradeRequired
+            ? 'Upgrade your plan to create more agents. Go to Billing or Pricing to upgrade.'
+            : (data.error ?? data.message ?? 'Something went wrong.'),
           variant: 'destructive',
         });
         return;

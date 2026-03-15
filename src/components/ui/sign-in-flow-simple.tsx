@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { LayoutGrid } from 'lucide-react';
 
 /**

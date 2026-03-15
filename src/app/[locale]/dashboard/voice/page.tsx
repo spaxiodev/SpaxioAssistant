@@ -1,11 +1,11 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTranslations } from 'next-intl/server';
-import { canUseVoice } from '@/lib/entitlements';
+import { getPlanAccess } from '@/lib/plan-access';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { VoiceSessionsClient } from '@/app/dashboard/voice/voice-sessions-client';
-import { formatDate } from '@/lib/utils';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +16,21 @@ export default async function VoicePage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const voiceEnabled = await canUseVoice(supabase, orgId, adminAllowed);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  const voiceEnabled = planAccess.featureAccess.voice;
 
   if (!voiceEnabled) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t('voice')}</h1>
-          <p className="text-muted-foreground">{t('voiceNotEnabled')}</p>
+          <p className="text-muted-foreground">{t('voiceDescription')}</p>
         </div>
+        <UpgradeRequiredCard
+          featureKey="voice"
+          currentPlanName={planAccess.planName}
+          from="voice"
+        />
       </div>
     );
   }

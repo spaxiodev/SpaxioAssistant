@@ -2,7 +2,7 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { canUseAiActions } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { ActionLogsClient } from '@/app/dashboard/actions/action-logs-client';

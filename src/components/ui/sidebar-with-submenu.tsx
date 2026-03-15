@@ -23,9 +23,11 @@ import {
   Zap,
   Calendar,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -36,8 +38,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { UserDisplay } from '@/types/dashboard';
+import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
+import type { FeatureKey } from '@/lib/plan-config';
 
-export type SubmenuItem = { nameKey: string; href: string };
+export type SubmenuItem = { nameKey: string; href: string; featureKey?: FeatureKey };
 
 const Menu = ({
   children,
@@ -131,6 +135,7 @@ function NavSection({
 type SidebarWithSubmenuProps = {
   organizationId?: string;
   userDisplay?: UserDisplay | null;
+  planAccess?: SidebarPlanAccess | null;
 };
 
 function getInitials(fullName: string | null, email: string | null): string {
@@ -143,11 +148,17 @@ function getInitials(fullName: string | null, email: string | null): string {
   return '?';
 }
 
-export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithSubmenuProps) {
+export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: SidebarWithSubmenuProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
+  const featureAccess = planAccess?.featureAccess ?? {};
+
+  function isLocked(featureKey?: FeatureKey): boolean {
+    if (!featureKey) return false;
+    return !featureAccess[featureKey];
+  }
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -163,8 +174,8 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
     { href: '/dashboard/ai-setup', key: 'aiSetupAssistant', icon: Sparkles },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
-    { href: '/dashboard/automations', key: 'automations', icon: Workflow },
-    { href: '/dashboard/actions', key: 'aiActions', icon: Zap },
+    { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
+    { href: '/dashboard/actions', key: 'aiActions', icon: Zap, featureKey: 'ai_actions' as FeatureKey },
     { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
   ];
 
@@ -178,17 +189,17 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
   ];
 
   const activityNav = [
-    { href: '/dashboard/inbox', key: 'inbox', icon: Inbox },
+    { href: '/dashboard/inbox', key: 'inbox', icon: Inbox, featureKey: 'inbox' as FeatureKey },
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
-    { href: '/dashboard/bookings', key: 'bookings', icon: Calendar },
+    { href: '/dashboard/bookings', key: 'bookings', icon: Calendar, featureKey: 'bookings' as FeatureKey },
     { href: '/dashboard/documents', key: 'documents', icon: FileText },
     { href: '/dashboard/analytics', key: 'analytics', icon: BarChart3 },
   ];
 
   const developersNav = [
     { href: '/dashboard/deployments', key: 'deployments', icon: Code },
-    { href: '/dashboard/webhooks', key: 'webhooks', icon: Webhook },
-    { href: '/dashboard/integrations', key: 'integrations', icon: Plug },
+    { href: '/dashboard/webhooks', key: 'webhooks', icon: Webhook, featureKey: 'webhooks' as FeatureKey },
+    { href: '/dashboard/integrations', key: 'integrations', icon: Plug, featureKey: 'integrations' as FeatureKey },
   ];
 
   const setupSubmenu: SubmenuItem[] = [
@@ -242,9 +253,15 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/account/add" className="flex cursor-pointer items-center gap-2">
+                <Link
+                  href="/dashboard/team"
+                  className="flex cursor-pointer items-center gap-2"
+                >
                   <UserPlus className="h-4 w-4" />
-                  {t('addAccount')}
+                  {t('teamMembers')}
+                  {featureAccess.team_members === false && (
+                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  )}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -270,6 +287,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
                 pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
               const Icon = item.icon;
               const isAiSetup = item.key === 'aiSetupAssistant';
+              const locked = isLocked(item.featureKey);
               return (
                 <Link
                   key={item.href}
@@ -285,7 +303,10 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
                   )}
                 >
                   <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined} />
-                  {t(item.key)}
+                  <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
+                  {locked && (
+                    <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />
+                  )}
                 </Link>
               );
             })}
@@ -299,6 +320,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
             {activityNav.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const Icon = item.icon;
+              const locked = isLocked(item.featureKey);
               return (
                 <Link
                   key={item.href}
@@ -311,7 +333,10 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
                   )}
                 >
                   <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
-                  {t(item.key)}
+                  <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
+                  {locked && (
+                    <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />
+                  )}
                 </Link>
               );
             })}
@@ -321,6 +346,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
             {developersNav.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const Icon = item.icon;
+              const locked = isLocked(item.featureKey);
               return (
                 <Link
                   key={item.href}
@@ -333,7 +359,10 @@ export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithS
                   )}
                 >
                   <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
-                  {t(item.key)}
+                  <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
+                  {locked && (
+                    <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />
+                  )}
                 </Link>
               );
             })}

@@ -123,10 +123,18 @@ export async function POST(request: Request) {
 
   const messageLimitExceeded = await hasExceededMonthlyMessages(supabase, widget.organization_id, adminAllowed);
   if (messageLimitExceeded) {
+    const { getPlanForOrg } = await import('@/lib/entitlements');
+    const { getNextPlanSlug, normalizePlanSlug } = await import('@/lib/plan-config');
+    const plan = await getPlanForOrg(supabase, widget.organization_id);
+    const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
     return NextResponse.json(
       {
         reply: "This month's message limit has been reached. Please upgrade your plan or try again next month.",
         error: 'message_limit_reached',
+        code: 'PLAN_UPGRADE_REQUIRED',
+        currentPlan: currentSlug,
+        requiredPlan: getNextPlanSlug(currentSlug),
+        feature: 'messages',
       },
       { status: 403, headers: corsHeaders }
     );

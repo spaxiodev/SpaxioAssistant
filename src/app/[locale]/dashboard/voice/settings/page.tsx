@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getTranslations } from 'next-intl/server';
 import { canUseVoice } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { VoiceSettingsClient } from '@/app/dashboard/voice/voice-settings-client';
 
 export const dynamic = 'force-dynamic';

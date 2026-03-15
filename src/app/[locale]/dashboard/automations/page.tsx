@@ -6,6 +6,9 @@ import type { Automation } from '@/lib/supabase/database.types';
 import { AutomationsDashboardClient } from '@/app/dashboard/automations/automations-dashboard-client';
 import type { RunWithName } from '@/app/dashboard/automations/recent-runs';
 import { ensureWebhookTokenForAutomations } from '@/lib/automations/webhook-url';
+import { getPlanAccess } from '@/lib/plan-access';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +17,23 @@ export default async function AutomationsPage() {
   if (!orgId) return null;
 
   const supabase = createAdminClient();
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  if (!planAccess.featureAccess.automations) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Automations</h1>
+          <p className="text-muted-foreground">Automate operations with AI-native workflows.</p>
+        </div>
+        <UpgradeRequiredCard
+          featureKey="automations"
+          currentPlanName={planAccess.planName}
+          from="automations"
+        />
+      </div>
+    );
+  }
 
   const [automationsRes, agentsRes, automationIdsRes] = await Promise.all([
     supabase

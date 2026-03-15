@@ -1,6 +1,7 @@
 'use client';
 
-import { Link, usePathname } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
+import { usePathname } from '@/i18n/navigation';
 import { useLocale } from 'next-intl';
 
 export function LocaleSwitcher() {

@@ -2,7 +2,7 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { conversationBelongsToOrg, getOrganizationIdForConversation } from '@/lib/conversation-org';
 import { canUseInbox } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';

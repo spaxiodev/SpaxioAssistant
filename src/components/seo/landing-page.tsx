@@ -1,4 +1,4 @@
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { Button } from '@/components/ui/button';
 
 export type SeoLandingProps = {

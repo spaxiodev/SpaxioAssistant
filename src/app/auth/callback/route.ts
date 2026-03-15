@@ -30,11 +30,20 @@ export async function GET(request: Request) {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
+          const meta = user.user_metadata as {
+            full_name?: string;
+            name?: string;
+            user_name?: string;
+            business_name?: string;
+            industry?: string;
+          };
+          const fullName =
+            meta.full_name ?? meta.name ?? meta.user_name ?? undefined;
           await ensureUserOrganization(
             user.id,
-            (user.user_metadata as { full_name?: string })?.full_name,
-            (user.user_metadata as { business_name?: string })?.business_name ?? null,
-            (user.user_metadata as { industry?: string })?.industry ?? null
+            fullName,
+            meta.business_name ?? null,
+            meta.industry ?? null
           );
         }
         return NextResponse.redirect(`${origin}${pathWithLocale}`);

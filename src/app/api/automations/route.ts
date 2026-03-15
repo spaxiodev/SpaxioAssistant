@@ -3,8 +3,10 @@ import { getOrganizationIdOrFromApiKey } from '@/lib/api-key-auth';
 import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
-import { canUseAutomation, canCreateAutomation } from '@/lib/entitlements';
+import { canUseAutomation, canCreateAutomation, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getUpgradePlanForFeature, normalizePlanSlug } from '@/lib/plan-config';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
 import { TRIGGER_TYPES, ACTION_TYPES } from '@/lib/automations/types';
 import { generateWebhookToken, generateWebhookSecret, buildAutomationWebhookUrl } from '@/lib/automations/webhook-url';
 
@@ -49,17 +51,25 @@ export async function POST(request: Request) {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const allowed = await canUseAutomation(supabase, organizationId, adminAllowed);
     if (!allowed) {
-      return NextResponse.json(
-        { error: 'Automations not available', code: 'plan_limit' },
-        { status: 403 }
-      );
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'Automations are not available on your current plan. Upgrade to Pro or above.',
+        currentPlan: currentSlug,
+        requiredPlan: getUpgradePlanForFeature('automations'),
+        feature: 'automations',
+      });
     }
     const canCreate = await canCreateAutomation(supabase, organizationId, adminAllowed);
     if (!canCreate) {
-      return NextResponse.json(
-        { error: 'Automation limit reached', code: 'plan_limit' },
-        { status: 403 }
-      );
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'Automation limit reached. Upgrade your plan to create more automations.',
+        currentPlan: currentSlug,
+        requiredPlan: getUpgradePlanForFeature('automations'),
+        feature: 'automations',
+      });
     }
 
     const body = await request.json().catch(() => ({}));

@@ -2,13 +2,15 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription, canUseInbox, canUseAiActions, canUseBookings } from '@/lib/entitlements';
+import { getPlanAccess } from '@/lib/plan-access';
 import { getAnalyticsOverview } from '@/lib/analytics-overview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, MessageSquare, FileText, Home, Inbox, Zap, Calendar } from 'lucide-react';
+import { Users, MessageSquare, FileText, Home, Inbox, Zap, Calendar, Lock, Workflow, Webhook, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { CheckoutButton } from '@/app/dashboard/billing/checkout-button';
+import { buildUpgradeUrl, getUpgradePlanForFeature, FEATURE_LABELS } from '@/lib/plan-config';
 
 export default async function DashboardOverviewPage() {
   const orgId = await getOrganizationId();
@@ -21,11 +23,16 @@ export default async function DashboardOverviewPage() {
   const widgetIds = (widgets ?? []).map((w) => w.id);
 
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
   const [inboxEnabled, actionsEnabled, bookingsEnabled] = await Promise.all([
     canUseInbox(supabase, orgId, adminAllowed),
     canUseAiActions(supabase, orgId, adminAllowed),
     canUseBookings(supabase, orgId, adminAllowed),
   ]);
+
+  const lockedFeatures = (['automations', 'webhooks', 'tool_calling'] as const).filter(
+    (k) => !planAccess.featureAccess[k]
+  );
 
   const [
     { count: leadsCount },
@@ -142,6 +149,37 @@ export default async function DashboardOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {lockedFeatures.length > 0 && (
+        <Card className="border-dashed border-muted-foreground/30 bg-muted/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              {t('upgradeRequired')} — more on higher plans
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Upgrade to unlock these features.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {lockedFeatures.map((key) => (
+                <Button key={key} asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Link href={buildUpgradeUrl({ from: 'overview', current: planAccess.planSlug ?? undefined, recommended: getUpgradePlanForFeature(key) })}>
+                    {key === 'automations' && <Workflow className="h-3.5 w-3.5" />}
+                    {key === 'webhooks' && <Webhook className="h-3.5 w-3.5" />}
+                    {key === 'tool_calling' && <Wrench className="h-3.5 w-3.5" />}
+                    {FEATURE_LABELS[key]}
+                  </Link>
+                </Button>
+              ))}
+              <Button asChild variant="secondary" size="sm" className="text-xs">
+                <Link href="/pricing">{t('viewPlans')}</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {(inboxEnabled || actionsEnabled || bookingsEnabled) && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

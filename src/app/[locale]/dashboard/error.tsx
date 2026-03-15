@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 
 export default function DashboardError({
   error,

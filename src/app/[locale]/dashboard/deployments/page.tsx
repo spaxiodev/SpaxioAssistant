@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { Code, Bot } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 
 export default async function DeploymentsPage() {
   const orgId = await getOrganizationId();

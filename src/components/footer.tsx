@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { Button } from '@/components/ui/button';
 
 const SPAXIO_BLOG_URL = 'https://www.spaxio.ca/blog';

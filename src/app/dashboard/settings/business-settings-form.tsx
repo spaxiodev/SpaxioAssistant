@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Mail, Palette, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

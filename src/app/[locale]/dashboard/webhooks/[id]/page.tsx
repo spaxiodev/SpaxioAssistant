@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { Link } from '@/components/intl-link';
 import { WebhookEndpointClient } from '@/app/dashboard/webhooks/webhook-endpoint-client';
 
 type Props = { params: Promise<{ id: string }> };
