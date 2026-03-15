@@ -2,7 +2,7 @@
  * Widget UI translation dictionaries for multilingual support.
  * Keys: welcomeMessage, placeholder, send, typingIndicator, restartChat,
  * leadFormName, leadFormEmail, leadFormPhone, leadFormMessage, offlineMessage,
- * errorMessage, chatTab, voiceTab, close, poweredBy, loading.
+ * errorMessage, chatTab, close, poweredBy, loading.
  * Fallback: English when a key is missing.
  */
 
@@ -19,7 +19,6 @@ export type WidgetTranslationKey =
   | 'offlineMessage'
   | 'errorMessage'
   | 'chatTab'
-  | 'voiceTab'
   | 'close'
   | 'poweredBy'
   | 'loading';
@@ -39,7 +38,6 @@ const en: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'We\'re offline. Leave a message and we\'ll get back to you.',
   errorMessage: 'Sorry, something went wrong. Please try again.',
   chatTab: 'Chat',
-  voiceTab: 'Voice',
   close: 'Close',
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Loading...',
@@ -58,7 +56,6 @@ const fr: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'Nous sommes hors ligne. Laissez un message et nous vous recontacterons.',
   errorMessage: 'Désolé, une erreur s\'est produite. Veuillez réessayer.',
   chatTab: 'Chat',
-  voiceTab: 'Voix',
   close: 'Fermer',
   poweredBy: 'Propulsé par Spaxio Assistant',
   loading: 'Chargement...',
@@ -77,7 +74,6 @@ const es: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'Estamos desconectados. Deja un mensaje y te responderemos.',
   errorMessage: 'Lo sentimos, algo salió mal. Por favor, inténtalo de nuevo.',
   chatTab: 'Chat',
-  voiceTab: 'Voz',
   close: 'Cerrar',
   poweredBy: 'Desarrollado por Spaxio Assistant',
   loading: 'Cargando...',
@@ -96,7 +92,6 @@ const de: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'Wir sind offline. Hinterlassen Sie eine Nachricht, wir melden uns.',
   errorMessage: 'Entschuldigung, etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
   chatTab: 'Chat',
-  voiceTab: 'Sprache',
   close: 'Schließen',
   poweredBy: 'Unterstützt von Spaxio Assistant',
   loading: 'Laden...',
@@ -115,7 +110,6 @@ const pt: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'Estamos offline. Deixe uma mensagem e entraremos em contato.',
   errorMessage: 'Desculpe, algo deu errado. Por favor, tente novamente.',
   chatTab: 'Chat',
-  voiceTab: 'Voz',
   close: 'Fechar',
   poweredBy: 'Desenvolvido por Spaxio Assistant',
   loading: 'Carregando...',
@@ -134,7 +128,6 @@ const it: Record<WidgetTranslationKey, string> = {
   offlineMessage: 'Siamo offline. Lascia un messaggio e ti risponderemo.',
   errorMessage: 'Scusa, qualcosa è andato storto. Riprova.',
   chatTab: 'Chat',
-  voiceTab: 'Voce',
   close: 'Chiudi',
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Caricamento...',

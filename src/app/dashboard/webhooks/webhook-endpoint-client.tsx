@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Copy, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -44,6 +52,8 @@ export function WebhookEndpointClient({ endpoint, initialMappings, baseUrl }: Pr
   const [addRequired, setAddRequired] = useState(false);
   const [addDefault, setAddDefault] = useState('');
   const [saving, setSaving] = useState(false);
+  const [mappingToRemove, setMappingToRemove] = useState<Mapping | null>(null);
+  const [removing, setRemoving] = useState(false);
   const { toast } = useToast();
 
   const effectiveBase = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -85,19 +95,52 @@ export function WebhookEndpointClient({ endpoint, initialMappings, baseUrl }: Pr
     }
   };
 
-  const removeMapping = async (mappingId: string) => {
+  const handleRemoveMappingConfirm = async () => {
+    if (!mappingToRemove) return;
+    setRemoving(true);
     try {
-      const res = await fetch(`/api/webhooks/endpoints/${endpoint.id}/mappings/${mappingId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/webhooks/endpoints/${endpoint.id}/mappings/${mappingToRemove.id}`, {
+        method: 'DELETE',
+      });
       if (!res.ok) throw new Error('Failed to delete');
-      setMappings((prev) => prev.filter((m) => m.id !== mappingId));
+      setMappings((prev) => prev.filter((m) => m.id !== mappingToRemove.id));
+      setMappingToRemove(null);
       toast({ title: 'Mapping removed' });
     } catch (e) {
       toast({ title: 'Error', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setRemoving(false);
     }
   };
 
   return (
     <div className="space-y-6">
+      <Dialog open={!!mappingToRemove} onOpenChange={(open) => !open && setMappingToRemove(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove field mapping?</DialogTitle>
+            <DialogDescription>
+              {mappingToRemove ? (
+                <>
+                  Remove mapping <span className="font-mono">{mappingToRemove.source_path}</span> →{' '}
+                  <span className="font-mono">{mappingToRemove.target_key}</span>? This cannot be undone.
+                </>
+              ) : (
+                'This mapping will be removed.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-4">
+            <Button variant="outline" onClick={() => setMappingToRemove(null)} disabled={removing}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveMappingConfirm} disabled={removing}>
+              {removing ? '…' : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Endpoint URL</CardTitle>
@@ -125,7 +168,7 @@ export function WebhookEndpointClient({ endpoint, initialMappings, baseUrl }: Pr
                   <span className="text-muted-foreground">→</span>
                   <span className="font-mono text-sm">{m.target_key}</span>
                   <span className="text-xs text-muted-foreground">({m.value_type}{m.required ? ', required' : ''})</span>
-                  <Button variant="ghost" size="sm" onClick={() => removeMapping(m.id)}>
+                  <Button variant="ghost" size="sm" onClick={() => setMappingToRemove(m)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </li>

@@ -108,7 +108,7 @@ export const PricingCard = ({
     >
       <Card
         className={cn(
-          "relative h-full w-full overflow-hidden border",
+          "relative flex h-full w-full flex-col overflow-hidden border",
           "dark:border-zinc-700 dark:bg-gradient-to-br dark:from-zinc-950/50 dark:to-zinc-900/80",
           "border-zinc-200 bg-gradient-to-br from-zinc-50/50 to-zinc-100/80",
           "p-6",
@@ -134,12 +134,14 @@ export const PricingCard = ({
             {bestFor}
           </span>
         </div>
-        <div className="space-y-4 py-9">
+        <div className="min-h-0 flex-1 space-y-4 py-9">
           {benefits.map((benefit, index) => (
             <Benefit key={index} {...benefit} />
           ))}
         </div>
-        {renderCta()}
+        <div className={cn("mt-auto pt-4", !featured && "pb-6")}>
+          {renderCta()}
+        </div>
       </Card>
     </motion.div>
   );

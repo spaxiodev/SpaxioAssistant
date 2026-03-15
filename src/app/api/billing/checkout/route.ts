@@ -80,13 +80,19 @@ export async function POST(request: Request) {
     if (!priceId) priceId = process.env.STRIPE_PRICE_ID ?? null;
     if (!priceId) return NextResponse.json({ error: 'Billing not configured' }, { status: 503 });
 
+    const locale = typeof body.locale === 'string' && body.locale ? body.locale : 'en';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const successUrl = `${baseUrl}/${locale}/dashboard/billing?success=1`;
+    const cancelUrl = `${baseUrl}/${locale}/dashboard/billing`;
+
     const createSession = (customer: string) =>
       stripe.checkout.sessions.create({
         customer: customer,
         mode: 'subscription',
         line_items: [{ price: priceId!, quantity: 1 }],
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing?success=1`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        locale: locale === 'fr-CA' ? 'fr-CA' : 'en',
         subscription_data: {
           trial_period_days: 7,
           metadata: { organization_id: organizationId },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import type { ButtonProps } from '@/components/ui/button';
 
@@ -23,6 +24,7 @@ export function CheckoutButton({
   className,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
+  const locale = useLocale();
 
   async function handleCheckout() {
     setLoading(true);
@@ -30,7 +32,7 @@ export function CheckoutButton({
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId, planId }),
+        body: JSON.stringify({ organizationId, planId, locale }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;

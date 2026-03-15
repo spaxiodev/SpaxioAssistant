@@ -7,7 +7,6 @@ import {
   Users,
   MessageCircle,
   Inbox,
-  Mic,
   BookOpen,
   Workflow,
   BarChart3,
@@ -23,12 +22,12 @@ import {
   Webhook,
   Zap,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { CheckoutButton } from '@/app/dashboard/billing/checkout-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,7 +130,6 @@ function NavSection({
 
 type SidebarWithSubmenuProps = {
   organizationId?: string;
-  showUpgradeButton?: boolean;
   userDisplay?: UserDisplay | null;
 };
 
@@ -145,7 +143,7 @@ function getInitials(fullName: string | null, email: string | null): string {
   return '?';
 }
 
-export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisplay }: SidebarWithSubmenuProps) {
+export function SidebarWithSubmenu({ organizationId, userDisplay }: SidebarWithSubmenuProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('dashboard');
@@ -163,6 +161,7 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
 
   const workspaceNav = [
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
+    { href: '/dashboard/ai-setup', key: 'aiSetupAssistant', icon: Sparkles },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow },
     { href: '/dashboard/actions', key: 'aiActions', icon: Zap },
@@ -180,7 +179,6 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
 
   const activityNav = [
     { href: '/dashboard/inbox', key: 'inbox', icon: Inbox },
-    { href: '/dashboard/voice', key: 'voice', icon: Mic },
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
     { href: '/dashboard/bookings', key: 'bookings', icon: Calendar },
     { href: '/dashboard/documents', key: 'documents', icon: FileText },
@@ -271,18 +269,22 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
               const isActive =
                 pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
               const Icon = item.icon;
+              const isAiSetup = item.key === 'aiSetupAssistant';
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined}
                   className={cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                     isActive
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                      : isAiSetup
+                        ? 'hover:bg-white/50 hover:opacity-90 dark:hover:bg-white/5'
+                        : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
-                  <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+                  <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined} />
                   {t(item.key)}
                 </Link>
               );
@@ -353,16 +355,6 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
             <Menu items={setupSubmenu} labelKey="installAndSettings" icon={Settings} />
           </NavSection>
 
-          {showUpgradeButton && organizationId && (
-            <div className="pt-2">
-              <CheckoutButton
-                organizationId={organizationId}
-                subscribeLabel={t('upgrade')}
-                redirectingLabel={t('redirecting')}
-                className="w-full rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:opacity-95 hover:shadow-xl"
-              />
-            </div>
-          )}
         </div>
       </nav>
     </aside>

@@ -44,13 +44,23 @@ export default async function AgentDetailPage({ params }: Props) {
 
   if (error || !agent) notFound();
 
-  const { data: runsData } = await supabase
-    .from('agent_runs')
-    .select('id, status, started_at, trigger_type, duration_ms')
-    .eq('agent_id', id)
-    .order('started_at', { ascending: false })
-    .limit(20);
-  const runs = runsData ?? [];
+  const [runsRes, widgetRes] = await Promise.all([
+    supabase
+      .from('agent_runs')
+      .select('id, status, started_at, trigger_type, duration_ms')
+      .eq('agent_id', id)
+      .order('started_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('widgets')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('agent_id', id)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const runs = runsRes.data ?? [];
+  const widgetId = widgetRes.data?.id ?? null;
 
   return (
     <div className="space-y-8">
@@ -80,10 +90,15 @@ export default async function AgentDetailPage({ params }: Props) {
                 </div>
                 <div>
                   <CardTitle>{agent.name}</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Badge variant="secondary">{ROLE_LABELS[agent.role_type] ?? agent.role_type}</Badge>
-                    {' · '}
-                    {agent.model_provider} / {agent.model_id}
+                    <span>{agent.model_provider} / {agent.model_id}</span>
+                    {agent.created_by_ai_setup === true && (
+                      <>
+                        <span className="text-muted-foreground/70">·</span>
+                        <span className="text-muted-foreground">{t('agentCreatedByAiSetup')}</span>
+                      </>
+                    )}
                   </CardDescription>
                 </div>
               </div>
@@ -118,7 +133,8 @@ export default async function AgentDetailPage({ params }: Props) {
             </CardContent>
           </Card>
         }
-        runs={runs ?? []}
+        runs={runs}
+        widgetId={widgetId}
       />
     </div>
   );

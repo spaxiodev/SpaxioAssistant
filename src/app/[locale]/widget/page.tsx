@@ -3,7 +3,6 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
-import { WidgetVoiceUI } from '@/components/widget-voice-ui';
 import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations';
 import type { CustomTranslations } from '@/lib/widget/translations';
 
@@ -27,7 +26,6 @@ function WidgetContent() {
   const widgetId = searchParams.get('widgetId');
   const initialLang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<'chat' | 'voice'>('chat');
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   /** Active UI/API language: from URL, then postMessage, or manual override. */
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(initialLang));
@@ -174,88 +172,39 @@ function WidgetContent() {
       className="flex w-full flex-col items-center justify-start font-sans"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
-      {mode === 'voice' ? (
-        <div className="w-full max-w-[360px] shrink-0">
-          <div className="mb-2 flex rounded-lg border border-border bg-muted/30 p-1">
-            <button
-              type="button"
-              onClick={() => setMode('chat')}
-              className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              {t('chatTab')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('voice')}
-              className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
-            >
-              {t('voiceTab')}
-            </button>
-          </div>
-          <WidgetVoiceUI
-            widgetId={widgetId!}
-            primaryBrandColor={color}
-            chatbotName={chatbotName}
-            onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
-            showPoweredBy
-            baseUrl={baseUrl}
-            ariaLabelClose={t('close')}
-            poweredByText={t('poweredBy')}
-          />
+      {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
+        <div className="mb-2 flex w-full max-w-[360px] items-center gap-2">
+          <select
+            aria-label="Language"
+            value={resolvedLocale}
+            onChange={(e) => handleLanguageSelect(e.target.value)}
+            className="rounded-md border border-border bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {supportedLangs.map((l) => (
+              <option key={l} value={l}>
+                {l.toUpperCase()}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : (
-        <>
-          <div className="mb-2 flex w-full max-w-[360px] items-center gap-2">
-            <div className="flex flex-1 rounded-lg border border-border bg-muted/30 p-1">
-              <button
-                type="button"
-                onClick={() => setMode('chat')}
-                className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
-              >
-                {t('chatTab')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('voice')}
-                className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                {t('voiceTab')}
-              </button>
-            </div>
-            {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
-              <select
-                aria-label="Language"
-                value={resolvedLocale}
-                onChange={(e) => handleLanguageSelect(e.target.value)}
-                className="rounded-md border border-border bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {supportedLangs.map((l) => (
-                  <option key={l} value={l}>
-                    {l.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <AIChatCard
-            className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
-            primaryBrandColor={color}
-            chatbotName={chatbotName}
-            welcomeMessage={welcome}
-            messages={aiMessages}
-            onSend={send}
-            isTyping={loading}
-            input={input}
-            onInputChange={setInput}
-            placeholder={t('placeholder')}
-            onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
-            showPoweredBy
-            ariaLabelSend={t('send')}
-            ariaLabelClose={t('close')}
-            poweredByText={t('poweredBy')}
-          />
-        </>
       )}
+      <AIChatCard
+        className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
+        primaryBrandColor={color}
+        chatbotName={chatbotName}
+        welcomeMessage={welcome}
+        messages={aiMessages}
+        onSend={send}
+        isTyping={loading}
+        input={input}
+        onInputChange={setInput}
+        placeholder={t('placeholder')}
+        onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
+        showPoweredBy
+        ariaLabelSend={t('send')}
+        ariaLabelClose={t('close')}
+        poweredByText={t('poweredBy')}
+      />
     </div>
   );
 }

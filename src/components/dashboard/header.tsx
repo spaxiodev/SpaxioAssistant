@@ -7,7 +7,12 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
-export function Header() {
+type HeaderProps = {
+  organizationId?: string;
+  showUpgradeButton?: boolean;
+};
+
+export function Header({ showUpgradeButton }: HeaderProps) {
   const router = useRouter();
   const t = useTranslations('common');
 
@@ -20,7 +25,13 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/30 bg-background/65 px-6 backdrop-blur dark:border-white/10">
-      <div />
+      <div className="flex items-center gap-2">
+        {showUpgradeButton && (
+          <Button variant="default" size="sm" className="rounded-lg" asChild>
+            <Link href="/pricing">{t('upgrade')}</Link>
+          </Button>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         <LocaleSwitcher />
         <ThemeToggle />

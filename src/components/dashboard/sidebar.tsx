@@ -5,15 +5,13 @@ import type { UserDisplay } from '@/types/dashboard';
 
 type SidebarProps = {
   organizationId?: string;
-  showUpgradeButton?: boolean;
   userDisplay?: UserDisplay | null;
 };
 
-export function Sidebar({ organizationId, showUpgradeButton, userDisplay }: SidebarProps) {
+export function Sidebar({ organizationId, userDisplay }: SidebarProps) {
   return (
     <SidebarWithSubmenu
       organizationId={organizationId}
-      showUpgradeButton={showUpgradeButton}
       userDisplay={userDisplay}
     />
   );

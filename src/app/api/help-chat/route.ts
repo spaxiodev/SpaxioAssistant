@@ -12,13 +12,39 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   const have: string[] = [];
   const dontHave: string[] = [];
 
-  have.push('Dashboard (see leads, conversations, quote requests)');
-  have.push('Settings (business name, welcome message, how the chat sounds)');
+  have.push('Dashboard (see leads, conversations, quote requests, overview)');
+  have.push('Settings (business name, welcome message, tone, widget look; languages and language switcher)');
   have.push('Leads (see who gave their email in the widget)');
   have.push('Quote requests (see quote requests from the widget)');
   have.push('Conversations (read chat history with visitors)');
   have.push('Install (copy a code and put it on their website so the chat appears)');
   have.push('Billing (see their plan, upgrade, or manage payment)');
+  have.push('AI Setup Assistant (describe what you want in natural language; AI configures agent, lead capture, notifications—then Publish; requires active subscription)');
+  have.push('Deployments (get embed code per agent; under Developers in the sidebar)');
+
+  if (entitlements.inbox_enabled) {
+    have.push('Inbox (assign conversations, reply as human, notes, tags; under Activity in the sidebar)');
+  } else {
+    dontHave.push('Inbox (human takeover, assignment, notes—that\'s on a higher plan)');
+  }
+
+  if (entitlements.ai_actions_enabled) {
+    have.push('AI Actions (create_lead, book_appointment, etc.—under Workspace)');
+  } else {
+    dontHave.push('AI Actions (that\'s on a higher plan)');
+  }
+
+  if (entitlements.bookings_enabled) {
+    have.push('Bookings (appointments from the widget; under Activity)');
+  } else {
+    dontHave.push('Bookings (that\'s on a higher plan)');
+  }
+
+  if (entitlements.voice_enabled) {
+    have.push(`Voice (voice conversations in the widget; enable per agent; monthly minutes apply)`);
+  } else {
+    dontHave.push('Voice (that\'s on a higher plan)');
+  }
 
   if (entitlements.max_agents > 1) {
     have.push('Multiple Agents (create more than one AI assistant; each can have different settings)');
@@ -94,17 +120,22 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 - For "how do I install the widget?", give: 1) Open Spaxio Assistant and log in. 2) Click "Install" in the left sidebar. 3) Copy the code (script tag). 4) Paste it into your website HTML just before the closing </body> tag. 5) Save and publish. Put the script example on its own line so they can copy it.
 
 **Topics you can explain (only if the user has access - see below):**
-- **Dashboard / Overview:** What the numbers mean (leads, conversations, quote requests), trial banner, upgrade button.
-- **Settings (or Assistant):** Where to set business name, welcome message, tone; widget look and behaviour.
-- **Leads:** Where leads appear, how to view them, where to set the email that gets notified (in Settings).
-- **Quote requests:** How they are created from the widget, where to see them (Quote requests page), what the fields mean.
-- **Conversations:** Where to see the list of chats, how to open and read a conversation.
-- **Install:** How to get the code and put it on their website (numbered steps plus script on its own line).
+- **Dashboard / Overview:** What the numbers mean (leads, conversations, quote requests, inbox, actions, bookings), trial banner, upgrade button.
+- **Settings (or Assistant):** Where to set business name, welcome message, tone; widget look and behaviour; **widget languages** (default language, supported languages, show language switcher, custom translations)—under Settings.
+- **Leads:** Where leads appear (Leads under CRM), how to view them, where to set the email that gets notified (in Settings).
+- **Quote requests:** How they are created from the widget, where to see them (Quote requests under CRM), what the fields mean.
+- **Conversations:** Where to see the list of chats (Activity → Conversations), how to open and read a conversation.
+- **Install:** How to get the code and put it on their website: 1) Install in the sidebar (or Deployments for per-agent code). 2) Copy the script. 3) Paste just before </body>. 4) Save and publish. Put the script example on its own line so they can copy it.
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
-- **Widget:** What the widget does (chat, capture leads, quote requests), where to customize it (Settings).
-- **Agents:** Only if they have multiple agents - how to create or edit agents, where they appear.
-- **Knowledge:** Only if they have it - how to add a source, upload a doc, or add a URL; what the limits are.
-
+- **Widget:** What the widget does (chat, capture leads, quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
+- **AI Setup Assistant:** In the sidebar under Workspace. User describes what they want in natural language; the AI suggests agent setup, lead capture, email notification, webhook. They review and click Publish when ready. Requires an active subscription. If they don't have a subscription, tell them to go to Billing first.
+- **Agents:** How to create or edit agents (Workspace → Agents), where they appear; if they have multiple agents, explain that. Voice can be enabled per agent (Voice or agent settings) if they have the Voice feature.
+- **Knowledge:** Only if they have it - how to add a source, upload a doc, or add a URL; what the limits are (Workspace → Knowledge).
+- **Inbox:** Only if they have it - Activity → Inbox; assign conversations, reply as a human, add notes and tags, view voice transcripts.
+- **Bookings:** Only if they have it - Activity → Bookings; appointments created from the widget or AI actions.
+- **Voice:** Only if they have it - enable voice per agent (Voice settings or agent); monthly voice minutes limit; widget can offer voice button.
+- **Deployments:** Developers → Deployments; get embed code per agent/widget deployment.
+- **AI Actions:** Only if they have it - Workspace → AI Actions; create_lead, book_appointment, etc.
 - **Automations / Integrations / Tools / Advanced analytics:** Only if they have that feature—brief, step-by-step. If they don't have it, say it's on a higher plan and they can upgrade in Billing.
 `;
 

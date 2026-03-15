@@ -65,7 +65,6 @@ describe('default dictionaries', () => {
       'typingIndicator',
       'errorMessage',
       'chatTab',
-      'voiceTab',
       'close',
       'poweredBy',
     ] as const;

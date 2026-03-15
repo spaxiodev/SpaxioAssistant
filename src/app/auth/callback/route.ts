@@ -13,11 +13,11 @@ export async function GET(request: Request) {
   const localeCookie = cookieStore.get('NEXT_LOCALE')?.value;
   const locale =
     localeCookie && (routing.locales as readonly string[]).includes(localeCookie)
-      ? (localeCookie as 'en' | 'fr')
+      ? (localeCookie as 'en' | 'fr-CA')
       : routing.defaultLocale;
 
   const pathWithLocale =
-    next.startsWith('/en') || next.startsWith('/fr')
+    next.startsWith('/en') || next.startsWith('/fr-CA')
       ? next
       : `/${locale}${next.startsWith('/') ? next : `/${next}`}`;
 

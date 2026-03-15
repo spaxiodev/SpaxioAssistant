@@ -134,6 +134,7 @@ export interface Database {
           webhook_enabled: boolean;
           memory_short_term_enabled: boolean;
           memory_long_term_enabled: boolean;
+          created_by_ai_setup?: boolean;
           created_at: string;
           updated_at: string;
         };

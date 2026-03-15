@@ -19,8 +19,8 @@ export function LocaleSwitcher() {
       <span className="mx-1.5">|</span>
       <Link
         href={pathname}
-        locale="fr"
-        className={locale === 'fr' ? 'text-foreground' : 'hover:text-foreground'}
+        locale="fr-CA"
+        className={locale === 'fr-CA' ? 'text-foreground' : 'hover:text-foreground'}
       >
         FR
       </Link>

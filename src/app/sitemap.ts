@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { SITE_URL } from './seo';
 import { PUBLIC_PATHS } from './seo';
 
-const LOCALES = ['en', 'fr'] as const;
+const LOCALES = ['en', 'fr-CA'] as const;
 
 function changeFrequency(path: string): MetadataRoute.Sitemap[0]['changeFrequency'] {
   if (path === '') return 'weekly';

@@ -1,5 +1,5 @@
 /**
- * Temporary debug page to verify routing. Visit /en/test-route or /fr/test-route.
+ * Temporary debug page to verify routing. Visit /en/test-route or /fr-CA/test-route.
  * After confirming /dashboard works, this can be removed.
  */
 export default async function TestRoutePage({

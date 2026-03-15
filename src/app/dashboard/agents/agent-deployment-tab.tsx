@@ -8,19 +8,25 @@ import { Link } from '@/i18n/navigation';
 import { Copy } from 'lucide-react';
 
 export function AgentDeploymentTab({
+  agentId,
   widgetEnabled,
+  widgetId,
 }: {
   agentId: string;
   agentName: string;
   widgetEnabled: boolean;
+  widgetId?: string | null;
 }) {
   const [scriptTag, setScriptTag] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    setScriptTag(`<script src="${origin}/widget.js" data-widget-id="YOUR_WIDGET_ID"></script>`);
-  }, []);
+    const script = widgetId
+      ? `<script src="${origin}/widget.js" data-widget-id="${widgetId}"></script>`
+      : `<script src="${origin}/widget.js" data-agent-id="${agentId}"></script>`;
+    setScriptTag(script);
+  }, [agentId, widgetId]);
 
   function copyEmbed() {
     if (!scriptTag) return;
@@ -43,7 +49,9 @@ export function AgentDeploymentTab({
         <div>
           <h4 className="mb-2 text-sm font-medium">Website embed</h4>
           <p className="mb-2 text-xs text-muted-foreground">
-            Add this script to your site. Replace YOUR_WIDGET_ID with your widget ID from the Install page. Configure branding and which agent is used there.
+            {widgetId
+              ? 'Add this script to your site. This embed is for this agent only.'
+              : 'Add this script to your site. It uses your agent ID so the widget loads this agent (no widget ID needed).'}
           </p>
           <pre className="rounded-md border border-border bg-muted/50 p-3 text-xs font-mono break-all">
             {scriptTag || 'Loading…'}
@@ -57,7 +65,7 @@ export function AgentDeploymentTab({
           <Link href="/dashboard/install" className="text-primary underline underline-offset-2">
             Go to Install &amp; Deployments
           </Link>
-          {' '}to set widget position, preview, and default agent.
+          {' '}to see all agents&apos; embed codes, set widget position, and preview.
         </p>
       </CardContent>
     </Card>

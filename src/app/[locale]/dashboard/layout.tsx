@@ -65,9 +65,9 @@ export default async function DashboardLayout({
     <>
       <div className="relative flex bg-transparent">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.12),transparent_24%)]" />
-        <Sidebar organizationId={orgId} showUpgradeButton={showUpgradeButton} userDisplay={userDisplay} />
+        <Sidebar organizationId={orgId} userDisplay={userDisplay} />
         <div className="relative ml-56 flex min-h-screen flex-1 flex-col">
-          <Header />
+          <Header organizationId={orgId} showUpgradeButton={showUpgradeButton} />
           <main className="flex-1 p-6">{children}</main>
         </div>
       </div>

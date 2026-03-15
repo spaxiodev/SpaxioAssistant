@@ -33,6 +33,7 @@ type AgentDetailTabsProps = {
   defaultTab: string;
   overviewContent: React.ReactNode;
   runs: RunRow[];
+  widgetId?: string | null;
 };
 
 const TAB_KEYS = [
@@ -57,7 +58,7 @@ const TAB_LABELS: Record<(typeof TAB_KEYS)[number], string> = {
   analytics: 'Analytics',
 };
 
-export function AgentDetailTabs({ agentId, agent, defaultTab, overviewContent, runs }: AgentDetailTabsProps) {
+export function AgentDetailTabs({ agentId, agent, defaultTab, overviewContent, runs, widgetId }: AgentDetailTabsProps) {
   const enabledIds = Array.isArray(agent.enabled_tools) ? agent.enabled_tools : [];
   const linkedIds = Array.isArray(agent.linked_knowledge_source_ids) ? agent.linked_knowledge_source_ids : [];
 
@@ -108,6 +109,7 @@ export function AgentDetailTabs({ agentId, agent, defaultTab, overviewContent, r
           agentId={agentId}
           agentName={agent.name}
           widgetEnabled={!!agent.widget_enabled}
+          widgetId={widgetId ?? null}
         />
       </TabsContent>
 
