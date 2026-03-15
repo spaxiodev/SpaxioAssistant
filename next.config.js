@@ -60,7 +60,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Force a single React instance (avoids "ReactCurrentBatchConfig" undefined when deps bundle their own React)
     config.resolve = config.resolve || {};
     config.resolve.alias = {
