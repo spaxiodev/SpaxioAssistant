@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -107,6 +107,11 @@ export default function AIChatCard({
     ? (controlledOnInputChange ?? (() => {}))
     : setDemoInput;
   const isTyping = controlled ? controlledIsTyping : demoTyping;
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     const text = input.trim();
@@ -254,6 +259,7 @@ export default function AIChatCard({
               />
             </motion.div>
           )}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
         {/* Input */}

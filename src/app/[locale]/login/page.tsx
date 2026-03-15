@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { SignInPage } from '@/components/ui/sign-in-flow-1';
+import { SignInMobileGate } from '@/components/sign-in-mobile-gate';
 
 export default function LoginPage() {
   return (
@@ -12,7 +12,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <SignInPage />
+      <SignInMobileGate />
     </Suspense>
   );
 }

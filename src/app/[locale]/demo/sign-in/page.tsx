@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { SignInPage } from '@/components/ui/sign-in-flow-1';
+import { SignInMobileGate } from '@/components/sign-in-mobile-gate';
 
 export default function DemoSignInPage() {
   return (
@@ -13,7 +13,7 @@ export default function DemoSignInPage() {
           </div>
         }
       >
-        <SignInPage className="w-full min-h-screen" />
+        <SignInMobileGate className="w-full min-h-screen" />
       </Suspense>
     </div>
   );
