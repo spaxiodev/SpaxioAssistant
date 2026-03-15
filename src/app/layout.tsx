@@ -44,12 +44,20 @@ export const metadata: Metadata = {
   ...(GOOGLE_VERIFICATION ? { verification: { google: GOOGLE_VERIFICATION } } : {}),
 };
 
+async function getMessagesSafe() {
+  try {
+    return await getMessages();
+  } catch {
+    return (await import('../../messages/en.json')).default;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const messages = await getMessages();
+  const messages = await getMessagesSafe();
   return (
     <html lang="en" className={plusJakarta.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased text-foreground">

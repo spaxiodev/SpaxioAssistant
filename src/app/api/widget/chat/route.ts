@@ -9,7 +9,11 @@ import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
 import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions } from '@/lib/entitlements';
+import { searchKnowledge } from '@/lib/knowledge/search';
 import type { Agent } from '@/lib/supabase/database.types';
+
+/** Max characters of retrieved knowledge to inject into the prompt (avoids token overflow). */
+const MAX_KNOWLEDGE_CONTEXT_CHARS = 4000;
 
 /** Map tool id (from registry) to action_key for action_invocations log. */
 const TOOL_TO_ACTION_KEY: Record<string, string> = {
@@ -223,6 +227,38 @@ export async function POST(request: Request) {
       content: m.content,
     })),
   ];
+
+  // Inject relevant knowledge from crawled/uploaded content (e.g. FAQ page) so the AI can answer from it
+  // even when the agent doesn't use the search_knowledge_base tool or the model doesn't call it
+  try {
+    const knowledgeMatches = await searchKnowledge(supabase, {
+      organizationId: widget.organization_id,
+      query: message,
+      matchCount: 8,
+      preferredLanguage: effectiveLocale ?? undefined,
+    });
+    if (knowledgeMatches.length > 0) {
+      const seen = new Set<string>();
+      let total = 0;
+      const parts: string[] = [];
+      for (const m of knowledgeMatches) {
+        const key = m.content.slice(0, 80);
+        if (seen.has(key) || !m.content.trim()) continue;
+        seen.add(key);
+        const snippet = m.content.trim().slice(0, 800);
+        if (total + snippet.length + 2 > MAX_KNOWLEDGE_CONTEXT_CHARS) break;
+        parts.push(snippet);
+        total += snippet.length + 2;
+      }
+      if (parts.length > 0) {
+        const knowledgeBlock = `Relevant knowledge from the business website/FAQ (use this to answer the user):\n\n${parts.join('\n\n')}`;
+        const insertIdx = languageInstruction ? 2 : 1;
+        messagesForApi.splice(insertIdx, 0, { role: 'system', content: knowledgeBlock });
+      }
+    }
+  } catch (knowledgeErr) {
+    console.warn('Widget chat: knowledge retrieval failed', { error: (knowledgeErr as Error).message });
+  }
 
   const provider = agent?.model_provider ?? 'openai';
   const modelId = agent?.model_id ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini';

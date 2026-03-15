@@ -6,7 +6,7 @@
     "dev": "next dev --webpack -H 0.0.0.0",
     "dev:no-deprecation": "set NODE_OPTIONS=--no-deprecation&& next dev --webpack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "lint": "next lint",
     "test": "vitest run",
     "db:generate": "npx supabase gen types typescript --local > src/lib/supabase/database.types.ts",

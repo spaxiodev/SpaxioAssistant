@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 // the error happens before or outside NextIntlClientProvider, e.g. production mobile).
 const FALLBACK = {
   title: 'Something went wrong',
-  description: 'An error occurred. You can try again.',
+  description: 'Please try again later.',
   tryAgain: 'Try again',
+  debugHint: 'Add ?showError=1 to the URL to see technical details.',
 } as const;
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
@@ -29,6 +30,9 @@ export default function Error({
     }
   }, [error]);
 
+  const showDebugHint =
+    typeof window !== 'undefined' && !window.location?.search?.includes('showError=1') && !isDev;
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
       <h1 className="text-2xl font-semibold text-foreground">{FALLBACK.title}</h1>
@@ -37,6 +41,9 @@ export default function Error({
         <pre className="max-h-40 max-w-full overflow-auto rounded border border-border bg-muted p-3 text-left text-xs text-foreground">
           {error.message}
         </pre>
+      )}
+      {showDebugHint && (
+        <p className="text-center text-xs text-muted-foreground">{FALLBACK.debugHint}</p>
       )}
       <Button onClick={reset}>{FALLBACK.tryAgain}</Button>
     </div>
