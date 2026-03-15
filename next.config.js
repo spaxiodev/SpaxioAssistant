@@ -25,6 +25,9 @@ const nextConfig = {
       // Locale-prefixed routes: allow /widget-preview and /widget to work without locale (default: en)
       { source: '/widget-preview', destination: '/en/widget-preview' },
       { source: '/widget', destination: '/en/widget' },
+      // Fallback so /dashboard and /dashboard/* resolve if proxy redirect is ever skipped
+      { source: '/dashboard', destination: '/en/dashboard' },
+      { source: '/dashboard/:path*', destination: '/en/dashboard/:path*' },
     ];
   },
   async headers() {

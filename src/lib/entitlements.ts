@@ -29,6 +29,17 @@ export type Entitlements = {
   priority_support: boolean;
   white_label: boolean;
   integrations_enabled: boolean;
+  // AI Actions, Inbox, Bookings, Voice
+  inbox_enabled: boolean;
+  human_seats: number;
+  ai_actions_enabled: boolean;
+  bookings_enabled: boolean;
+  voice_enabled: boolean;
+  monthly_voice_minutes: number;
+  advanced_escalation: boolean;
+  ai_draft_replies: boolean;
+  phone_integration: boolean;
+  max_active_voice_agents: number;
 };
 
 const DEFAULT_ENTITLEMENTS: Entitlements = {
@@ -49,6 +60,16 @@ const DEFAULT_ENTITLEMENTS: Entitlements = {
   priority_support: false,
   white_label: false,
   integrations_enabled: false,
+  inbox_enabled: false,
+  human_seats: 0,
+  ai_actions_enabled: false,
+  bookings_enabled: false,
+  voice_enabled: false,
+  monthly_voice_minutes: 0,
+  advanced_escalation: false,
+  ai_draft_replies: false,
+  phone_integration: false,
+  max_active_voice_agents: 0,
 };
 
 function parseEntitlementValue(value: unknown): number | boolean | string {
@@ -360,4 +381,142 @@ export async function hasActiveSubscription(
     return new Date(sub.trial_ends_at) > new Date();
   }
   return false;
+}
+
+// -----------------------------------------------------------------------------
+// AI Actions, Inbox, Bookings, Voice entitlements
+// -----------------------------------------------------------------------------
+
+/** Whether the org can use the Human+AI Inbox. */
+export async function canUseInbox(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.inbox_enabled;
+}
+
+/** Whether the org can use AI Actions (create_lead, book_appointment, etc.). */
+export async function canUseAiActions(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.ai_actions_enabled;
+}
+
+/** Whether the org can use bookings / appointments. */
+export async function canUseBookings(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.bookings_enabled;
+}
+
+/** Whether the org can use voice agents. */
+export async function canUseVoice(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.voice_enabled;
+}
+
+/** Max human seats for inbox (assignment / takeover). */
+export async function getHumanSeatsLimit(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<number> {
+  if (adminAllowed) return 999;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return Number(entitlements.human_seats) || 0;
+}
+
+/** Monthly voice minutes limit. */
+export async function getMonthlyVoiceMinutesLimit(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<number> {
+  if (adminAllowed) return 999999;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return Number(entitlements.monthly_voice_minutes) || 0;
+}
+
+/** Whether the org has exceeded monthly voice minutes (based on voice_sessions duration_seconds in current month). */
+export async function hasExceededMonthlyVoiceMinutes(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return false;
+  const limit = await getMonthlyVoiceMinutesLimit(supabase, organizationId, false);
+  if (!Number.isFinite(limit) || limit <= 0) return true;
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const { data: sessions } = await supabase
+    .from('voice_sessions')
+    .select('duration_seconds')
+    .eq('organization_id', organizationId)
+    .gte('started_at', periodStart);
+  const totalSeconds = (sessions ?? []).reduce(
+    (sum, s) => sum + ((s as { duration_seconds: number | null }).duration_seconds ?? 0),
+    0
+  );
+  const usedMinutes = Math.ceil(totalSeconds / 60);
+  return usedMinutes >= limit;
+}
+
+/** Whether the org has advanced escalation (thresholds, business hours). */
+export async function hasAdvancedEscalation(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.advanced_escalation;
+}
+
+/** Whether the org can use AI draft replies in inbox. */
+export async function canUseAiDraftReplies(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.ai_draft_replies;
+}
+
+/** Whether the org has phone integration (Twilio etc.) entitlement. */
+export async function hasPhoneIntegration(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.phone_integration;
+}
+
+/** Max concurrent / active voice agents. */
+export async function getMaxActiveVoiceAgents(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<number> {
+  if (adminAllowed) return 999;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return Number(entitlements.max_active_voice_agents) || 0;
 }

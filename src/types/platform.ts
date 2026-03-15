@@ -439,6 +439,235 @@ export interface ToolExecutionResult {
 }
 
 // -----------------------------------------------------------------------------
+// AI Actions (invocation audit, action registry keys)
+// -----------------------------------------------------------------------------
+export const ACTION_INVOCATION_STATUSES = ['pending', 'success', 'failed'] as const;
+export type ActionInvocationStatus = (typeof ACTION_INVOCATION_STATUSES)[number];
+
+export const INITIATED_BY_TYPES = ['ai', 'user', 'human'] as const;
+export type InitiatedByType = (typeof INITIATED_BY_TYPES)[number];
+
+export interface ActionInvocation {
+  id: string;
+  organization_id: string;
+  agent_id: string | null;
+  conversation_id: string | null;
+  message_id: string | null;
+  action_key: string;
+  input_json: Json;
+  output_json: Json | null;
+  status: ActionInvocationStatus;
+  initiated_by_type: InitiatedByType;
+  initiated_by_user_id: string | null;
+  error_text: string | null;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Registry keys for AI actions (create_lead, update_lead, create_booking, etc.) */
+export const AI_ACTION_KEYS = [
+  'create_lead',
+  'update_lead',
+  'create_contact',
+  'create_company',
+  'create_deal',
+  'update_deal_stage',
+  'create_ticket',
+  'create_task',
+  'add_note',
+  'generate_quote_request',
+  'generate_document',
+  'trigger_automation',
+  'send_email',
+  'schedule_booking',
+  'create_follow_up_reminder',
+  'tag_conversation',
+  'assign_conversation',
+  'escalate_to_human',
+  'call_webhook',
+] as const;
+export type AiActionKey = (typeof AI_ACTION_KEYS)[number];
+
+// -----------------------------------------------------------------------------
+// Bookings / appointments
+// -----------------------------------------------------------------------------
+export const BOOKING_STATUSES = ['scheduled', 'confirmed', 'cancelled', 'completed', 'no_show'] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+export const BOOKING_SOURCES = ['ai', 'manual', 'widget', 'api'] as const;
+export type BookingSource = (typeof BOOKING_SOURCES)[number];
+
+export interface Booking {
+  id: string;
+  organization_id: string;
+  contact_id: string | null;
+  lead_id: string | null;
+  conversation_id: string | null;
+  agent_id: string | null;
+  title: string;
+  description: string | null;
+  start_at: string;
+  end_at: string;
+  timezone: string;
+  status: BookingStatus;
+  source: BookingSource;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookingAvailability {
+  id: string;
+  organization_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// -----------------------------------------------------------------------------
+// Inbox: conversation channel, status, assignments, notes, tags, events
+// -----------------------------------------------------------------------------
+export const CONVERSATION_CHANNEL_TYPES = ['chat', 'voice_browser', 'voice_phone'] as const;
+export type ConversationChannelType = (typeof CONVERSATION_CHANNEL_TYPES)[number];
+
+export const CONVERSATION_STATUSES = ['open', 'closed', 'snoozed'] as const;
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
+
+export const CONVERSATION_PRIORITIES = ['low', 'normal', 'high'] as const;
+export type ConversationPriority = (typeof CONVERSATION_PRIORITIES)[number];
+
+export interface ConversationAssignment {
+  id: string;
+  conversation_id: string;
+  assignee_id: string;
+  assigned_by_id: string | null;
+  assigned_at: string;
+  created_at: string;
+}
+
+export interface ConversationTag {
+  id: string;
+  conversation_id: string;
+  tag: string;
+  created_at: string;
+}
+
+export interface ConversationNote {
+  id: string;
+  conversation_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const CONVERSATION_EVENT_TYPES = [
+  'ai_replied',
+  'human_replied',
+  'escalated',
+  'assigned',
+  'booking_created',
+  'lead_created',
+  'ticket_created',
+  'action_run',
+  'voice_call_started',
+  'voice_call_ended',
+] as const;
+export type ConversationEventType = (typeof CONVERSATION_EVENT_TYPES)[number];
+
+export interface ConversationEvent {
+  id: string;
+  conversation_id: string;
+  event_type: string;
+  metadata: Json;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export const ESCALATION_STATUSES = ['pending', 'acknowledged', 'resolved'] as const;
+export type EscalationStatus = (typeof ESCALATION_STATUSES)[number];
+
+export interface EscalationEvent {
+  id: string;
+  organization_id: string;
+  conversation_id: string;
+  reason: string | null;
+  escalated_by_type: 'ai' | 'user' | 'system';
+  escalated_by_user_id: string | null;
+  status: EscalationStatus;
+  escalated_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export interface OrgInboxSettings {
+  id: string;
+  organization_id: string;
+  auto_escalate_confidence_threshold: number | null;
+  business_hours_only_escalate: boolean;
+  escalation_notification_emails: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// -----------------------------------------------------------------------------
+// Voice sessions and transcripts
+// -----------------------------------------------------------------------------
+export const VOICE_SOURCE_TYPES = ['browser', 'phone', 'api'] as const;
+export type VoiceSourceType = (typeof VOICE_SOURCE_TYPES)[number];
+
+export const VOICE_SESSION_STATUSES = ['active', 'ended', 'failed', 'escalated'] as const;
+export type VoiceSessionStatus = (typeof VOICE_SESSION_STATUSES)[number];
+
+export interface VoiceSession {
+  id: string;
+  organization_id: string;
+  conversation_id: string | null;
+  agent_id: string | null;
+  widget_id: string | null;
+  source_type: VoiceSourceType;
+  status: VoiceSessionStatus;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  transcript_summary: string | null;
+  escalated_to_human: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const VOICE_SPEAKER_TYPES = ['user', 'ai', 'human'] as const;
+export type VoiceSpeakerType = (typeof VOICE_SPEAKER_TYPES)[number];
+
+export interface VoiceTranscript {
+  id: string;
+  voice_session_id: string;
+  speaker_type: VoiceSpeakerType;
+  text: string;
+  timestamp: string;
+  confidence: number | null;
+}
+
+export interface VoiceAgentSettings {
+  id: string;
+  agent_id: string;
+  organization_id: string;
+  voice_enabled: boolean;
+  greeting_text: string | null;
+  max_session_duration_seconds: number;
+  allow_actions_during_voice: boolean;
+  auto_create_lead: boolean;
+  auto_escalate_to_human_on_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// -----------------------------------------------------------------------------
 // Analytics
 // -----------------------------------------------------------------------------
 export interface AnalyticsEvent {
@@ -462,4 +691,16 @@ export interface AnalyticsSummary {
   dealsCreated: number;
   ticketsCreated: number;
   documentsGenerated: number;
+}
+
+/** Extended analytics for actions, inbox, voice */
+export interface AnalyticsSummaryExtended extends AnalyticsSummary {
+  actionRuns: number;
+  actionSuccessCount: number;
+  actionFailureCount: number;
+  bookingsCreated: number;
+  escalationsCount: number;
+  humanTakeoverCount: number;
+  voiceSessionCount: number;
+  voiceMinutes: number;
 }

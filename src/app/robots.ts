@@ -1,5 +1,5 @@
-import { SITE_URL } from '@/lib/seo';
-import type { MetadataRoute } from 'next';
+import { MetadataRoute } from 'next';
+import { SITE_URL } from './seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,15 +7,18 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/dashboard/', '/api/', '/widget', '/widget-preview', '/auth/'],
-      },
-      {
-        userAgent: 'Googlebot',
-        allow: '/',
-        disallow: ['/dashboard/', '/api/', '/widget', '/widget-preview', '/auth/', '/login', '/signup'],
+        disallow: [
+          '/dashboard',
+          '/dashboard/',
+          '/api',
+          '/api/',
+          '/widget',
+          '/widget-preview',
+          '/login',
+          '/signup',
+        ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
   };
 }

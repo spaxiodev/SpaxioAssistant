@@ -2,16 +2,17 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { setRequestLocale } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
-import { buildPageMetadata } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return buildPageMetadata(
-    { title: 'Privacy policy', description: 'Spaxio Assistant privacy policy. How we collect, use, and protect your data.' },
-    `/${locale}/privacy-policy`
-  );
+  const t = await getTranslations({ locale, namespace: 'legal' });
+  return {
+    title: t('pageTitlePrivacy'),
+    description: t('pageDescriptionPrivacy'),
+  };
 }
 
 export default async function PrivacyPolicyPage({ params }: Props) {

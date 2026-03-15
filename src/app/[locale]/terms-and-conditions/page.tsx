@@ -2,16 +2,17 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { setRequestLocale } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
-import { buildPageMetadata } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return buildPageMetadata(
-    { title: 'Terms and conditions', description: 'Spaxio Assistant terms of service. Rules and conditions for using the platform.' },
-    `/${locale}/terms-and-conditions`
-  );
+  const t = await getTranslations({ locale, namespace: 'legal' });
+  return {
+    title: t('pageTitleTerms'),
+    description: t('pageDescriptionTerms'),
+  };
 }
 
 export default async function TermsAndConditionsPage({ params }: Props) {

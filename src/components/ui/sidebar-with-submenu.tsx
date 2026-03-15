@@ -6,6 +6,8 @@ import {
   Bot,
   Users,
   MessageCircle,
+  Inbox,
+  Mic,
   BookOpen,
   Workflow,
   BarChart3,
@@ -19,6 +21,8 @@ import {
   UserPlus,
   FileText,
   Webhook,
+  Zap,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -161,6 +165,7 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow },
+    { href: '/dashboard/actions', key: 'aiActions', icon: Zap },
     { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
   ];
 
@@ -174,7 +179,10 @@ export function SidebarWithSubmenu({ organizationId, showUpgradeButton, userDisp
   ];
 
   const activityNav = [
+    { href: '/dashboard/inbox', key: 'inbox', icon: Inbox },
+    { href: '/dashboard/voice', key: 'voice', icon: Mic },
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
+    { href: '/dashboard/bookings', key: 'bookings', icon: Calendar },
     { href: '/dashboard/documents', key: 'documents', icon: FileText },
     { href: '/dashboard/analytics', key: 'analytics', icon: BarChart3 },
   ];

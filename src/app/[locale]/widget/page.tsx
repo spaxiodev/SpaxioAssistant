@@ -3,12 +3,14 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
+import { WidgetVoiceUI } from '@/components/widget-voice-ui';
 
 function WidgetContent() {
   const searchParams = useSearchParams();
   const widgetId = searchParams.get('widgetId');
   const lang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<'chat' | 'voice'>('chat');
   const [config, setConfig] = useState<{
     welcomeMessage?: string;
     chatbotName?: string;
@@ -108,20 +110,66 @@ function WidgetContent() {
       className="flex w-full flex-col items-center justify-start font-sans"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
-      <AIChatCard
-        className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
-        primaryBrandColor={color}
-        chatbotName={chatbotName}
-        welcomeMessage={welcome}
-        messages={aiMessages}
-        onSend={send}
-        isTyping={loading}
-        input={input}
-        onInputChange={setInput}
-        placeholder="Type a message..."
-        onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
-        showPoweredBy
-      />
+      {mode === 'voice' ? (
+        <div className="w-full max-w-[360px] shrink-0">
+          <div className="mb-2 flex rounded-lg border border-border bg-muted/30 p-1">
+            <button
+              type="button"
+              onClick={() => setMode('chat')}
+              className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('voice')}
+              className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
+            >
+              Voice
+            </button>
+          </div>
+          <WidgetVoiceUI
+            widgetId={widgetId!}
+            primaryBrandColor={color}
+            chatbotName={chatbotName}
+            onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
+            showPoweredBy
+          />
+        </div>
+      ) : (
+        <>
+          <div className="mb-2 flex w-full max-w-[360px] rounded-lg border border-border bg-muted/30 p-1">
+            <button
+              type="button"
+              onClick={() => setMode('chat')}
+              className="flex-1 rounded-md bg-background px-2 py-1 text-sm font-medium shadow"
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('voice')}
+              className="flex-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Voice
+            </button>
+          </div>
+          <AIChatCard
+            className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
+            primaryBrandColor={color}
+            chatbotName={chatbotName}
+            welcomeMessage={welcome}
+            messages={aiMessages}
+            onSend={send}
+            isTyping={loading}
+            input={input}
+            onInputChange={setInput}
+            placeholder="Type a message..."
+            onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
+            showPoweredBy
+          />
+        </>
+      )}
     </div>
   );
 }

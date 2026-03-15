@@ -11,8 +11,14 @@ import { HelpChatGate } from '@/components/help-chat-gate';
 import { LazyToaster } from '@/components/lazy-toaster';
 import { OnboardingGate } from '@/components/dashboard/onboarding-gate';
 import type { UserDisplay } from '@/types/dashboard';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: 'Dashboard',
+};
 
 export default async function DashboardLayout({
   children,

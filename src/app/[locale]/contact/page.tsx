@@ -3,20 +3,17 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { ContactForm } from '@/components/contact-form';
-import { buildPageMetadata } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return buildPageMetadata(
-    {
-      title: 'Contact',
-      description:
-        'Contact Spaxio Assistant for support, sales, or questions about our AI infrastructure platform. We respond quickly.',
-    },
-    `/${locale}/contact`
-  );
+  const t = await getTranslations({ locale, namespace: 'metadata' });
+  return {
+    title: t('contactTitle'),
+    description: t('contactDescription'),
+  };
 }
 
 export default async function ContactPage({ params }: Props) {

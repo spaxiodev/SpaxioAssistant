@@ -8,8 +8,18 @@ import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validati
 import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
-import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions } from '@/lib/entitlements';
+import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions } from '@/lib/entitlements';
 import type { Agent } from '@/lib/supabase/database.types';
+
+/** Map tool id (from registry) to action_key for action_invocations log. */
+const TOOL_TO_ACTION_KEY: Record<string, string> = {
+  capture_contact_info: 'create_lead',
+  handoff_to_human: 'escalate_to_human',
+  create_ticket: 'create_ticket',
+  send_email: 'send_email',
+  call_webhook: 'call_webhook',
+  schedule_booking: 'schedule_booking',
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -266,6 +276,7 @@ export async function POST(request: Request) {
           role: m.role,
           content: m.content,
         }));
+        const logActionInvocations = await canUseAiActions(supabase, widget.organization_id, adminAllowed);
         reply = await runChatWithToolsLoop({
           openai,
           modelId,
@@ -275,21 +286,58 @@ export async function POST(request: Request) {
           maxTokens: 500,
           temperature,
           onToolRun: () => recordAiActionUsage(supabase, widget.organization_id),
-          onToolInvocation: agentRunId
-            ? async (params) => {
-                const outputJson =
-                  typeof params.output === 'object' && params.output !== null
-                    ? params.output
-                    : { value: String(params.output) };
-                await supabase.from('agent_tool_invocations').insert({
-                  agent_run_id: agentRunId,
-                  tool_name: params.toolName,
-                  input_json: params.input,
-                  output_json: outputJson as Record<string, unknown>,
-                  status: params.status,
-                });
+          onBeforeToolExecute: logActionInvocations
+            ? async (toolName, input) => {
+                const actionKey = TOOL_TO_ACTION_KEY[toolName] ?? toolName;
+                const { data: row } = await supabase
+                  .from('action_invocations')
+                  .insert({
+                    organization_id: widget.organization_id,
+                    agent_id: agent?.id ?? null,
+                    conversation_id: convId,
+                    message_id: null,
+                    action_key: actionKey,
+                    input_json: input,
+                    status: 'pending',
+                    initiated_by_type: 'ai',
+                    initiated_by_user_id: null,
+                    started_at: new Date().toISOString(),
+                  })
+                  .select('id')
+                  .single();
+                return row?.id ?? null;
               }
             : undefined,
+          onToolInvocation: async (params) => {
+            if (params.invocationId) {
+              const outputJson =
+                typeof params.output === 'object' && params.output !== null
+                  ? params.output
+                  : { value: String(params.output) };
+              await supabase
+                .from('action_invocations')
+                .update({
+                  status: params.status,
+                  output_json: outputJson as Record<string, unknown>,
+                  error_text: params.status === 'failed' ? String((params.output as { error?: string })?.error ?? 'Failed') : null,
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('id', params.invocationId);
+            }
+            if (agentRunId) {
+              const outputJson =
+                typeof params.output === 'object' && params.output !== null
+                  ? params.output
+                  : { value: String(params.output) };
+              await supabase.from('agent_tool_invocations').insert({
+                agent_run_id: agentRunId,
+                tool_name: params.toolName,
+                input_json: params.input,
+                output_json: outputJson as Record<string, unknown>,
+                status: params.status,
+              });
+            }
+          },
         });
       }
     } else {
@@ -325,6 +373,12 @@ export async function POST(request: Request) {
     });
 
     await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
+
+    await supabase.from('conversation_events').insert({
+      conversation_id: convId,
+      event_type: 'ai_replied',
+      metadata: {},
+    });
 
     // Extract quote request from conversation if user asked for a quote
     const fullHistory = [...(history ?? []), { role: 'user' as const, content: message }, { role: 'assistant' as const, content: reply }];

@@ -5,20 +5,17 @@ import { getOrganizationId } from "@/lib/auth-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanForOrg } from "@/lib/entitlements";
 import { Link } from '@/i18n/navigation';
-import { buildPageMetadata } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 type Props = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return buildPageMetadata(
-    {
-      title: 'Pricing',
-      description:
-        'Spaxio Assistant pricing: start free, scale with your business. Plans for AI chatbots, AI agents, CRM automation, and website deployment.',
-    },
-    `/${locale}/pricing`
-  );
+  const t = await getTranslations({ locale, namespace: 'metadata' });
+  return {
+    title: t('pricingTitle'),
+    description: t('pricingDescription'),
+  };
 }
 
 export default async function PricingPage({ params }: Props) {

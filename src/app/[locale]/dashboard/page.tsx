@@ -1,9 +1,10 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
-import { hasActiveSubscription } from '@/lib/entitlements';
+import { hasActiveSubscription, canUseInbox, canUseAiActions, canUseBookings, canUseVoice } from '@/lib/entitlements';
+import { getAnalyticsOverview } from '@/lib/analytics-overview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, MessageSquare, FileText, Home } from 'lucide-react';
+import { Users, MessageSquare, FileText, Home, Inbox, Zap, Calendar, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
@@ -19,12 +20,20 @@ export default async function DashboardOverviewPage() {
   const { data: widgets } = await supabase.from('widgets').select('id').eq('organization_id', orgId);
   const widgetIds = (widgets ?? []).map((w) => w.id);
 
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const [inboxEnabled, actionsEnabled, bookingsEnabled, voiceEnabled] = await Promise.all([
+    canUseInbox(supabase, orgId, adminAllowed),
+    canUseAiActions(supabase, orgId, adminAllowed),
+    canUseBookings(supabase, orgId, adminAllowed),
+    canUseVoice(supabase, orgId, adminAllowed),
+  ]);
+
   const [
     { count: leadsCount },
     { count: conversationsCount },
     { count: quoteRequestsCount },
     { data: subscription },
-    { count: agentsCount },
+    overview,
   ] = await Promise.all([
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     widgetIds.length
@@ -32,10 +41,14 @@ export default async function DashboardOverviewPage() {
       : { count: 0 },
     supabase.from('quote_requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     supabase.from('subscriptions').select('status, trial_ends_at').eq('organization_id', orgId).single(),
-    supabase.from('agents').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+    getAnalyticsOverview(supabase, orgId, {
+      inboxEnabled: inboxEnabled || adminAllowed,
+      actionsEnabled: actionsEnabled || adminAllowed,
+      bookingsEnabled: bookingsEnabled || adminAllowed,
+      voiceEnabled: voiceEnabled || adminAllowed,
+    }),
   ]);
 
-  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
   const trialEnd = subscription?.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
   const activeSub = await hasActiveSubscription(supabase, orgId, adminAllowed);
   const isTrialing = !adminAllowed && subscription?.status === 'trialing' && activeSub;
@@ -130,6 +143,78 @@ export default async function DashboardOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(inboxEnabled || actionsEnabled || bookingsEnabled || voiceEnabled) && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {inboxEnabled && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('inbox')}</CardTitle>
+                <div className="rounded-full bg-muted p-2 text-muted-foreground">
+                  <Inbox className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{overview.inbox.conversations_open}</p>
+                <p className="text-xs text-muted-foreground">
+                  {overview.inbox.escalations_pending > 0
+                    ? `${overview.inbox.escalations_pending} pending escalations · `
+                    : ''}
+                  <Link href="/dashboard/inbox" className="underline">{t('inbox')}</Link>
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {actionsEnabled && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('aiActions')}</CardTitle>
+                <div className="rounded-full bg-muted p-2 text-muted-foreground">
+                  <Zap className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{overview.actions.invocations_last_30d}</p>
+                <p className="text-xs text-muted-foreground">
+                  Last 30 days · <Link href="/dashboard/actions" className="underline">{t('aiActions')}</Link>
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {bookingsEnabled && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('bookings')}</CardTitle>
+                <div className="rounded-full bg-muted p-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{overview.bookings.scheduled_or_confirmed}</p>
+                <p className="text-xs text-muted-foreground">
+                  Scheduled · <Link href="/dashboard/bookings" className="underline">{t('bookings')}</Link>
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {voiceEnabled && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('voice')}</CardTitle>
+                <div className="rounded-full bg-muted p-2 text-muted-foreground">
+                  <Mic className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{overview.voice.sessions_last_30d}</p>
+                <p className="text-xs text-muted-foreground">
+                  {overview.voice.minutes_last_30d} min (30d) · <Link href="/dashboard/voice" className="underline">{t('voice')}</Link>
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <Card className="overflow-hidden bg-[linear-gradient(135deg,hsl(var(--card)),hsl(var(--primary)/0.08))]">
         <CardHeader>

@@ -52,12 +52,19 @@ export type ChatWithToolsOptions = {
   maxIterations?: number;
   /** Called once per tool execution (for usage/billing). */
   onToolRun?: () => void | Promise<void>;
-  /** Called per tool invocation for audit/agent run logging. */
+  /** Called before each tool run; return action_invocation id to log to (optional). */
+  onBeforeToolExecute?: (
+    toolName: string,
+    input: Record<string, unknown>,
+    toolContext: ToolContext
+  ) => Promise<string | null>;
+  /** Called per tool invocation for audit/agent run logging. invocationId from onBeforeToolExecute when present. */
   onToolInvocation?: (params: {
     toolName: string;
     input: Record<string, unknown>;
     output: unknown;
     status: 'success' | 'failed';
+    invocationId?: string | null;
   }) => void | Promise<void>;
 };
 
@@ -74,6 +81,7 @@ export async function runChatWithToolsLoop(options: ChatWithToolsOptions): Promi
     temperature = 0.7,
     maxIterations = MAX_TOOL_LOOP_ITERATIONS,
     onToolRun,
+    onBeforeToolExecute,
     onToolInvocation,
   } = options;
 
@@ -138,21 +146,43 @@ export async function runChatWithToolsLoop(options: ChatWithToolsOptions): Promi
       } catch {
         params = {};
       }
+      let invocationId: string | null = null;
+      if (onBeforeToolExecute) {
+        invocationId = await onBeforeToolExecute(toolId ?? '', params, toolContext);
+      }
       try {
         const tool = toolId ? getTool(toolId) : undefined;
         if (!tool) {
           toolResult = JSON.stringify({ error: 'Unknown tool', toolId });
-          await onToolInvocation?.({ toolName: toolId ?? 'unknown', input: params, output: { error: 'Unknown tool' }, status: 'failed' });
+          await onToolInvocation?.({
+            toolName: toolId ?? 'unknown',
+            input: params,
+            output: { error: 'Unknown tool' },
+            status: 'failed',
+            invocationId,
+          });
         } else {
           const result = await tool.execute(params, toolContext);
           toolResult = typeof result === 'string' ? result : JSON.stringify(result);
-          await onToolInvocation?.({ toolName: toolId, input: params, output: result, status: 'success' });
+          await onToolInvocation?.({
+            toolName: toolId,
+            input: params,
+            output: result,
+            status: 'success',
+            invocationId,
+          });
         }
         await onToolRun?.();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         toolResult = JSON.stringify({ error: message });
-        await onToolInvocation?.({ toolName: toolId ?? 'unknown', input: params, output: { error: message }, status: 'failed' });
+        await onToolInvocation?.({
+          toolName: toolId ?? 'unknown',
+          input: params,
+          output: { error: message },
+          status: 'failed',
+          invocationId,
+        });
       }
       messages = [
         ...messages,

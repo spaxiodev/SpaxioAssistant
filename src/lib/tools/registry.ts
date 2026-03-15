@@ -226,6 +226,40 @@ register({
   },
 });
 
+// --- schedule_booking ---
+register({
+  id: 'schedule_booking',
+  name: 'Schedule booking',
+  description: 'Create an appointment. Use when the user wants to book a meeting, consultation, or call. Requires start_at and end_at as ISO date-time strings.',
+  parameters: [
+    { name: 'title', type: 'string', description: 'Appointment title', required: false },
+    { name: 'start_at', type: 'string', description: 'Start time (ISO 8601)', required: true },
+    { name: 'end_at', type: 'string', description: 'End time (ISO 8601)', required: true },
+    { name: 'timezone', type: 'string', description: 'Timezone (e.g. UTC)', required: false },
+    { name: 'description', type: 'string', description: 'Optional notes', required: false },
+  ],
+  async execute(params, context) {
+    const title = typeof params.title === 'string' ? params.title.trim().slice(0, 500) : 'Appointment';
+    const startAt = typeof params.start_at === 'string' ? params.start_at.trim() : '';
+    const endAt = typeof params.end_at === 'string' ? params.end_at.trim() : '';
+    if (!startAt || !endAt) return { success: false, error: 'start_at and end_at required' };
+    const { createBooking } = await import('@/lib/bookings/service');
+    const result = await createBooking(context.supabase, {
+      organizationId: context.organizationId,
+      title,
+      startAt,
+      endAt,
+      timezone: typeof params.timezone === 'string' ? params.timezone.slice(0, 64) : 'UTC',
+      conversationId: context.conversationId ?? undefined,
+      agentId: context.agentId ?? undefined,
+      description: typeof params.description === 'string' ? params.description.slice(0, 2000) : undefined,
+      source: 'ai',
+    });
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, booking_id: result.bookingId, message: result.message ?? 'Booking created' };
+  },
+});
+
 // --- Export registry API ---
 export function getTool(id: string): ToolDefinition | undefined {
   return TOOLS.find((t) => t.id === id);
