@@ -125,7 +125,7 @@ function WidgetContent() {
     setMessages((m) => [...m, { role: 'user', content: text.trim() }]);
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
       const res = await fetch(`${base}/api/widget/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

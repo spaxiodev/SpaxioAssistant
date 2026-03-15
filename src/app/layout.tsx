@@ -56,7 +56,7 @@ export default async function RootLayout({
         <AnalyticsHooks />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('spaxio-theme');document.documentElement.classList.toggle('dark',t!=='light');})();`,
+            __html: `(function(){try{var t=localStorage.getItem('spaxio-theme');document.documentElement.classList.toggle('dark',t!=='light');}catch(e){document.documentElement.classList.add('dark');}})();`,
           }}
         />
         <NextIntlClientProvider messages={messages}>

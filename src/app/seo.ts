@@ -7,7 +7,7 @@ export const SITE_URL = 'https://www.spaxioassistant.com';
 export const SITE_NAME = 'Spaxio Assistant';
 
 export const DEFAULT_SEO = {
-  title: 'Spaxio Assistant — AI Chatbot Widget for Websites',
+  title: 'Spaxio Assistant — Custom AI Website Assistant',
   description:
     'Create a custom AI chatbot for your website in minutes. Spaxio Assistant lets businesses deploy AI chat widgets that answer questions, capture leads, and automate customer support.',
   keywords: [

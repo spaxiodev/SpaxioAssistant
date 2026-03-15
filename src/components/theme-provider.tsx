@@ -17,15 +17,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const resolved: Theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
-    setThemeState(resolved);
-    document.documentElement.classList.toggle('dark', resolved === 'dark');
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      const resolved: Theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
+      setThemeState(resolved);
+      document.documentElement.classList.toggle('dark', resolved === 'dark');
+    } catch {
+      setThemeState('dark');
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   function setTheme(next: Theme) {
     setThemeState(next);
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // localStorage unavailable (e.g. private browsing on mobile)
+    }
     document.documentElement.classList.toggle('dark', next === 'dark');
   }
 
