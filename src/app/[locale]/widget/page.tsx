@@ -104,6 +104,10 @@ function WidgetContent() {
   }, [config, resolvedLocale]);
 
   const color = config?.primaryBrandColor || '#0f172a';
+  const baseUrl =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_APP_URL || '');
   const welcome =
     config?.welcomeMessage?.trim() ||
     getWidgetTranslation(resolvedLocale, 'welcomeMessage', config?.customTranslations);
@@ -194,6 +198,9 @@ function WidgetContent() {
             chatbotName={chatbotName}
             onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
             showPoweredBy
+            baseUrl={baseUrl}
+            ariaLabelClose={t('close')}
+            poweredByText={t('poweredBy')}
           />
         </div>
       ) : (
