@@ -1,3 +1,4 @@
+const path = require('path');
 const createNextIntlPlugin = require('next-intl/plugin');
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
@@ -59,7 +60,14 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Force a single React instance (avoids "ReactCurrentBatchConfig" undefined when deps bundle their own React)
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+    };
     // Suppress webpack cache serialization warning (harmless, from PackFileCacheStrategy)
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
