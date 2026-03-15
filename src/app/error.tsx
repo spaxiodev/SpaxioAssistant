@@ -33,6 +33,11 @@ export default function Error({
   const showDebugHint =
     typeof window !== 'undefined' && !window.location?.search?.includes('showError=1') && !isDev;
 
+  const debugUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.pathname}${window.location.search ? `${window.location.search}&` : '?'}showError=1`
+      : '#';
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
       <h1 className="text-2xl font-semibold text-foreground">{FALLBACK.title}</h1>
@@ -43,7 +48,11 @@ export default function Error({
         </pre>
       )}
       {showDebugHint && (
-        <p className="text-center text-xs text-muted-foreground">{FALLBACK.debugHint}</p>
+        <p className="text-center text-xs text-muted-foreground">
+          <a href={debugUrl} className="underline underline-offset-2 hover:text-foreground">
+            {FALLBACK.debugHint}
+          </a>
+        </p>
       )}
       <Button onClick={reset}>{FALLBACK.tryAgain}</Button>
     </div>
