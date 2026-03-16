@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
@@ -32,6 +33,8 @@ export default function SignupPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -45,8 +48,11 @@ export default function SignupPage() {
     setGithubLoading(true);
     try {
       document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=3600`;
+      if (redirectTo && redirectTo !== '/dashboard') {
+        document.cookie = `auth_return_to=${encodeURIComponent(redirectTo)};path=/;max-age=600;sameSite=lax`;
+      }
       const supabase = createClient();
-      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+      const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: { redirectTo: redirectUrl },
@@ -74,7 +80,7 @@ export default function SignupPage() {
         password,
         options: {
           data: fullName ? { full_name: fullName } : undefined,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         },
       });
       if (signUpError) {
@@ -82,7 +88,8 @@ export default function SignupPage() {
         return;
       }
       if (data.session) {
-        router.replace('/dashboard');
+        const target = redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`;
+        router.replace(target);
         return;
       }
       setMessage(t('checkEmail'));
@@ -188,7 +195,7 @@ export default function SignupPage() {
             <p className="text-center text-sm text-muted-foreground">
               {t('hasAccount')}{' '}
               <Link
-                href="/login"
+                href={redirectTo !== '/dashboard' ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : '/login'}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 {t('logIn')}

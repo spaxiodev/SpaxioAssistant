@@ -62,7 +62,12 @@ export async function proxy(request: NextRequest) {
     }
 
     if (isAuthPage && user) {
-      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+      const redirectTo = request.nextUrl.searchParams.get('redirectTo');
+      const target =
+        redirectTo && redirectTo.startsWith('/') && (redirectTo.startsWith('/en') || redirectTo.startsWith('/fr-CA'))
+          ? new URL(redirectTo, request.url)
+          : new URL(`/${locale}/dashboard`, request.url);
+      return NextResponse.redirect(target);
     }
   } catch (err) {
     console.error('[proxy] Supabase auth error:', err instanceof Error ? err.message : err);

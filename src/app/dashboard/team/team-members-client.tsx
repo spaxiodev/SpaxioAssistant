@@ -281,7 +281,7 @@ export function TeamMembersClient() {
           <form onSubmit={handleSendInvite} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="invite-email">{t('common:email')}</Label>
+                <Label htmlFor="invite-email">{t('emailLabel')}</Label>
                 <Input
                   id="invite-email"
                   type="email"

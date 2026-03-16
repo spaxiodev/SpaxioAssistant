@@ -4,12 +4,18 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureUserOrganization } from '@/lib/ensure-org';
 import { routing } from '@/i18n/routing';
 
+const AUTH_RETURN_TO_COOKIE = 'auth_return_to';
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
-
   const cookieStore = await cookies();
+
+  // Prefer next from URL (e.g. email magic link); fall back to cookie (set before OAuth so we don't lose it when provider strips query)
+  const nextFromQuery = searchParams.get('next');
+  const nextFromCookie = cookieStore.get(AUTH_RETURN_TO_COOKIE)?.value;
+  const next = nextFromQuery ?? nextFromCookie ?? '/dashboard';
+
   const localeCookie = cookieStore.get('NEXT_LOCALE')?.value;
   const locale =
     localeCookie && (routing.locales as readonly string[]).includes(localeCookie)
@@ -46,7 +52,10 @@ export async function GET(request: Request) {
             meta.industry ?? null
           );
         }
-        return NextResponse.redirect(`${origin}${pathWithLocale}`);
+        const res = NextResponse.redirect(`${origin}${pathWithLocale}`);
+        // Clear return-to cookie after successful redirect
+        res.cookies.set(AUTH_RETURN_TO_COOKIE, '', { path: '/', maxAge: 0 });
+        return res;
       }
     } catch (err) {
       console.error('[auth/callback]', err instanceof Error ? err.message : err);

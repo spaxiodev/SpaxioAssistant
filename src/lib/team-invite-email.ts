@@ -11,7 +11,10 @@ import { Resend } from 'resend';
 import { getPublicAppUrl } from '@/lib/app-url';
 
 function getResend() {
-  const key = process.env.RESEND_API_KEY;
+  // Optional: use a dedicated key for team invites (e.g. restricted scope). Falls back to main key.
+  const key =
+    process.env.RESEND_API_KEY_TEAM_INVITES?.trim() ||
+    process.env.RESEND_API_KEY?.trim();
   return key ? new Resend(key) : null;
 }
 

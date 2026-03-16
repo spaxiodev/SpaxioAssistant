@@ -44,6 +44,10 @@ export default function LoginPage() {
     setGithubLoading(true);
     try {
       document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=3600`;
+      // Store return path in cookie so auth callback can redirect here even if OAuth strips query params
+      if (redirectTo && redirectTo !== '/dashboard') {
+        document.cookie = `auth_return_to=${encodeURIComponent(redirectTo)};path=/;max-age=600;sameSite=lax`;
+      }
       const supabase = createClient();
       const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -73,7 +77,9 @@ export default function LoginPage() {
         setError(signInError.message);
         return;
       }
-      window.location.href = redirectTo;
+      // Use full URL so redirect works regardless of current path
+      const target = redirectTo.startsWith('/') ? `${window.location.origin}${redirectTo}` : redirectTo;
+      window.location.href = target;
     } finally {
       setLoading(false);
     }
@@ -154,7 +160,7 @@ export default function LoginPage() {
             <p className="text-center text-sm text-muted-foreground">
               {t('noAccount')}{' '}
               <Link
-                href="/signup"
+                href={redirectTo !== '/dashboard' ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup'}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 {t('signUp')}
