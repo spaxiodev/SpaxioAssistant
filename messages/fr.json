@@ -76,6 +76,9 @@
     "logIn": "Se connecter"
   },
   "dashboard": {
+    "common": {
+      "email": "E-mail"
+    },
     "overview": "Vue d'ensemble",
     "overviewDescription": "Votre infrastructure IA en un coup d'œil. Agents, automatisations, CRM et connaissances au même endroit.",
     "trialEnds": "Votre essai gratuit se termine le {date}. Abonnez-vous pour garder votre widget actif.",

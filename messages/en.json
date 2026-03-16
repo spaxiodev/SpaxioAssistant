@@ -76,6 +76,9 @@
     "logIn": "Log in"
   },
   "dashboard": {
+    "common": {
+      "email": "Email"
+    },
     "overview": "Overview",
     "overviewDescription": "Your AI infrastructure at a glance. Agents, automations, CRM, and knowledge in one place.",
     "trialEnds": "Your free trial ends on {date}. Subscribe to keep your widget live.",
