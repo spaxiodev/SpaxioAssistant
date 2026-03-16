@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth-server';
+import { getOrganizationId, getUser } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTeamMemberAuth } from '@/lib/team-auth-server';
 
@@ -13,14 +13,10 @@ export async function GET() {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabase = createAdminClient();
-    const { data: members } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1);
-    const orgId = members?.[0]?.organization_id;
+    const orgId = await getOrganizationId(user);
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const supabase = createAdminClient();
 
     const auth = await getTeamMemberAuth(supabase, orgId, user.id);
     if (!auth?.canManageTeamMembers) {

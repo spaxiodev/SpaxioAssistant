@@ -343,6 +343,17 @@
     "addAccount": "Ajouter un compte",
     "teamMembers": "Équipe",
     "teamMembersDescription": "Invitez et gérez les membres de l'équipe. Seul le propriétaire du compte peut inviter ; forfaits payants requis.",
+    "businessSwitcherYourBusiness": "Votre entreprise",
+    "businessSwitcherTeam": "Équipe",
+    "businessSwitcherSelectBusiness": "Choisir une entreprise",
+    "addBusiness": "Ajouter une entreprise",
+    "addBusinessDescription": "Créez une nouvelle entreprise (espace) sous votre compte. Elle est entièrement séparée de vos autres entreprises.",
+    "addBusinessNameLabel": "Nom de l'entreprise",
+    "addBusinessNamePlaceholder": "ex. Acme Consulting",
+    "addBusinessCreate": "Créer l'entreprise",
+    "addBusinessCreating": "Création…",
+    "addBusinessError": "Impossible de créer l'entreprise. Réessayez.",
+    "addBusinessLimitReached": "Vous avez atteint la limite de {max} entreprise(s). Vous en avez {count}. Passez à un forfait supérieur pour en ajouter.",
     "upgradeToInviteTeamMembers": "Passez à un forfait payant pour inviter des membres",
     "upgradeToInviteTeamMembersDescription": "Les invitations d'équipe sont disponibles sur les forfaits payants. Passez à un forfait supérieur pour ajouter votre équipe.",
     "inviteTeamMember": "Inviter un membre",
@@ -453,6 +464,15 @@
     "askOwnerToResend": "Demandez au propriétaire d'envoyer une nouvelle invitation depuis Équipe dans le tableau de bord.",
     "acceptFailed": "Échec de l'acceptation. Réessayez.",
     "emailMismatch": "Cette invitation a été envoyée à {email}. Connectez-vous avec cette adresse pour accepter."
+  },
+  "inviteEmail": {
+    "subject": "Vous êtes invité à rejoindre Spaxio Assistant",
+    "title": "Vous êtes invité à rejoindre Spaxio Assistant",
+    "body": "<strong>{inviterName}</strong> vous a invité à rejoindre son espace d'équipe{orgPart} sur Spaxio Assistant.",
+    "cta": "Accepter l'invitation",
+    "expiresOne": "Ce lien expire dans 1 jour. Si vous n'avez pas de compte, vous pourrez en créer un après avoir cliqué.",
+    "expiresMany": "Ce lien expire dans {days} jours. Si vous n'avez pas de compte, vous pourrez en créer un après avoir cliqué.",
+    "footer": "Si vous n'attendiez pas cette invitation, vous pouvez ignorer ce courriel."
   },
   "metadata": {
     "title": "Infrastructure IA, widget IA et outils IA pour les entreprises",

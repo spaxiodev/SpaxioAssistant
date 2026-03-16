@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ type Invitation = {
 
 export function TeamMembersClient() {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const { toast } = useToast();
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -120,6 +121,7 @@ export function TeamMembersClient() {
           email,
           role_label: inviteRoleLabel.trim() || null,
           permissions: invitePermissions,
+          locale,
         }),
       });
       const data = await res.json();
@@ -153,11 +155,11 @@ export function TeamMembersClient() {
       const res = await fetch('/api/team/invitations/resend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invitation_id: invitationId }),
+        body: JSON.stringify({ invitation_id: invitationId, locale }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast({ title: data.error || 'Failed to resend', variant: 'destructive' });
+        toast({ title: data.error || t('inviteFailed'), variant: 'destructive' });
         return;
       }
       if (data.email_sent) {

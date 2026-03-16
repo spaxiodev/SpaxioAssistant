@@ -1,6 +1,7 @@
 /**
  * Send team invitation email via Resend.
  * Branded Spaxio Assistant invite email with secure accept link.
+ * Email content is localized (en, fr, fr-CA) when locale is provided.
  *
  * Resend does not allow Gmail/Yahoo etc. as "from"; we fall back to onboarding@resend.dev.
  * With that sender, Resend only delivers to the account's signup email. To send to any
@@ -9,6 +10,29 @@
 
 import { Resend } from 'resend';
 import { getPublicAppUrl } from '@/lib/app-url';
+import en from '../../messages/en.json';
+import fr from '../../messages/fr.json';
+import frCA from '../../messages/fr-CA.json';
+
+type InviteEmailMessages = {
+  subject: string;
+  title: string;
+  body: string;
+  cta: string;
+  expiresOne: string;
+  expiresMany: string;
+  footer: string;
+};
+
+const INVITE_EMAIL_BUNDLES: Record<string, InviteEmailMessages> = {
+  en: en.inviteEmail as InviteEmailMessages,
+  fr: fr.inviteEmail as InviteEmailMessages,
+  'fr-CA': frCA.inviteEmail as InviteEmailMessages,
+};
+
+function getInviteEmailMessages(locale: string): InviteEmailMessages {
+  return INVITE_EMAIL_BUNDLES[locale] ?? INVITE_EMAIL_BUNDLES.en;
+}
 
 function getResend() {
   // Optional: use a dedicated key for team invites (e.g. restricted scope). Falls back to main key.
@@ -39,6 +63,8 @@ export async function sendTeamInviteEmail(params: {
   organizationName: string;
   token: string;
   expiresAt: Date;
+  /** Preferred locale for email content and accept link (en, fr, fr-CA). Defaults to en. */
+  locale?: string;
   request?: Request;
 }): Promise<{ sent: boolean; error?: string }> {
   const resend = getResend();
@@ -46,9 +72,18 @@ export async function sendTeamInviteEmail(params: {
     return { sent: false, error: 'Email not configured' };
   }
 
+  const locale = params.locale && INVITE_EMAIL_BUNDLES[params.locale] ? params.locale : 'en';
+  const m = getInviteEmailMessages(locale);
+
   const baseUrl = getPublicAppUrl({ request: params.request });
-  const acceptUrl = buildInviteAcceptUrl(params.token, baseUrl);
+  const acceptUrl = buildInviteAcceptUrl(params.token, baseUrl, locale);
   const expiresInDays = Math.max(1, Math.ceil((params.expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+
+  const orgPart = params.organizationName ? ` (${escapeHtml(params.organizationName)})` : '';
+  const bodyText = m.body
+    .replace('{inviterName}', escapeHtml(params.inviterName))
+    .replace('{orgPart}', orgPart);
+  const expiresText = expiresInDays === 1 ? m.expiresOne : m.expiresMany.replace('{days}', String(expiresInDays));
 
   const html = `
 <!DOCTYPE html>
@@ -56,7 +91,7 @@ export async function sendTeamInviteEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're invited to Spaxio Assistant</title>
+  <title>${escapeHtml(m.title)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;min-height:100vh;padding:32px 16px;">
@@ -65,26 +100,26 @@ export async function sendTeamInviteEmail(params: {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#1e293b;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4);">
           <tr>
             <td style="padding:32px 32px 24px;">
-              <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f8fafc;">You've been invited to join Spaxio Assistant</h1>
+              <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#f8fafc;">${escapeHtml(m.title)}</h1>
               <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;">
-                <strong style="color:#e2e8f0;">${escapeHtml(params.inviterName)}</strong> has invited you to join their team workspace${params.organizationName ? ` (${escapeHtml(params.organizationName)})` : ''} on Spaxio Assistant.
+                ${bodyText}
               </p>
             </td>
           </tr>
           <tr>
             <td style="padding:0 32px 32px;">
               <a href="${escapeHtml(acceptUrl)}" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#7c3aed,#22d3ee);color:#fff;font-size:16px;font-weight:600;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(124,58,237,0.4);">
-                Accept invitation
+                ${escapeHtml(m.cta)}
               </a>
               <p style="margin:20px 0 0;font-size:13px;color:#64748b;">
-                This link expires in ${expiresInDays} day${expiresInDays !== 1 ? 's' : ''}. If you don't have an account, you'll be able to create one after clicking.
+                ${escapeHtml(expiresText)}
               </p>
             </td>
           </tr>
           <tr>
             <td style="padding:24px 32px;border-top:1px solid #334155;">
               <p style="margin:0;font-size:12px;color:#64748b;">
-                If you didn't expect this invite, you can safely ignore this email.
+                ${escapeHtml(m.footer)}
               </p>
             </td>
           </tr>
@@ -100,7 +135,7 @@ export async function sendTeamInviteEmail(params: {
   const { error } = await resend.emails.send({
     from,
     to: [params.to],
-    subject: `You're invited to join Spaxio Assistant`,
+    subject: m.subject,
     html,
   });
 

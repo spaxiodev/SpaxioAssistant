@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth-server';
+import { getOrganizationId, getUser } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTeamMemberAuth } from '@/lib/team-auth-server';
 import { serializePermissions, type TeamPermissions } from '@/lib/team-permissions';
@@ -17,18 +17,13 @@ export async function PATCH(request: Request, context: Context) {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const orgId = await getOrganizationId(user);
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
     const { id: memberId } = await context.params;
     if (!isUuid(memberId)) return NextResponse.json({ error: 'Invalid member id' }, { status: 400 });
 
     const supabase = createAdminClient();
-    const { data: myMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    const orgId = myMember?.organization_id;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
     const auth = await getTeamMemberAuth(supabase, orgId, user.id);
     if (!auth?.canManageTeamMembers) {
@@ -83,18 +78,13 @@ export async function DELETE(_request: Request, context: Context) {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const orgId = await getOrganizationId(user);
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
     const { id: memberId } = await context.params;
     if (!isUuid(memberId)) return NextResponse.json({ error: 'Invalid member id' }, { status: 400 });
 
     const supabase = createAdminClient();
-    const { data: myMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    const orgId = myMember?.organization_id;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
     const auth = await getTeamMemberAuth(supabase, orgId, user.id);
     if (!auth?.canManageTeamMembers) {

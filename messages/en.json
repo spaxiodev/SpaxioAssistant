@@ -343,6 +343,17 @@
     "addAccount": "Add account",
     "teamMembers": "Team Members",
     "teamMembersDescription": "Invite and manage team members. Only the account owner can invite; paid plans required.",
+    "businessSwitcherYourBusiness": "Your business",
+    "businessSwitcherTeam": "Team",
+    "businessSwitcherSelectBusiness": "Select business",
+    "addBusiness": "Add business",
+    "addBusinessDescription": "Create a new business (workspace) under your account. It's completely separate from your other businesses.",
+    "addBusinessNameLabel": "Business name",
+    "addBusinessNamePlaceholder": "e.g. Acme Consulting",
+    "addBusinessCreate": "Create business",
+    "addBusinessCreating": "Creating…",
+    "addBusinessError": "Failed to create business. Try again.",
+    "addBusinessLimitReached": "You've reached your limit of {max} business. You currently have {count}. Upgrade your plan to add more.",
     "upgradeToInviteTeamMembers": "Upgrade to invite team members",
     "upgradeToInviteTeamMembersDescription": "Team member invites are available on paid plans. Upgrade to add your team.",
     "inviteTeamMember": "Invite team member",
@@ -453,6 +464,15 @@
     "askOwnerToResend": "Ask the workspace owner to send a new invitation from Team Members in the dashboard.",
     "acceptFailed": "Failed to accept. Try again.",
     "emailMismatch": "This invitation was sent to {email}. Sign in with that email to accept."
+  },
+  "inviteEmail": {
+    "subject": "You're invited to join Spaxio Assistant",
+    "title": "You've been invited to join Spaxio Assistant",
+    "body": "<strong>{inviterName}</strong> has invited you to join their team workspace{orgPart} on Spaxio Assistant.",
+    "cta": "Accept invitation",
+    "expiresOne": "This link expires in 1 day. If you don't have an account, you'll be able to create one after clicking.",
+    "expiresMany": "This link expires in {days} days. If you don't have an account, you'll be able to create one after clicking.",
+    "footer": "If you didn't expect this invite, you can safely ignore this email."
   },
   "metadata": {
     "title": "AI Infrastructure, AI Widget & AI Tools for Business",

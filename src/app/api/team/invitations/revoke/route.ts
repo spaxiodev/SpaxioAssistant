@@ -3,7 +3,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth-server';
+import { getOrganizationId, getUser } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTeamMemberAuth } from '@/lib/team-auth-server';
 import { isUuid } from '@/lib/validation';
@@ -13,6 +13,9 @@ export async function POST(request: Request) {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const orgId = await getOrganizationId(user);
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
     const body = await request.json().catch(() => ({}));
     const invitationId = typeof body.invitation_id === 'string' ? body.invitation_id.trim() : '';
     if (!isUuid(invitationId)) {
@@ -20,14 +23,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
-    const { data: myMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    const orgId = myMember?.organization_id;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
     const auth = await getTeamMemberAuth(supabase, orgId, user.id);
     if (!auth?.canManageTeamMembers) {

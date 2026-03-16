@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth-server';
+import { getOrganizationId, getUser } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTeamMemberAuth, requireOwner } from '@/lib/team-auth-server';
 import { canAddTeamMember, getPlanForOrg } from '@/lib/entitlements';
@@ -30,15 +30,10 @@ export async function GET() {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabase = createAdminClient();
-    const { data: myMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    const orgId = myMember?.organization_id;
+    const orgId = await getOrganizationId(user);
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const supabase = createAdminClient();
 
     const auth = await getTeamMemberAuth(supabase, orgId, user.id);
     if (!auth?.canManageTeamMembers) {
@@ -85,6 +80,9 @@ export async function POST(request: Request) {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const orgId = await getOrganizationId(user);
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
     const ip = getClientIp(request);
     const { allowed } = rateLimit({ key: `team-invite:${user.id}:${ip}`, limit: 10, windowMs: 60 * 60 * 1000 });
     if (!allowed) {
@@ -92,15 +90,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
-    const { data: myMember } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    const orgId = myMember?.organization_id;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
-
     await requireOwner(supabase, orgId, user.id);
 
     const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
@@ -120,6 +109,7 @@ export async function POST(request: Request) {
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const roleLabel = typeof body.role_label === 'string' ? sanitizeText(body.role_label, 100) : null;
     const permissions = body.permissions && typeof body.permissions === 'object' ? (body.permissions as Partial<TeamPermissions>) : {};
+    const locale = typeof body.locale === 'string' ? body.locale.trim() : undefined;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
@@ -193,6 +183,7 @@ export async function POST(request: Request) {
       organizationName: (org as { name?: string } | null)?.name ?? '',
       token,
       expiresAt,
+      locale,
       request,
     });
 

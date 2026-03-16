@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import { getPlanTier } from '@/lib/plan-config';
 
 type PlanRow = Database['public']['Tables']['plans']['Row'];
 type PlanEntitlementRow = Database['public']['Tables']['plan_entitlements']['Row'];
@@ -40,6 +41,7 @@ export type Entitlements = {
   ai_draft_replies: boolean;
   phone_integration: boolean;
   max_active_voice_agents: number;
+  max_businesses: number;
 };
 
 const DEFAULT_ENTITLEMENTS: Entitlements = {
@@ -70,6 +72,7 @@ const DEFAULT_ENTITLEMENTS: Entitlements = {
   ai_draft_replies: false,
   phone_integration: false,
   max_active_voice_agents: 0,
+  max_businesses: 1,
 };
 
 function parseEntitlementValue(value: unknown): number | boolean | string {
@@ -519,4 +522,72 @@ export async function getMaxActiveVoiceAgents(
   if (adminAllowed) return 999;
   const { entitlements } = await getEntitlements(supabase, organizationId);
   return Number(entitlements.max_active_voice_agents) || 0;
+}
+
+// -----------------------------------------------------------------------------
+// Multi-business: max organizations (businesses) a user can own
+// -----------------------------------------------------------------------------
+
+/** Number of organizations the user owns (role = owner). */
+export async function getOwnedOrganizationsCount(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { count } = await supabase
+    .from('organization_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('role', 'owner');
+  return count ?? 0;
+}
+
+/** Max businesses allowed and whether user can create another. Based on highest plan among orgs user owns. */
+export async function getMaxBusinessesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  adminAllowed = false
+): Promise<{ max: number; ownedCount: number; canCreate: boolean }> {
+  const ownedCount = await getOwnedOrganizationsCount(supabase, userId);
+  if (adminAllowed) {
+    return { max: 999, ownedCount, canCreate: true };
+  }
+  const { data: ownedMembers } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .eq('role', 'owner');
+  const orgIds = (ownedMembers ?? []).map((m) => m.organization_id);
+  let bestTier = 0;
+  let bestPlanId: string | null = null;
+  for (const orgId of orgIds) {
+    const plan = await getPlanForOrg(supabase, orgId);
+    if (!plan) continue;
+    const tier = getPlanTier(plan.slug);
+    if (tier > bestTier) {
+      bestTier = tier;
+      bestPlanId = plan.id;
+    }
+  }
+  let max = 1;
+  if (bestPlanId) {
+    const { data: row } = await supabase
+      .from('plan_entitlements')
+      .select('value')
+      .eq('plan_id', bestPlanId)
+      .eq('entitlement_key', 'max_businesses')
+      .maybeSingle();
+    const v = row?.value;
+    max = typeof v === 'number' ? v : Number(v) || 1;
+  }
+  return { max, ownedCount, canCreate: ownedCount < max };
+}
+
+/** Whether the user can create a new business (under their plan limit). */
+export async function canCreateBusiness(
+  supabase: SupabaseClient,
+  userId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  const { canCreate } = await getMaxBusinessesForUser(supabase, userId, adminAllowed);
+  return canCreate;
 }
