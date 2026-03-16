@@ -7,6 +7,8 @@ import { handleApiError } from '@/lib/api-error';
 import { emitAutomationEvent } from '@/lib/automations/engine';
 import { canUseAutomation } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { qualifyLeadWithAi, updateLeadWithQualification, maybeCreateDealForHighPriorityLead } from '@/lib/lead-qualification/qualify';
+import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,6 +106,78 @@ export async function POST(request: Request) {
 
     if (!lead) {
       return withCors({ error: 'Failed to save lead' }, 500);
+    }
+
+    // AI lead qualification (fire-and-forget; do not block response)
+    if (process.env.OPENAI_API_KEY) {
+      qualifyLeadWithAi({
+        name,
+        email,
+        phone: phone || null,
+        message: message || null,
+        requested_service: requestedService || null,
+        requested_timeline: requestedTimeline || null,
+        project_details: projectDetails || null,
+        location: location || null,
+        transcript_snippet: transcriptSnippet || null,
+      })
+        .then(async (result) => {
+          await updateLeadWithQualification(supabase, lead.id, widget.organization_id, result);
+          if (result.priority === 'high') {
+            maybeCreateDealForHighPriorityLead(supabase, widget.organization_id, { name, email, phone: phone || null }, result).catch((err) =>
+              console.warn('[widget/lead] Deal creation failed', err)
+            );
+          }
+          // Optional: follow-up run after qualification (richer context)
+          triggerFollowUpRun(supabase, {
+            organizationId: widget.organization_id,
+            sourceType: 'lead_qualification_completed',
+            sourceId: lead.id,
+            leadId: lead.id,
+            context: {
+              lead: {
+                id: lead.id,
+                name,
+                email,
+                phone: phone || null,
+                message: message || null,
+                requested_service: requestedService || null,
+                requested_timeline: requestedTimeline || null,
+                project_details: projectDetails || null,
+                location: location || null,
+                transcript_snippet: transcriptSnippet || null,
+                qualification_summary: result.summary,
+                qualification_priority: result.priority,
+                next_recommended_action: result.next_recommended_action ?? null,
+              },
+            },
+          }).catch((err) => console.warn('[widget/lead] follow-up after qualification failed', err));
+        })
+        .catch((err) => console.warn('[widget/lead] Qualification failed', err));
+    }
+
+    // AI follow-up run (fire-and-forget; do not block response)
+    if (process.env.OPENAI_API_KEY) {
+      triggerFollowUpRun(supabase, {
+        organizationId: widget.organization_id,
+        sourceType: 'lead_form_submitted',
+        sourceId: lead.id,
+        leadId: lead.id,
+        context: {
+          lead: {
+            id: lead.id,
+            name,
+            email,
+            phone: phone || null,
+            message: message || null,
+            requested_service: requestedService || null,
+            requested_timeline: requestedTimeline || null,
+            project_details: projectDetails || null,
+            location: location || null,
+            transcript_snippet: transcriptSnippet || null,
+          },
+        },
+      }).catch((err) => console.warn('[widget/lead] follow-up trigger failed', err));
     }
 
     // Event-driven automations: emit lead_form_submitted so active automations can run

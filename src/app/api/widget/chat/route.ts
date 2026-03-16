@@ -8,9 +8,14 @@ import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validati
 import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
-import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions } from '@/lib/entitlements';
+import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions, canUseAutomation } from '@/lib/entitlements';
 import { searchKnowledge } from '@/lib/knowledge/search';
 import type { Agent } from '@/lib/supabase/database.types';
+import { parseAndSanitizeAction } from '@/lib/widget-actions/types';
+import { emitAutomationEvent } from '@/lib/automations/engine';
+import { parseActionFromReply } from '@/lib/widget-actions/parse-action-from-reply';
+import { getRelevantMemories, formatMemoriesForPrompt } from '@/lib/ai-memory/retrieve-memory';
+import { extractMemoriesFromTranscript, persistMemories } from '@/lib/ai-memory/extract-memory';
 
 /** Max characters of retrieved knowledge to inject into the prompt (avoids token overflow). */
 const MAX_KNOWLEDGE_CONTEXT_CHARS = 4000;
@@ -227,9 +232,12 @@ export async function POST(request: Request) {
       ? `The website visitor is currently viewing the site in "${language}". Always respond in this language unless they clearly ask to switch.`
       : null;
 
+  const widgetActionInstruction = `If the user clearly wants to open a contact form, quote form, booking form, see pricing, scroll to a section, or open a link, you may add at the very end of your reply a single line: ACTION: <type> or ACTION: <type> <json payload>. Allowed types: open_contact_form, open_quote_form, open_booking_form, show_pricing, scroll_to_section, open_link. For scroll_to_section use payload {"section_id":"#id"}. For open_link use {"url":"https://..."}. We will strip this line and trigger the action on the website. Do not add ACTION: unless the user intent clearly matches.
+If the user clearly wants a detailed quote, support ticket, or intake/booking form and would benefit from a full-page assistant, you may instead (or in addition) add a single line: HANDOFF: quote or HANDOFF: support or HANDOFF: intake or HANDOFF: booking. We will show a button to continue in the full assistant page. Use HANDOFF only when the task is complex enough for a dedicated page.`;
   const messagesForApi: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     ...(languageInstruction ? [{ role: 'system' as const, content: languageInstruction }] : []),
     { role: 'system', content: systemContent },
+    { role: 'system', content: widgetActionInstruction },
     ...(history ?? []).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
@@ -266,6 +274,32 @@ export async function POST(request: Request) {
     }
   } catch (knowledgeErr) {
     console.warn('Widget chat: knowledge retrieval failed', { error: (knowledgeErr as Error).message });
+  }
+
+  let leadByConv: { id: string } | null = null;
+  const { data: leadByConvRow } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('conversation_id', convId)
+    .limit(1)
+    .maybeSingle();
+  leadByConv = leadByConvRow;
+
+  // Inject AI memory for this conversation/lead so the AI has continuity
+  try {
+    const memories = await getRelevantMemories(supabase, {
+      organizationId: widget.organization_id,
+      conversationId: convId,
+      leadId: leadByConv?.id ?? null,
+      visitorId: null,
+    });
+    if (memories.length > 0) {
+      const memoryBlock = formatMemoriesForPrompt(memories);
+      const insertIdx = languageInstruction ? 2 : 1;
+      messagesForApi.splice(insertIdx, 0, { role: 'system', content: memoryBlock });
+    }
+  } catch (memoryErr) {
+    console.warn('Widget chat: memory retrieval failed', { error: (memoryErr as Error).message });
   }
 
   const provider = agent?.model_provider ?? 'openai';
@@ -406,11 +440,14 @@ export async function POST(request: Request) {
       reply = result.content || 'Sorry, I could not generate a response.';
     }
 
+    const { cleanReply, action, handoffType } = parseActionFromReply(reply);
+    const replyToStore = cleanReply;
+
     if (agentRunId) {
       await supabase.from('agent_messages').insert({
         agent_run_id: agentRunId,
         role: 'assistant',
-        content: reply,
+        content: replyToStore,
       });
       const completedAt = new Date();
       const durationMs = Math.round(completedAt.getTime() - runStartedAt.getTime());
@@ -427,7 +464,7 @@ export async function POST(request: Request) {
     await supabase.from('messages').insert({
       conversation_id: convId,
       role: 'assistant',
-      content: reply,
+      content: replyToStore,
     });
 
     await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
@@ -438,8 +475,37 @@ export async function POST(request: Request) {
       metadata: {},
     });
 
+    // AI memory extraction (fire-and-forget): store reusable memory from this conversation
+    const fullHistory = [...(history ?? []), { role: 'user' as const, content: message }, { role: 'assistant' as const, content: replyToStore }];
+    const transcriptForMemory = fullHistory.map((m) => `${m.role}: ${m.content}`).join('\n').slice(0, 6000);
+    const leadIdForMemory = leadByConv?.id ?? null;
+    if (process.env.OPENAI_API_KEY && transcriptForMemory.length > 100) {
+      extractMemoriesFromTranscript(transcriptForMemory)
+        .then(async (extracted) => {
+          if (extracted.length === 0) return;
+          await persistMemories(supabase, {
+            organizationId: widget.organization_id,
+            subjectType: 'conversation',
+            subjectId: convId,
+            sourceConversationId: convId,
+            sourceMessageIds: null,
+            memories: extracted,
+          });
+          if (leadIdForMemory) {
+            await persistMemories(supabase, {
+              organizationId: widget.organization_id,
+              subjectType: 'lead',
+              subjectId: leadIdForMemory,
+              sourceConversationId: convId,
+              sourceMessageIds: null,
+              memories: extracted,
+            });
+          }
+        })
+        .catch((err) => console.warn('[widget/chat] memory extraction failed', err));
+    }
+
     // Extract quote request from conversation if user asked for a quote
-    const fullHistory = [...(history ?? []), { role: 'user' as const, content: message }, { role: 'assistant' as const, content: reply }];
     const transcript = fullHistory.map((m) => `${m.role}: ${m.content}`).join('\n');
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     try {
@@ -481,7 +547,7 @@ export async function POST(request: Request) {
                 typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount)
                   ? parsed.budget_amount
                   : null;
-              await supabase.from('quote_requests').insert({
+              const { data: newQuote } = await supabase.from('quote_requests').insert({
                 organization_id: widget.organization_id,
                 conversation_id: convId,
                 customer_name: name.slice(0, 500),
@@ -492,7 +558,28 @@ export async function POST(request: Request) {
                 notes: typeof parsed.notes === 'string' ? parsed.notes.slice(0, 2000) : null,
                 budget_text: typeof parsed.budget_text === 'string' ? parsed.budget_text.slice(0, 500) : null,
                 budget_amount: budgetAmount,
-              });
+              }).select('id').single();
+              if (newQuote?.id) {
+                const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
+                const automationsAllowed = await canUseAutomation(supabase, widget.organization_id, adminAllowed);
+                if (automationsAllowed) {
+                  emitAutomationEvent(supabase, {
+                    organization_id: widget.organization_id,
+                    event_type: 'quote_request_submitted',
+                    payload: {
+                      trigger_type: 'quote_request_submitted',
+                      conversation_id: convId,
+                      quote_request_id: newQuote.id,
+                      customer_name: name,
+                      service_type: parsed.service_type ?? undefined,
+                      project_details: parsed.project_details ?? undefined,
+                    },
+                    trace_id: `quote-${newQuote.id}`,
+                    source: 'widget_chat',
+                    actor: { type: 'quote_request', id: newQuote.id },
+                  }).catch((err) => console.warn('[widget/chat] quote_request_submitted emit failed', err));
+                }
+              }
             }
           }
         } catch (parseErr) {
@@ -554,30 +641,60 @@ export async function POST(request: Request) {
 
             if (!existingLead) {
               const transcriptSnippet = leadTranscriptSnippet.slice(0, 1000);
-              await supabase.from('leads').insert({
-                organization_id: widget.organization_id,
-                conversation_id: convId,
-                name: leadName.slice(0, 500),
-                email: leadEmail ? leadEmail.slice(0, 500) : 'unknown@example.com',
-                phone: leadPhone ? leadPhone.slice(0, 100) : null,
-                requested_service:
-                  typeof parsedLead.requested_service === 'string'
-                    ? parsedLead.requested_service.slice(0, 500)
-                    : null,
-                message:
-                  typeof parsedLead.message === 'string' ? parsedLead.message.slice(0, 2000) : null,
-                requested_timeline:
-                  typeof parsedLead.requested_timeline === 'string'
-                    ? parsedLead.requested_timeline.slice(0, 500)
-                    : null,
-                project_details:
-                  typeof parsedLead.project_details === 'string'
-                    ? parsedLead.project_details.slice(0, 2000)
-                    : null,
-                location:
-                  typeof parsedLead.location === 'string' ? parsedLead.location.slice(0, 500) : null,
-                transcript_snippet: transcriptSnippet,
-              });
+              const { data: newLead } = await supabase
+                .from('leads')
+                .insert({
+                  organization_id: widget.organization_id,
+                  conversation_id: convId,
+                  name: leadName.slice(0, 500),
+                  email: leadEmail ? leadEmail.slice(0, 500) : 'unknown@example.com',
+                  phone: leadPhone ? leadPhone.slice(0, 100) : null,
+                  requested_service:
+                    typeof parsedLead.requested_service === 'string'
+                      ? parsedLead.requested_service.slice(0, 500)
+                      : null,
+                  message:
+                    typeof parsedLead.message === 'string' ? parsedLead.message.slice(0, 2000) : null,
+                  requested_timeline:
+                    typeof parsedLead.requested_timeline === 'string'
+                      ? parsedLead.requested_timeline.slice(0, 500)
+                      : null,
+                  project_details:
+                    typeof parsedLead.project_details === 'string'
+                      ? parsedLead.project_details.slice(0, 2000)
+                      : null,
+                  location:
+                    typeof parsedLead.location === 'string' ? parsedLead.location.slice(0, 500) : null,
+                  transcript_snippet: transcriptSnippet,
+                })
+                .select('id')
+                .single();
+              if (newLead?.id && process.env.OPENAI_API_KEY) {
+                const { qualifyLeadWithAi, updateLeadWithQualification, maybeCreateDealForHighPriorityLead } = await import('@/lib/lead-qualification/qualify');
+                qualifyLeadWithAi({
+                  name: leadName,
+                  email: leadEmail || '',
+                  phone: leadPhone || null,
+                  message: parsedLead.message ?? null,
+                  requested_service: parsedLead.requested_service ?? null,
+                  requested_timeline: parsedLead.requested_timeline ?? null,
+                  project_details: parsedLead.project_details ?? null,
+                  location: parsedLead.location ?? null,
+                  transcript_snippet: transcriptSnippet || null,
+                })
+                  .then(async (result) => {
+                    await updateLeadWithQualification(supabase, newLead.id, widget.organization_id, result);
+                    if (result.priority === 'high') {
+                      maybeCreateDealForHighPriorityLead(
+                        supabase,
+                        widget.organization_id,
+                        { name: leadName, email: leadEmail || '', phone: leadPhone || null },
+                        result
+                      ).catch((err) => console.warn('[widget/chat] deal creation failed', err));
+                    }
+                  })
+                  .catch((err) => console.warn('[widget/chat] lead qualification failed', err));
+              }
             }
           }
         } catch (parseErr) {
@@ -588,10 +705,61 @@ export async function POST(request: Request) {
       // Non-fatal: lead extraction failed
     }
 
+    // Use action from parsed reply line (ACTION: type); else optionally infer from separate call
+    let resolvedAction: { type: string; payload?: Record<string, unknown> } | null = action
+      ? { type: action.type, payload: action.payload as Record<string, unknown> | undefined }
+      : null;
+    if (!resolvedAction) {
+      try {
+        const actionCompletion = await openai.chat.completions.create({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You decide if the assistant's reply should trigger a website action. Allowed types: open_contact_form, open_quote_form, open_booking_form, show_pricing, scroll_to_section, open_link. For open_link return payload: { url: "https://..." }. For scroll_to_section return payload: { section_id: "id" }. If the user asked for a quote and the assistant agreed to show the form, return { "action": { "type": "open_quote_form" } }. If no action, return {}. Reply with only the JSON.`,
+            },
+            { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
+          ],
+          max_tokens: 100,
+          response_format: { type: 'json_object' },
+        });
+        const actionRaw = actionCompletion.choices[0]?.message?.content?.trim();
+        if (actionRaw) {
+          const parsed = JSON.parse(actionRaw) as { action?: unknown };
+          const sanitized = parseAndSanitizeAction(parsed.action);
+          if (sanitized) resolvedAction = { type: sanitized.type, payload: sanitized.payload };
+        }
+      } catch (_) {
+        // Non-fatal
+      }
+    }
+
     await recordMessageUsage(supabase, widget.organization_id);
 
+    let pageHandoff: { handoff_type: string; target_page_slug: string; target_page_type: string; button_label: string; intro_message?: string; context_token?: string } | null = null;
+    if (handoffType) {
+      const { getPublishedPageSlugByType } = await import('@/lib/ai-pages/config-service');
+      const { buildPageHandoffPayload } = await import('@/lib/ai-pages/handoff-service');
+      const targetSlug = await getPublishedPageSlugByType(supabase, widget.organization_id, handoffType);
+      if (targetSlug) {
+        const payload = await buildPageHandoffPayload(supabase, {
+          organizationId: widget.organization_id,
+          targetSlug,
+          targetPageType: handoffType,
+          conversationId: convId,
+          contextSnippet: { last_user_message: message.slice(0, 500) },
+        });
+        if (payload) pageHandoff = payload;
+      }
+    }
+
     return NextResponse.json(
-      { conversationId: convId, reply },
+      {
+        conversationId: convId,
+        reply: replyToStore,
+        ...(resolvedAction && { action: resolvedAction }),
+        ...(pageHandoff && { page_handoff: pageHandoff }),
+      },
       { headers: corsHeaders }
     );
   } catch (err) {

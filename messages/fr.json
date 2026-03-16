@@ -162,6 +162,7 @@
     "tickets": "Tickets",
     "documents": "Documents",
     "deployments": "Déploiements",
+    "aiPages": "Pages IA",
     "knowledge": "Base de connaissances",
     "knowledgeDescription": "Formez votre IA sur vos connaissances. Sources, chunks et recherche.",
     "automations": "Automatisations",
@@ -494,6 +495,7 @@
     "footer": "Si vous n'attendiez pas cette invitation, vous pouvez ignorer cet e-mail."
   },
   "metadata": {
+    "appName": "Spaxio Assistant",
     "title": "Infrastructure IA, widget IA et outils IA pour les entreprises",
     "description": "Spaxio Assistant : plateforme d'infrastructure IA avec widget IA pour votre site, outils IA pour la capture de leads et l'assistance, et CRM IA. Déployez un chatbot IA personnalisé en une ligne de code.",
     "homeTitle": "Widget de chatbot IA pour sites web",

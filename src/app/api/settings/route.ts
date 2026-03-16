@@ -45,6 +45,7 @@ export async function PUT(request: Request) {
       matchAIResponseToWebsiteLanguage,
       showLanguageSwitcher,
       customTranslations,
+      widgetActionMappings,
     } = body;
 
     const updatePayload: Record<string, unknown> = {
@@ -101,6 +102,21 @@ export async function PUT(request: Request) {
         }
       }
       updatePayload.service_base_prices = cleaned;
+    }
+    const ALLOWED_ACTION_TYPES = ['open_contact_form', 'open_quote_form', 'open_booking_form', 'show_pricing', 'scroll_to_section', 'open_link'];
+    if (widgetActionMappings != null && typeof widgetActionMappings === 'object' && !Array.isArray(widgetActionMappings)) {
+      const cleaned: Record<string, { selector?: string; url?: string; section_id?: string }> = {};
+      for (const [key, val] of Object.entries(widgetActionMappings)) {
+        if (!ALLOWED_ACTION_TYPES.includes(key)) continue;
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          const v = val as Record<string, unknown>;
+          cleaned[key] = {};
+          if (typeof v.selector === 'string') cleaned[key].selector = sanitizeText(v.selector, 500);
+          if (typeof v.url === 'string') cleaned[key].url = sanitizeText(v.url, 2000);
+          if (typeof v.section_id === 'string') cleaned[key].section_id = sanitizeText(v.section_id, 200).replace(/[^a-zA-Z0-9_-]/g, '');
+        }
+      }
+      updatePayload.widget_action_mappings = cleaned;
     }
     const { error } = await supabase
       .from('business_settings')

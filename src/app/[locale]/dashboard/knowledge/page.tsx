@@ -7,6 +7,8 @@ import { AddSourceForm } from '@/app/dashboard/knowledge/add-source-form';
 import { IngestUrlForm } from '@/app/dashboard/knowledge/ingest-url-form';
 import { UploadTextForm } from '@/app/dashboard/knowledge/upload-text-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ViewModeClientGate } from '@/components/dashboard/view-mode-client-gate';
+import { SimpleKnowledgeContent } from '@/components/dashboard/simple-knowledge-content';
 
 export default async function KnowledgePage() {
   const orgId = await getOrganizationId();
@@ -22,8 +24,9 @@ export default async function KnowledgePage() {
     .order('created_at', { ascending: false });
 
   const sourceList = (sources ?? []).map((s) => ({ id: s.id, name: s.name }));
+  const hasSources = (sources?.length ?? 0) > 0;
 
-  return (
+  const developerContent = (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t('knowledge')}</h1>
@@ -42,7 +45,9 @@ export default async function KnowledgePage() {
             <div className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-8 text-center">
               <BookOpen className="mx-auto h-10 w-10 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">No knowledge sources yet.</p>
-              <p className="mt-1 text-xs text-muted-foreground">Create a source below, then add content via URL or paste.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Create a source below, then add content via URL or paste.
+              </p>
             </div>
           ) : (
             <ul className="divide-y divide-border">
@@ -51,7 +56,8 @@ export default async function KnowledgePage() {
                   <div>
                     <p className="font-medium">{src.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {src.source_type} · Last synced: {src.last_synced_at ? new Date(src.last_synced_at).toLocaleDateString() : 'Never'}
+                      {src.source_type} · Last synced:{' '}
+                      {src.last_synced_at ? new Date(src.last_synced_at).toLocaleDateString() : 'Never'}
                     </p>
                   </div>
                 </li>
@@ -78,5 +84,23 @@ export default async function KnowledgePage() {
         </CardContent>
       </Card>
     </div>
+  );
+
+  return (
+    <ViewModeClientGate
+      simple={
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">My Content</h1>
+            <p className="text-muted-foreground">
+              Add your materials and let Spaxio organize them into courses and lessons for you.
+            </p>
+          </div>
+          <SimpleKnowledgeContent hasSources={hasSources} />
+          {developerContent}
+        </div>
+      }
+      developer={developerContent}
+    />
   );
 }

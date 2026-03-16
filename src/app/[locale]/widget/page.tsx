@@ -36,6 +36,11 @@ function WidgetContent() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [pageHandoff, setPageHandoff] = useState<{
+    target_page_slug: string;
+    button_label: string;
+    context_token?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!widgetId) return;
@@ -154,6 +159,27 @@ function WidgetContent() {
           { role: 'assistant', content: data.reply || t('errorMessage') },
         ]);
       }
+      if (data.action && typeof data.action === 'object' && typeof data.action.type === 'string') {
+        try {
+          window.parent?.postMessage?.({ type: 'spaxio-action', action: data.action }, '*');
+        } catch {
+          // ignore
+        }
+      }
+      if (data.page_handoff && typeof data.page_handoff === 'object' && data.page_handoff.target_page_slug) {
+        setPageHandoff({
+          target_page_slug: data.page_handoff.target_page_slug,
+          button_label: data.page_handoff.button_label || 'Continue in full assistant',
+          context_token: data.page_handoff.context_token,
+        });
+        try {
+          window.parent?.postMessage?.({ type: 'spaxio-page-handoff', page_handoff: data.page_handoff }, '*');
+        } catch {
+          // ignore
+        }
+      } else {
+        setPageHandoff(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -187,6 +213,16 @@ function WidgetContent() {
             ))}
           </select>
         </div>
+      )}
+      {pageHandoff && (
+        <a
+          href={`${baseUrl}/${resolvedLocale}/a/${pageHandoff.target_page_slug}${pageHandoff.context_token ? `?handoff=${encodeURIComponent(pageHandoff.context_token)}` : ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-2 flex w-full max-w-[360px] items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20"
+        >
+          {pageHandoff.button_label}
+        </a>
       )}
       <AIChatCard
         className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"

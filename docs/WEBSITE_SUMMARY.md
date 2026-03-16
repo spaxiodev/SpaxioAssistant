@@ -35,6 +35,8 @@ The site is **i18n-ready** (e.g. English and French) and uses **Next.js App Rout
 | `/[locale]/privacy-policy` | Privacy policy page. |
 | `/[locale]/terms-and-conditions` | Terms and conditions page. |
 | `/[locale]/widget-preview` | Preview of the chat widget (for testing). |
+| `/[locale]/dashboard-preview` | Redirects to dashboard-preview overview (logged-in widget preview flow). |
+| `/[locale]/dashboard-preview/[section]` | Dashboard preview sections: overview, assistants, widget, knowledge, inbox, analytics, automations, team, billing (some sections may be locked). |
 | `/[locale]/demo/ai-chat` | Demo AI chat page. |
 | `/[locale]/demo/sign-in` | Demo sign-in flow. |
 | `/[locale]/widget` | Widget UI (iframe/embed target). |
@@ -56,6 +58,41 @@ The site is **i18n-ready** (e.g. English and French) and uses **Next.js App Rout
 ## 4. Dashboard (logged-in)
 
 Dashboard is under `/[locale]/dashboard` with a sidebar and header. **Subscription/trial** and **onboarding** (e.g. business name) are gated where relevant; upgrade CTAs and onboarding prompts are shown when needed.
+
+### 4.0 Dashboard view modes (Simple vs Developer)
+
+The dashboard supports two **view modes** that change the entire in-app experience:
+
+- **Simple Mode** — A streamlined experience for non-technical users: plain-language labels (e.g. “Home”, “Setup with AI”, “Chat Widget”, “Leads”, “Team”, “Launch”, “Help”), simplified main content per route, and a “Do It For Me” / AI-guided setup emphasis. The main content area is driven by **Simple Mode** pages (e.g. `SimpleDashboardOverview`, `SimpleAiSetupPage`, `SimpleInstallPage`, `SimpleLeadsPage`, `SimpleLaunchPage`, and generic placeholder pages for Knowledge, Conversations, Analytics, Billing, Account).
+- **Developer Mode** — The full dashboard: all workspace, CRM, activity, and developer sections with full feature set and technical labels.
+
+**Behavior:**
+
+- **Toggle:** In the dashboard header (desktop), a control shows “Simple Mode” and “Developer Mode” with a **Switch**; the chosen mode is persisted in `localStorage` under the key `spaxio-view-mode`.
+- **Context:** `ViewModeProvider` (in `view-mode-context.tsx`) supplies `mode` and `setMode`; `useViewMode()` is used by the header, sidebar, and content.
+- **Content routing:** `ModeAwareContent` wraps the main area: in Developer Mode it renders the normal server-rendered page (children); in Simple Mode it renders `SimpleModeRouter`, which maps the current pathname to the corresponding Simple-mode page component.
+- **Sidebar:** The sidebar (`sidebar-with-submenu`) shows different navigation in Simple Mode (Home, Setup with AI, Chat Widget, Automations, Leads, Team, Launch, Help, Settings, plus a “Switch to Developer Mode” button) vs Developer Mode (full Workspace, CRM, Activity, Developers, Account sections).
+- **Per-page gating:** Some pages (e.g. Knowledge) use `ViewModeClientGate` to show a simplified block (e.g. `SimpleKnowledgeContent` with “Let AI organize your content”) in Simple Mode while still showing the full developer content when needed.
+
+**Simple Mode pages (summary):**
+
+| Route / area | Simple Mode component | Purpose |
+|--------------|------------------------|--------|
+| `/dashboard` | `SimpleDashboardOverview` | Welcome, “Do It For Me” AI setup card, quick actions (Set up with AI, Add content, Chat Widget, Leads, Preview widget), setup progress, AI recommendations. |
+| `/dashboard/ai-setup` | `SimpleAiSetupPage` | “Do It For Me” CTA and existing AI setup client. |
+| `/dashboard/install` | `SimpleInstallPage` | Chat widget install flow. |
+| `/dashboard/agents` | `SimpleAgentsPage` | Agents in simple layout. |
+| `/dashboard/automations` | `SimpleAutomationsPage` | Automations in simple layout. |
+| `/dashboard/leads`, contacts, quote-requests | `SimpleLeadsPage` | Leads (and related) in simple layout. |
+| `/dashboard/team` | `SimpleTeamPage` | Team in simple layout. |
+| `/dashboard/settings` | `SimpleSettingsPage` | Settings in simple layout. |
+| `/dashboard/deployments` | `SimpleLaunchPage` | Launch / deploy; link to widget preview. |
+| `/dashboard/knowledge` | `SimpleGenericPage` (“Add your learning materials”) | Placeholder with AI prompt for importing and organizing materials. |
+| `/dashboard/inbox`, conversations | `SimpleGenericPage` (“Conversations”) | Placeholder with title and optional AI prompt. |
+| `/dashboard/analytics` | `SimpleGenericPage` (“Analytics”) | Placeholder. |
+| `/dashboard/billing`, account | `SimpleGenericPage` | Title-only placeholder. |
+
+**Dashboard preview (widget preview):** The route `/[locale]/dashboard-preview` redirects to `/[locale]/dashboard-preview/overview`. A dedicated preview layout provides sections (overview, assistants, widget, knowledge, inbox, analytics, automations, team, billing); some sections may be locked. This is linked from Simple Mode (e.g. “Preview widget” from the overview and from the Launch page).
 
 ### 4.1 Workspace (main product)
 
@@ -241,7 +278,7 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui, next-intl (i18n) |
+| Frontend | Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui (including Switch for view-mode toggle), next-intl (i18n) |
 | Backend / DB | Supabase: Postgres, Auth, RLS |
 | AI | OpenAI Chat Completions (server-side only; e.g. gpt-4o-mini default) |
 | Billing | Stripe: Checkout, Customer Portal, webhooks |
@@ -252,4 +289,4 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 ## 11. One-line summary
 
-**Spaxio Assistant** is an AI infrastructure SaaS that lets businesses deploy a customizable website AI widget, capture leads and quote requests, run multiple AI agents with knowledge bases and tool-calling, automate workflows (events and webhooks), manage CRM data (leads, contacts, companies, deals, tickets), and subscribe via multi-tier Stripe plans with usage-based and entitlement-based limits—all on a single multi-tenant Next.js + Supabase platform.
+**Spaxio Assistant** is an AI infrastructure SaaS that lets businesses deploy a customizable website AI widget, capture leads and quote requests, run multiple AI agents with knowledge bases and tool-calling, automate workflows (events and webhooks), manage CRM data (leads, contacts, companies, deals, tickets), and subscribe via multi-tier Stripe plans with usage-based and entitlement-based limits—all on a single multi-tenant Next.js + Supabase platform. The dashboard offers **Simple Mode** (streamlined, AI-guided setup and plain-language navigation) and **Developer Mode** (full workspace, CRM, and developer features), with the choice persisted in the browser.

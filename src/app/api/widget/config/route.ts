@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
   const { data: settings } = await supabase
     .from('business_settings')
-    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_enabled, widget_position_preset, default_language, supported_languages, auto_detect_website_language, fallback_language, match_ai_response_to_website_language, show_language_switcher, custom_translations')
+    .select('business_name, chatbot_name, chatbot_welcome_message, primary_brand_color, widget_logo_url, widget_label_override, show_widget_label, widget_enabled, widget_position_preset, default_language, supported_languages, auto_detect_website_language, fallback_language, match_ai_response_to_website_language, show_language_switcher, custom_translations, widget_action_mappings')
     .eq('organization_id', widget.organization_id)
     .single();
 
@@ -73,6 +73,9 @@ export async function GET(request: Request) {
   const customTranslations = (settings?.custom_translations && typeof settings.custom_translations === 'object')
     ? (settings.custom_translations as Record<string, Record<string, string>>)
     : undefined;
+  const actionMappings = (settings?.widget_action_mappings && typeof settings.widget_action_mappings === 'object')
+    ? (settings.widget_action_mappings as Record<string, { selector?: string; url?: string; section_id?: string }>)
+    : undefined;
 
   return NextResponse.json(
     {
@@ -92,6 +95,7 @@ export async function GET(request: Request) {
       matchAIResponseToWebsiteLanguage: settings?.match_ai_response_to_website_language !== false,
       showLanguageSwitcher: settings?.show_language_switcher === true,
       customTranslations: customTranslations ?? undefined,
+      actionMappings: actionMappings ?? undefined,
     },
     { headers: corsHeaders }
   );

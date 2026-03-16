@@ -7,6 +7,7 @@
 export const TRIGGER_TYPES = [
   'new_chat_started',
   'lead_form_submitted',
+  'quote_request_submitted',
   'conversation_completed',
   'contact_info_captured',
   'manual_test',
@@ -51,6 +52,9 @@ export const ACTION_TYPES = [
   'send_follow_up_message',
   'crm_create_contact',
   'crm_add_note',
+  'crm_create_deal',
+  'create_support_ticket',
+  'crm_create_task',
 ] as const;
 
 /** Step types for multi-step workflows (automation_steps.step_type). */

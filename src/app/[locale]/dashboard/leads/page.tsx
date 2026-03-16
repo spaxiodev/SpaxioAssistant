@@ -4,7 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
 import type { Lead } from '@/lib/supabase/database.types';
 import { LeadRowActions } from '../../../dashboard/leads/lead-row-actions';
+import { FollowUpCard } from '@/components/dashboard/follow-up-card';
+import { MemoryCard } from '@/components/dashboard/memory-card';
+import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
 import { getTranslations } from 'next-intl/server';
+
+function priorityLabel(priority: string | null): string {
+  if (!priority) return '';
+  switch (priority) {
+    case 'high':
+      return 'Hot lead';
+    case 'medium':
+      return 'Likely customer soon';
+    case 'low':
+      return 'Needs follow-up';
+    default:
+      return priority;
+  }
+}
 
 function LeadCard({
   lead,
@@ -22,18 +39,71 @@ function LeadCard({
     { label: labels.location, value: lead.location },
     { label: labels.message, value: lead.message },
   ];
+  const score = lead.qualification_score ?? null;
+  const priority = lead.qualification_priority ?? null;
   return (
     <Card className="overflow-hidden">
       <CardHeader className="border-b bg-muted/30 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg">{lead.name}</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {score != null && (
+              <span
+                className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                title="AI lead score 0-100"
+              >
+                Score {score}
+              </span>
+            )}
+            {priority && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  priority === 'high'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                    : priority === 'medium'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+                      : 'bg-muted text-muted-foreground'
+                }`}
+                title="AI priority"
+              >
+                {priorityLabel(priority)}
+              </span>
+            )}
             <span className="text-sm text-muted-foreground">{formatDate(lead.created_at)}</span>
             <LeadRowActions leadId={lead.id} />
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-4">
+        {(lead.qualification_summary || lead.next_recommended_action) && (
+          <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 p-3">
+            <dt className="text-xs font-medium text-muted-foreground">AI Summary</dt>
+            {lead.qualification_summary && (
+              <dd className="mt-1 text-sm">{lead.qualification_summary}</dd>
+            )}
+            {lead.next_recommended_action && (
+              <dd className="mt-1 text-xs text-muted-foreground">
+                Next: {lead.next_recommended_action}
+              </dd>
+            )}
+          </div>
+        )}
+        <FollowUpCard leadId={lead.id} />
+        <MemoryCard subjectType="lead" subjectId={lead.id} />
+        <div className="flex flex-wrap gap-2">
+          <GenerateDocumentActions
+            sourceType="lead"
+            sourceId={lead.id}
+            primaryType="lead_summary"
+            primaryLabel="Summarize this lead"
+          />
+          <GenerateDocumentActions
+            sourceType="lead"
+            sourceId={lead.id}
+            primaryType="quote_draft"
+            primaryLabel="Make a quote draft"
+          />
+        </div>
         <dl className="grid gap-3 sm:grid-cols-2">
           {fields.map(
             (f) =>

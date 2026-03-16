@@ -162,6 +162,7 @@
     "tickets": "Tickets",
     "documents": "Documents",
     "deployments": "Deployments",
+    "aiPages": "AI Pages",
     "knowledge": "Knowledge",
     "knowledgeDescription": "Train your AI on your business knowledge. Sources, chunks, and retrieval.",
     "automations": "Automations",
@@ -494,6 +495,7 @@
     "footer": "If you didn't expect this invite, you can safely ignore this email."
   },
   "metadata": {
+    "appName": "Spaxio Assistant",
     "title": "AI Infrastructure, AI Widget & AI Tools for Business",
     "description": "Spaxio Assistant: AI infrastructure platform with an AI widget for your website, AI tools for lead capture and support, and AI CRM. Deploy a custom AI chatbot in one line of code.",
     "homeTitle": "AI Chatbot Widget for Websites",

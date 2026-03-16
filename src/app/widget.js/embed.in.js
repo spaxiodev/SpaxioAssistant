@@ -435,6 +435,69 @@
       bubble.style.color = isLightColor(applied) ? '#1a1a1a' : '#ffffff';
     }
 
+    var actionMappingsCache = null;
+
+    function dispatchWebsiteAction(action) {
+      if (!action || typeof action.type !== 'string') return;
+      var mapping = actionMappingsCache && actionMappingsCache[action.type];
+      var payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
+      var selector = mapping && mapping.selector;
+      var url = mapping && mapping.url;
+      var sectionId = mapping && mapping.section_id;
+      if (!mapping) {
+        sectionId = payload.section_id || payload.sectionId || (action.type === 'scroll_to_section' && (payload.section_id || payload.sectionId));
+        var sel = payload.selector;
+        if (action.type === 'open_link' && payload.url) {
+          try {
+            var u = payload.url;
+            if (typeof u === 'string' && (u.indexOf('http://') === 0 || u.indexOf('https://') === 0)) {
+              window.open(u, '_blank', 'noopener');
+            }
+          } catch (e) {}
+        }
+        if (action.type === 'scroll_to_section' && (sectionId || sel)) {
+          var el = null;
+          if (sectionId && sectionId.indexOf('#') === 0) {
+            el = document.getElementById(sectionId.slice(1));
+          } else if (sel) {
+            el = document.querySelector(sel);
+          } else if (sectionId) {
+            el = document.querySelector(sectionId);
+          }
+          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        try {
+          window.dispatchEvent(new CustomEvent('spaxio-website-action', { detail: action }));
+        } catch (e2) {}
+        return;
+      }
+      if (selector) {
+        try {
+          var target = document.querySelector(selector);
+          if (target) {
+            if (target.click) target.click();
+            else if (target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } catch (e) {}
+      }
+      if (url && (url.indexOf('http://') === 0 || url.indexOf('https://') === 0 || url.indexOf('#') === 0)) {
+        try {
+          if (url.indexOf('#') === 0) {
+            var anchor = document.getElementById(url.slice(1));
+            if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.open(url, '_blank', 'noopener');
+          }
+        } catch (e) {}
+      }
+      if (sectionId && !selector && !url) {
+        try {
+          var sect = document.getElementById(sectionId);
+          if (sect && sect.scrollIntoView) sect.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (e) {}
+      }
+    }
+
     var open = false;
     var teaserTimer = null;
     var teaserShown = false;
@@ -513,6 +576,18 @@
         var h = Math.min(600, Math.max(200, e.data.height));
         iframe.style.height = h + 'px';
       }
+      if (e.data && e.data.type === 'spaxio-action' && e.data.action) {
+        try { dispatchWebsiteAction(e.data.action); } catch (err) {}
+      }
+      if (e.data && e.data.type === 'spaxio-page-handoff' && e.data.page_handoff) {
+        try {
+          var ph = e.data.page_handoff;
+          var localeSeg = (pageLanguage && /^[a-z]{2}/.test(pageLanguage)) ? pageLanguage.slice(0, 2) : 'en';
+          var handoffUrl = base + '/' + localeSeg + '/a/' + encodeURIComponent(ph.target_page_slug || '');
+          if (ph.context_token) handoffUrl += '?handoff=' + encodeURIComponent(ph.context_token);
+          window.dispatchEvent(new CustomEvent('spaxio-page-handoff', { detail: { page_handoff: ph, url: handoffUrl } }));
+        } catch (err) {}
+      }
     });
 
     var currentPositionPreset = 'bottom-right';
@@ -527,6 +602,7 @@
 
     function applyConfig(config) {
       var c = config || {};
+      actionMappingsCache = c.actionMappings && typeof c.actionMappings === 'object' ? c.actionMappings : null;
       if (c.autoDetectWebsiteLanguage === false && c.defaultLanguage) {
         var def = normalizeLang(c.defaultLanguage);
         if (def && def !== pageLanguage) {

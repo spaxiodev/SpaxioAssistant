@@ -11,7 +11,6 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/components/intl-link';
 import { CheckoutButton } from '@/app/dashboard/billing/checkout-button';
 import { buildUpgradeUrl, getUpgradePlanForFeature, FEATURE_LABELS } from '@/lib/plan-config';
-
 export default async function DashboardOverviewPage() {
   const orgId = await getOrganizationId();
   if (!orgId) return null;
@@ -60,7 +59,7 @@ export default async function DashboardOverviewPage() {
   const isTrialing = !adminAllowed && subscription?.status === 'trialing' && activeSub;
   const isActive = activeSub;
 
-  return (
+  const content = (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -250,4 +249,6 @@ export default async function DashboardOverviewPage() {
       </Card>
     </div>
   );
+
+  return content;
 }

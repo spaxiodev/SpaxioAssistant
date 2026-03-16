@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash2 } from 'lucide-react';
+import { Trash2, MessageSquare } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { FollowUpCard } from '@/components/dashboard/follow-up-card';
+import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from 'next-intl';
 
@@ -45,6 +54,27 @@ export function QuoteRequestRowActions({ quoteRequestId }: QuoteRequestRowAction
 
   return (
     <>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="AI Follow-up">
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Follow-up & documents</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <FollowUpCard quoteRequestId={quoteRequestId} />
+            <GenerateDocumentActions
+              sourceType="quote_request"
+              sourceId={quoteRequestId}
+              primaryType="quote_draft"
+              primaryLabel="Make a quote draft"
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
       <Button
         variant="ghost"
         size="icon"

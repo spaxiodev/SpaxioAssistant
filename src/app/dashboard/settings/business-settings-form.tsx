@@ -72,6 +72,22 @@ export function BusinessSettingsForm({
   const [logoCropDialogOpen, setLogoCropDialogOpen] = useState(false);
   const [logoCropImageSrc, setLogoCropImageSrc] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const [widgetActionMappings, setWidgetActionMappings] = useState<Record<string, { selector?: string; url?: string; section_id?: string }>>(() => {
+    const raw = (initial as Record<string, unknown>)?.widget_action_mappings;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out: Record<string, { selector?: string; url?: string; section_id?: string }> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === 'object' && v && !Array.isArray(v)) {
+        const vv = v as Record<string, unknown>;
+        out[k] = {};
+        if (typeof vv.selector === 'string') out[k].selector = vv.selector;
+        if (typeof vv.url === 'string') out[k].url = vv.url;
+        if (typeof vv.section_id === 'string') out[k].section_id = vv.section_id;
+      }
+    }
+    return out;
+  });
+  const ACTION_KEYS = ['open_contact_form', 'open_quote_form', 'open_booking_form', 'show_pricing', 'scroll_to_section', 'open_link'] as const;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +120,7 @@ export function BusinessSettingsForm({
         widgetLogoUrl: widgetLogoUrl || null,
         widgetEnabled,
         serviceBasePrices: basePricesPayload,
+        widgetActionMappings: widgetActionMappings,
       }),
     });
     setLoading(false);
@@ -465,6 +482,57 @@ export function BusinessSettingsForm({
             />
           </div>
 
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden border border-border-soft shadow-sm">
+        <CardHeader className="border-b border-border-soft bg-muted/30 pb-6">
+          <CardTitle className="text-xl">Widget website actions</CardTitle>
+          <CardDescription className="mt-1.5">
+            When the AI suggests opening a form or scrolling, the widget can trigger these on your site. Optional: set a CSS selector, URL, or section ID for each action.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-6">
+          {ACTION_KEYS.map((key) => (
+            <div key={key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-3">
+              <Label className="font-mono text-sm">{key.replace(/_/g, ' ')}</Label>
+              <Input
+                placeholder="Selector (e.g. #contact-form)"
+                value={widgetActionMappings[key]?.selector ?? ''}
+                onChange={(e) =>
+                  setWidgetActionMappings((prev) => ({
+                    ...prev,
+                    [key]: { ...prev[key], selector: e.target.value || undefined },
+                  }))
+                }
+                className="rounded-lg"
+              />
+              <div className="flex gap-2 sm:col-span-2">
+                <Input
+                  placeholder="URL or #section"
+                  value={widgetActionMappings[key]?.url ?? ''}
+                  onChange={(e) =>
+                    setWidgetActionMappings((prev) => ({
+                      ...prev,
+                      [key]: { ...prev[key], url: e.target.value || undefined },
+                    }))
+                  }
+                  className="rounded-lg"
+                />
+                <Input
+                  placeholder="Section ID"
+                  value={widgetActionMappings[key]?.section_id ?? ''}
+                  onChange={(e) =>
+                    setWidgetActionMappings((prev) => ({
+                      ...prev,
+                      [key]: { ...prev[key], section_id: e.target.value || undefined },
+                    }))
+                  }
+                  className="w-28 rounded-lg"
+                />
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

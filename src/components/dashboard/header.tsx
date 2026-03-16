@@ -9,6 +9,8 @@ import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { Menu, MoreVertical } from 'lucide-react';
 import { useDashboardSidebar } from '@/contexts/dashboard-sidebar-context';
+import { useViewMode } from '@/contexts/view-mode-context';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +28,7 @@ export function Header({ showUpgradeButton }: HeaderProps) {
   const router = useRouter();
   const t = useTranslations('common');
   const { toggle } = useDashboardSidebar();
+  const { mode, setMode } = useViewMode();
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -46,11 +49,34 @@ export function Header({ showUpgradeButton }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        {showUpgradeButton && (
-          <Button variant="default" size="sm" className="shrink-0 rounded-lg" asChild>
-            <Link href="/pricing">{t('upgrade')}</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {showUpgradeButton && (
+            <Button variant="default" size="sm" className="shrink-0 rounded-lg" asChild>
+              <Link href="/pricing">{t('upgrade')}</Link>
+            </Button>
+          )}
+          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-background/70 px-3 py-1 text-xs text-muted-foreground md:flex">
+            <button
+              type="button"
+              className={`transition-colors ${mode === 'simple' ? 'font-semibold text-foreground' : ''}`}
+              onClick={() => setMode('simple')}
+            >
+              Simple Mode
+            </button>
+            <Switch
+              checked={mode === 'developer'}
+              onCheckedChange={(checked) => setMode(checked ? 'developer' : 'simple')}
+              aria-label="Toggle Developer Mode"
+            />
+            <button
+              type="button"
+              className={`transition-colors ${mode === 'developer' ? 'font-semibold text-foreground' : ''}`}
+              onClick={() => setMode('developer')}
+            >
+              Developer Mode
+            </button>
+          </div>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <div className="hidden md:flex md:items-center md:gap-2">

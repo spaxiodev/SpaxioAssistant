@@ -532,6 +532,116 @@ async function executeAction(
         message: 'Follow-up message placeholder',
       };
 
+    case 'create_support_ticket': {
+      const title =
+        (typeof config.title === 'string' && config.title.trim()) ||
+        `Support: ${input.lead?.name ?? 'Unknown'} – ${automation.name}`;
+      const description =
+        typeof config.description === 'string'
+          ? config.description
+          : [input.lead?.message, input.lead?.email].filter(Boolean).join('\n');
+      const { data: ticket, error: ticketError } = await supabase.from('support_tickets').insert({
+        organization_id: automation.organization_id,
+        conversation_id: input.conversation_id ?? null,
+        title: title.slice(0, 500),
+        description: (description || '').slice(0, 2000),
+        priority: (config.priority as string) || 'medium',
+        status: 'open',
+      }).select('id').single();
+      if (ticketError) {
+        return {
+          action_executed: 'create_support_ticket',
+          success: false,
+          message: ticketError.message,
+        };
+      }
+      return {
+        action_executed: 'create_support_ticket',
+        success: true,
+        message: 'Support ticket created',
+        external_id: ticket?.id,
+      };
+    }
+
+    case 'crm_create_deal': {
+      const lead = input.lead ?? {};
+      let contactId: string | null = (config.contact_id as string) ?? null;
+      if (!contactId && (lead.name || lead.email)) {
+        const email = lead.email?.trim();
+        const name = (lead.name as string)?.trim() || 'Unknown';
+        if (email) {
+          const { data: existingByEmail } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('organization_id', automation.organization_id)
+            .eq('email', email)
+            .limit(1)
+            .maybeSingle();
+          if (existingByEmail) contactId = existingByEmail.id;
+        }
+        if (!contactId) {
+          const { data: newContact } = await supabase
+            .from('contacts')
+            .insert({
+              organization_id: automation.organization_id,
+              name,
+              email: lead.email ?? null,
+              phone: lead.phone ?? null,
+            })
+            .select('id')
+            .single();
+          contactId = newContact?.id ?? null;
+        }
+      }
+      const dealTitle = (typeof config.title === 'string' && config.title.trim()) || `Deal: ${lead.name ?? 'Lead'}`;
+      const valueCents = typeof config.value_cents === 'number' ? config.value_cents : (input.estimated_value as number) ? Math.round(Number(input.estimated_value) * 100) : 0;
+      const stage = (typeof config.stage === 'string' && config.stage.trim()) || 'qualification';
+      const { data: deal, error: dealError } = await supabase.from('deals').insert({
+        organization_id: automation.organization_id,
+        contact_id: contactId,
+        title: dealTitle.slice(0, 500),
+        value_cents: valueCents,
+        stage: ['qualification', 'proposal', 'negotiation', 'won', 'lost'].includes(stage) ? stage : 'qualification',
+      }).select('id').single();
+      if (dealError) {
+        return {
+          action_executed: 'crm_create_deal',
+          success: false,
+          message: dealError.message,
+        };
+      }
+      return {
+        action_executed: 'crm_create_deal',
+        success: true,
+        message: 'Deal created',
+        external_id: deal?.id,
+      };
+    }
+
+    case 'crm_create_task': {
+      const taskTitle = (typeof config.title === 'string' && config.title.trim()) || `Follow up: ${input.lead?.name ?? 'Lead'}`;
+      const { data: task, error: taskError } = await supabase.from('tasks').insert({
+        organization_id: automation.organization_id,
+        title: taskTitle.slice(0, 500),
+        lead_id: input.lead_id ?? null,
+        contact_id: config.contact_id ?? null,
+        deal_id: config.deal_id ?? null,
+      }).select('id').single();
+      if (taskError) {
+        return {
+          action_executed: 'crm_create_task',
+          success: false,
+          message: taskError.message,
+        };
+      }
+      return {
+        action_executed: 'crm_create_task',
+        success: true,
+        message: 'Task created',
+        external_id: task?.id,
+      };
+    }
+
     default:
       return {
         action_executed: automation.action_type,

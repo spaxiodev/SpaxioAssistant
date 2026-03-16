@@ -68,6 +68,14 @@ export interface Database {
           project_details: string | null;
           location: string | null;
           created_at: string;
+          qualification_score: number | null;
+          qualification_priority: string | null;
+          qualification_summary: string | null;
+          qualification_raw: Record<string, unknown> | null;
+          qualified_at: string | null;
+          recommended_deal_stage: string | null;
+          estimated_deal_value: number | null;
+          next_recommended_action: string | null;
         };
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;

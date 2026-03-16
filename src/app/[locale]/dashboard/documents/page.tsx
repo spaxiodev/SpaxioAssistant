@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { FileText } from 'lucide-react';
+import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
 
 export default async function DocumentsPage() {
   const orgId = await getOrganizationId();
@@ -35,6 +36,18 @@ export default async function DocumentsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t('documents')}</h1>
         <p className="text-muted-foreground">{t('documentsDescription')}</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Generate document</CardTitle>
+          <CardDescription>
+            Generate a quote draft, proposal, or lead summary from Leads or Quote requests. For generic drafts, use the dropdown below.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GenerateDocumentActions sourceType="none" sourceId={null} asDropdown primaryType="proposal_draft" />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -163,7 +163,17 @@ export function AISetupClient() {
 
   useEffect(() => {
     checkAccessAndLoad();
-  }, []);
+  }, [checkAccessAndLoad]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const key = 'spaxio-ai-setup-intent';
+    const stored = window.localStorage.getItem(key);
+    if (stored && !input) {
+      setInput(stored);
+      window.localStorage.removeItem(key);
+    }
+  }, [input]);
 
   // Collapse starter prompts when user sends first message
   useEffect(() => {
