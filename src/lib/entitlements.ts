@@ -547,20 +547,22 @@ export async function getMaxBusinessesForUser(
   userId: string,
   adminAllowed = false
 ): Promise<{ max: number; ownedCount: number; canCreate: boolean }> {
-  const ownedCount = await getOwnedOrganizationsCount(supabase, userId);
-  if (adminAllowed) {
-    return { max: 999, ownedCount, canCreate: true };
-  }
   const { data: ownedMembers } = await supabase
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', userId)
     .eq('role', 'owner');
   const orgIds = (ownedMembers ?? []).map((m) => m.organization_id);
+  const ownedCount = orgIds.length;
+
+  if (adminAllowed) {
+    return { max: 999, ownedCount, canCreate: true };
+  }
+
+  const plans = await Promise.all(orgIds.map((orgId) => getPlanForOrg(supabase, orgId)));
   let bestTier = 0;
   let bestPlanId: string | null = null;
-  for (const orgId of orgIds) {
-    const plan = await getPlanForOrg(supabase, orgId);
+  for (const plan of plans) {
     if (!plan) continue;
     const tier = getPlanTier(plan.slug);
     if (tier > bestTier) {

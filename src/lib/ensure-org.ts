@@ -1,5 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
+/**
+ * Ensure the user has at least one organization. If they have none, create one (once).
+ * Uses a post-insert check to avoid duplicate orgs when multiple requests run at once.
+ */
 export async function ensureUserOrganization(
   userId: string,
   fullName?: string,
@@ -8,16 +12,14 @@ export async function ensureUserOrganization(
 ) {
   const supabase = createAdminClient();
 
-  const { data: member } = await supabase
+  const { data: existingMembers } = await supabase
     .from('organization_members')
-    .select('organization_id')
+    .select('organization_id, created_at')
     .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
 
-  if (member) {
-    return member.organization_id;
+  if (existingMembers && existingMembers.length > 0) {
+    return existingMembers[0].organization_id;
   }
 
   const orgName = fullName || businessName || 'My Organization';
@@ -70,6 +72,22 @@ export async function ensureUserOrganization(
 
   if (subscriptionError) {
     return null;
+  }
+
+  // Race safeguard: if another request created an org first, we now have 2+ memberships. Keep the first, remove ours.
+  const { data: allMembers } = await supabase
+    .from('organization_members')
+    .select('organization_id, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  if (allMembers && allMembers.length > 1) {
+    const firstOrgId = allMembers[0].organization_id;
+    if (firstOrgId !== org.id) {
+      await supabase.from('organization_members').delete().eq('user_id', userId).eq('organization_id', org.id);
+      await supabase.from('organizations').delete().eq('id', org.id);
+      return firstOrgId;
+    }
   }
 
   return org.id;

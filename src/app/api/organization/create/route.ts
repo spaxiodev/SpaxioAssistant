@@ -1,13 +1,16 @@
 /**
  * POST /api/organization/create – create a new business (organization) under the current user.
- * Body: { name?: string, business_name?: string }. Enforces max_businesses by plan.
+ * Called only when the user clicks "Create" in the Add business dialog (after entering a name).
+ * No business is created or counted until this POST runs. Body: { name?: string, business_name?: string }.
+ * Enforces max_businesses by plan.
  */
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUser } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { canCreateBusiness, getMaxBusinessesForUser } from '@/lib/entitlements';
+import { isUserAdmin } from '@/lib/admin';
+import { getMaxBusinessesForUser } from '@/lib/entitlements';
 import { CURRENT_ORG_COOKIE } from '@/lib/auth-server';
 import { sanitizeText } from '@/lib/validation';
 
@@ -22,7 +25,8 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createAdminClient();
-    const { canCreate, max, ownedCount } = await getMaxBusinessesForUser(supabase, user.id, false);
+    const adminAllowed = isUserAdmin(user.id);
+    const { canCreate, max, ownedCount } = await getMaxBusinessesForUser(supabase, user.id, adminAllowed);
     if (!canCreate) {
       return NextResponse.json(
         {

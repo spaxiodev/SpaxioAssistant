@@ -3,7 +3,8 @@ import { isUuid, normalizeUuid } from '@/lib/validation';
 
 /**
  * Comma-separated Supabase Auth user IDs from .env.
- * These users get free access (subscription bypass) for any org they belong to.
+ * These users get unlimited access (subscription and plan limits bypass) for any org they belong to,
+ * and can create unlimited businesses.
  */
 export function getAdminUserIds(): string[] {
   const raw = process.env.ADMIN_USER_IDS;
@@ -12,6 +13,12 @@ export function getAdminUserIds(): string[] {
     .split(',')
     .map((id) => normalizeUuid(id.trim()))
     .filter((id) => id.length > 0 && isUuid(id));
+}
+
+/** True if the given user ID is in ADMIN_USER_IDS (unlimited access everywhere, including multi-business). */
+export function isUserAdmin(userId: string): boolean {
+  const adminIds = getAdminUserIds();
+  return adminIds.length > 0 && adminIds.includes(normalizeUuid(userId));
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,18 @@ export function BusinessSwitcher() {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
 
+  const fetchList = useCallback(() => {
+    fetch('/api/organization/list')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.organizations)) setOrganizations(data.organizations);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     fetch('/api/organization/list')
       .then((res) => res.json())
       .then((data) => {
@@ -44,6 +54,12 @@ export function BusinessSwitcher() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const handler = () => fetchList();
+    window.addEventListener('businesses-updated', handler);
+    return () => window.removeEventListener('businesses-updated', handler);
+  }, [fetchList]);
 
   const current = organizations.find((o) => o.is_current) ?? organizations[0];
 

@@ -41,7 +41,7 @@ import {
 import type { UserDisplay } from '@/types/dashboard';
 import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
 import type { FeatureKey } from '@/lib/plan-config';
-import { AddBusinessDialog } from '@/components/dashboard/add-business-dialog';
+import { ManageBusinessesDialog } from '@/components/dashboard/manage-businesses-dialog';
 
 export type SubmenuItem = { nameKey: string; href: string; featureKey?: FeatureKey };
 
@@ -156,7 +156,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const featureAccess = planAccess?.featureAccess ?? {};
-  const [addBusinessOpen, setAddBusinessOpen] = useState(false);
+  const [manageBusinessesOpen, setManageBusinessesOpen] = useState(false);
 
   function isLocked(featureKey?: FeatureKey): boolean {
     if (!featureKey) return false;
@@ -271,11 +271,11 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
                 className="flex cursor-pointer items-center gap-2"
                 onSelect={(e) => {
                   e.preventDefault();
-                  setAddBusinessOpen(true);
+                  setManageBusinessesOpen(true);
                 }}
               >
                 <Building2 className="h-4 w-4" />
-                {t('addBusiness')}
+                {t('manageBusinesses')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -290,7 +290,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <AddBusinessDialog open={addBusinessOpen} onOpenChange={setAddBusinessOpen} />
+          <ManageBusinessesDialog open={manageBusinessesOpen} onOpenChange={setManageBusinessesOpen} />
         </div>
       )}
       <nav className="flex flex-1 flex-col overflow-auto p-3" aria-label={t('navAriaLabel')}>

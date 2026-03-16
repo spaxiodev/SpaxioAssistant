@@ -34,18 +34,27 @@ export function AddBusinessDialog({ open, onOpenChange }: Props) {
     if (!open) return;
     setError('');
     setBusinessName('');
-    fetch('/api/organization/can-create')
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+    fetch('/api/organization/can-create', { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setCanCreate(data.can_create === true);
         setMax(data.max ?? 1);
         setOwnedCount(data.owned_count ?? 0);
       })
-      .catch(() => setCanCreate(false));
+      .catch((e) => {
+        if (e?.name === 'AbortError') console.warn('[AddBusiness] can-create request timed out');
+        setCanCreate(true);
+        setMax(1);
+        setOwnedCount(0);
+      })
+      .finally(() => clearTimeout(timeoutId));
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Business is created only when the user clicks Create (this submit). Opening the dialog or typing a name does nothing.
     setError('');
     setSubmitting(true);
     try {
