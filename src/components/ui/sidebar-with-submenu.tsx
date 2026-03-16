@@ -38,6 +38,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useDashboardSidebar } from '@/contexts/dashboard-sidebar-context';
 import type { UserDisplay } from '@/types/dashboard';
 import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
 import type { FeatureKey } from '@/lib/plan-config';
@@ -51,12 +53,14 @@ const Menu = ({
   labelKey,
   icon: Icon,
   defaultOpen,
+  onNavClick,
 }: {
   children?: React.ReactNode;
   items: SubmenuItem[];
   labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   defaultOpen?: boolean;
+  onNavClick?: () => void;
 }) => {
   const pathname = usePathname();
   const isActiveSection = items.some(
@@ -95,6 +99,7 @@ const Menu = ({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onNavClick}
                   className={cn(
                     'flex items-center gap-2 rounded-lg px-2 py-2 transition-all duration-150',
                     isActive
@@ -150,7 +155,11 @@ function getInitials(fullName: string | null, email: string | null): string {
   return '?';
 }
 
-export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: SidebarWithSubmenuProps) {
+type SidebarContentProps = SidebarWithSubmenuProps & {
+  onNavClick?: () => void;
+};
+
+function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('dashboard');
@@ -211,9 +220,10 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
   ];
 
   return (
-    <aside className="fixed left-0 top-0 z-10 flex h-screen w-56 flex-col border-r border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10">
+    <>
       <Link
         href="/dashboard"
+        onClick={onNavClick}
         className="flex h-16 items-center gap-3 px-4 font-semibold text-foreground shadow-[0_1px_0_0_hsl(var(--border)/0.22)]"
       >
         <img src="/icon.png" alt="" className="h-8 w-8 shrink-0 object-contain" aria-hidden />
@@ -244,13 +254,13 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="right" className="w-56 shadow-lg">
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/account" className="flex cursor-pointer items-center gap-2">
+                <Link href="/dashboard/account" className="flex cursor-pointer items-center gap-2" onClick={onNavClick}>
                   <User className="h-4 w-4" />
                   {t('account')}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" className="flex cursor-pointer items-center gap-2">
+                <Link href="/dashboard/settings" className="flex cursor-pointer items-center gap-2" onClick={onNavClick}>
                   <Settings className="h-4 w-4" />
                   {t('settingsTitle')}
                 </Link>
@@ -259,6 +269,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
                 <Link
                   href="/dashboard/team"
                   className="flex cursor-pointer items-center gap-2"
+                  onClick={onNavClick}
                 >
                   <UserPlus className="h-4 w-4" />
                   {t('teamMembers')}
@@ -306,6 +317,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onNavClick}
                   style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined}
                   className={cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
@@ -327,7 +339,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
           </NavSection>
 
           <NavSection labelKey="navSectionCrm">
-            <Menu items={crmSubmenu} labelKey="crm" icon={Users} />
+            <Menu items={crmSubmenu} labelKey="crm" icon={Users} onNavClick={onNavClick} />
           </NavSection>
 
           <NavSection labelKey="navSectionActivity">
@@ -339,6 +351,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onNavClick}
                   className={cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                     isActive
@@ -365,6 +378,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onNavClick}
                   className={cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                     isActive
@@ -385,6 +399,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
           <NavSection labelKey="navSectionAccount">
             <Link
               href="/dashboard/billing"
+              onClick={onNavClick}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                 pathname === '/dashboard/billing' || pathname.startsWith('/dashboard/billing/')
@@ -395,11 +410,45 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
               <CreditCard className={cn('h-5 w-5 shrink-0', pathname.startsWith('/dashboard/billing') && 'text-primary')} />
               {t('billingTitle')}
             </Link>
-            <Menu items={setupSubmenu} labelKey="installAndSettings" icon={Settings} />
+            <Menu items={setupSubmenu} labelKey="installAndSettings" icon={Settings} onNavClick={onNavClick} />
           </NavSection>
 
         </div>
       </nav>
-    </aside>
+    </>
+  );
+}
+
+export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: SidebarWithSubmenuProps) {
+  const { open, setOpen } = useDashboardSidebar();
+
+  const sidebarClass =
+    'flex h-screen w-56 flex-col border-r border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10';
+
+  return (
+    <>
+      <aside
+        className={cn('fixed left-0 top-0 z-10 hidden md:flex', sidebarClass)}
+        aria-label="Main navigation"
+      >
+        <SidebarContent userDisplay={userDisplay} planAccess={planAccess} organizationId={organizationId} />
+      </aside>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="w-56 max-w-[85vw] border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10"
+          showCloseButton={true}
+        >
+          <div className="flex h-full flex-col">
+            <SidebarContent
+              userDisplay={userDisplay}
+              planAccess={planAccess}
+              organizationId={organizationId}
+              onNavClick={() => setOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

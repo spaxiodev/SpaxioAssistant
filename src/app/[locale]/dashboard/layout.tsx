@@ -6,8 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription } from '@/lib/entitlements';
 import { getPlanAccess } from '@/lib/plan-access';
-import { Sidebar } from '@/components/dashboard/sidebar';
-import { Header } from '@/components/dashboard/header';
+import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client';
 import { HelpChatGate } from '@/components/help-chat-gate';
 import { LazyToaster } from '@/components/lazy-toaster';
 import { OnboardingGate } from '@/components/dashboard/onboarding-gate';
@@ -65,14 +64,14 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <div className="relative flex bg-transparent">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.12),transparent_24%)]" />
-        <Sidebar organizationId={orgId} userDisplay={userDisplay} planAccess={planAccess} />
-        <div className="relative ml-56 flex min-h-screen flex-1 flex-col">
-          <Header organizationId={orgId} showUpgradeButton={showUpgradeButton} />
-          <main className="flex-1 p-6">{children}</main>
-        </div>
-      </div>
+      <DashboardLayoutClient
+        organizationId={orgId}
+        userDisplay={userDisplay}
+        planAccess={planAccess}
+        showUpgradeButton={showUpgradeButton}
+      >
+        {children}
+      </DashboardLayoutClient>
       <HelpChatGate />
       <OnboardingGate needsOnboarding={needsOnboarding} />
       <LazyToaster />

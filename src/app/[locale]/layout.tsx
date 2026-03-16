@@ -5,6 +5,8 @@ import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 import { Footer } from '@/components/footer';
 import { FooterGate } from '@/components/footer-gate';
+import { GuestBanner } from '@/components/guest-banner';
+import { GuestTeaserGate } from '@/components/guest-teaser-gate';
 import { PublicHeaderGate } from '@/components/public-header-gate';
 
 type Props = {
@@ -34,7 +36,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <>
       <PublicHeaderGate />
-      {children}
+      <GuestBanner />
+      <GuestTeaserGate>
+        {children}
+      </GuestTeaserGate>
       <FooterGate>
         <Footer />
       </FooterGate>

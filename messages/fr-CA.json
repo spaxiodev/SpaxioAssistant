@@ -2,6 +2,8 @@
   "common": {
     "appName": "Spaxio Assistant",
     "accountMenu": "Menu compte",
+    "menu": "Ouvrir le menu",
+    "more": "Plus d'options",
     "billing": "Facturation",
     "home": "Accueil",
     "pricing": "Tarifs",
@@ -15,7 +17,9 @@
     "tryAgain": "Réessayer",
     "email": "E-mail",
     "password": "Mot de passe",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "signUpToSeeMore": "Inscrivez-vous pour en voir plus.",
+    "signUpToSeeFullSite": "Inscrivez-vous pour voir le site en entier."
   },
   "home": {
     "title": "Spaxio Assistant",
