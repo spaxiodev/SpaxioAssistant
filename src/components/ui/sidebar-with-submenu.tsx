@@ -423,12 +423,12 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
   const { open, setOpen } = useDashboardSidebar();
 
   const sidebarClass =
-    'flex h-screen w-56 flex-col border-r border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10';
+    'h-screen w-56 border-r border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10';
 
   return (
     <>
       <aside
-        className={cn('fixed left-0 top-0 z-10 hidden md:flex', sidebarClass)}
+        className={cn('fixed left-0 top-0 z-10 hidden md:flex md:flex-col', sidebarClass)}
         aria-label="Main navigation"
       >
         <SidebarContent userDisplay={userDisplay} planAccess={planAccess} organizationId={organizationId} />
