@@ -73,8 +73,9 @@ function InviteAcceptContent() {
   }, []);
 
   const acceptPath = `/${locale}/invite/accept${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-  const loginRedirect = `/${locale}/login?redirectTo=${encodeURIComponent(acceptPath)}`;
-  const signupRedirect = `/${locale}/signup?redirectTo=${encodeURIComponent(acceptPath)}`;
+  // Use object form so next-intl Link keeps the query string and doesn't mangle the path
+  const loginHref = { pathname: '/login', query: { redirectTo: acceptPath } };
+  const signupHref = { pathname: '/signup', query: { redirectTo: acceptPath } };
 
   async function handleAccept() {
     if (!token || !details || !('valid' in details) || !details.valid) return;
@@ -162,10 +163,10 @@ function InviteAcceptContent() {
               <p className="text-center text-sm text-muted-foreground">{t('signInToAccept')}</p>
               <div className="flex gap-2">
                 <Button asChild className="flex-1">
-                  <Link href={loginRedirect}>{t('signIn')}</Link>
+                  <Link href={loginHref}>{t('signIn')}</Link>
                 </Button>
                 <Button asChild variant="outline" className="flex-1">
-                  <Link href={signupRedirect}>{t('createAccount')}</Link>
+                  <Link href={signupHref}>{t('createAccount')}</Link>
                 </Button>
               </div>
             </div>
