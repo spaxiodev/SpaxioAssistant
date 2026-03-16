@@ -1,6 +1,10 @@
 /**
  * Send team invitation email via Resend.
  * Branded Spaxio Assistant invite email with secure accept link.
+ *
+ * Resend does not allow Gmail/Yahoo etc. as "from"; we fall back to onboarding@resend.dev.
+ * With that sender, Resend only delivers to the account's signup email. To send to any
+ * invitee, verify a domain in Resend and set RESEND_FROM_EMAIL (e.g. noreply@yourdomain.com).
  */
 
 import { Resend } from 'resend';

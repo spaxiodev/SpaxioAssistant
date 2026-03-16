@@ -367,6 +367,7 @@
     "removeMemberConfirm": "Retirer {name} de l'équipe ? Ils n'auront plus accès à cet espace.",
     "inviteSent": "Invitation envoyée à {email}",
     "inviteFailed": "Échec de l'envoi. Réessayez.",
+    "inviteCreatedEmailNotSent": "Invitation créée mais l'e-mail n'a pas pu être envoyé. Vérifiez votre domaine dans Resend et définissez RESEND_FROM_EMAIL pour envoyer à n'importe qui.",
     "inviteResent": "Invitation renvoyée.",
     "inviteRevoked": "Invitation révoquée.",
     "memberUpdated": "Permissions mises à jour.",

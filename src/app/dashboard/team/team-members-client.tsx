@@ -127,7 +127,15 @@ export function TeamMembersClient() {
         toast({ title: data.error || t('inviteFailed'), variant: 'destructive' });
         return;
       }
-      toast({ title: t('inviteSent', { email }) });
+      if (data.invitation?.email_sent) {
+        toast({ title: t('inviteSent', { email }) });
+      } else {
+        toast({
+          title: t('inviteCreatedEmailNotSent'),
+          description: data.invitation?.email_error,
+          variant: 'destructive',
+        });
+      }
       setInviteEmail('');
       setInviteRoleLabel('');
       setInvitePreset('custom');
@@ -152,7 +160,15 @@ export function TeamMembersClient() {
         toast({ title: data.error || 'Failed to resend', variant: 'destructive' });
         return;
       }
-      toast({ title: t('inviteResent') });
+      if (data.email_sent) {
+        toast({ title: t('inviteResent') });
+      } else {
+        toast({
+          title: t('inviteCreatedEmailNotSent'),
+          description: data.error_message,
+          variant: 'destructive',
+        });
+      }
       fetchData();
     } catch {
       toast({ title: 'Failed to resend', variant: 'destructive' });

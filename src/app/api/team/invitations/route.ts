@@ -207,6 +207,7 @@ export async function POST(request: Request) {
         expires_at: inserted.expires_at,
         created_at: inserted.created_at,
         email_sent: emailResult.sent,
+        email_error: emailResult.sent ? undefined : (emailResult.error ?? 'Unknown error'),
       },
     });
   } catch (err) {
