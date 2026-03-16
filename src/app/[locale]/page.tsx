@@ -58,6 +58,9 @@ export default async function HomePage({ params }: Props) {
             <Button asChild size="lg" variant="outline" className="rounded-full px-7">
               <Link href="/login">{t('logIn')}</Link>
             </Button>
+            <Button asChild size="lg" variant="ghost" className="rounded-full px-7">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
           </div>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {t('browseNoAccount')}

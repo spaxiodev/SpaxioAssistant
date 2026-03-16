@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import { getClientIp } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 
-const CONTACT_EMAIL = 'polidorispaxio@gmail.com';
+const CONTACT_EMAIL = 'contact@spaxio.ca';
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;

@@ -44,15 +44,15 @@ export default async function ContactPage({ params }: Props) {
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Button asChild size="sm" className="rounded-full">
-              <a href="mailto:polidorispaxio@gmail.com">{t('contactCta')}</a>
+              <a href="mailto:contact@spaxio.ca">{t('contactCta')}</a>
             </Button>
             <p className="text-xs text-muted-foreground sm:text-sm">
               <span className="font-medium text-foreground">{t('contactEmailLabel')} </span>
               <a
-                href="mailto:polidorispaxio@gmail.com"
+                href="mailto:contact@spaxio.ca"
                 className="underline-offset-4 hover:underline"
               >
-                polidorispaxio@gmail.com
+                contact@spaxio.ca
               </a>
             </p>
           </div>
