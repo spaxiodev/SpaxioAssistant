@@ -21,8 +21,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { FollowUpCard } from '@/components/dashboard/follow-up-card';
-import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
-import { EntityDocumentsList } from '@/components/dashboard/entity-documents-list';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from 'next-intl';
 
@@ -63,17 +61,10 @@ export function QuoteRequestRowActions({ quoteRequestId }: QuoteRequestRowAction
         </SheetTrigger>
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Follow-up & documents</SheetTitle>
+            <SheetTitle>Follow-up</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-4">
-            <EntityDocumentsList quoteRequestId={quoteRequestId} />
             <FollowUpCard quoteRequestId={quoteRequestId} />
-            <GenerateDocumentActions
-              sourceType="quote_request"
-              sourceId={quoteRequestId}
-              primaryType="quote_draft"
-              primaryLabel="Make a quote draft"
-            />
           </div>
         </SheetContent>
       </Sheet>

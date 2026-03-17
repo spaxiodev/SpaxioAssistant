@@ -6,12 +6,12 @@ type Props = {
 };
 
 export default async function AiPageRoute({ params, searchParams }: Props) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const { handoff } = await searchParams;
 
   return (
     <main className="min-h-screen bg-background">
-      <AiPageClient slug={slug} handoffToken={handoff ?? undefined} />
+      <AiPageClient slug={slug} locale={locale} handoffToken={handoff ?? undefined} />
     </main>
   );
 }

@@ -9,8 +9,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { formatDate } from '@/lib/utils';
-import { EntityDocumentsList } from '@/components/dashboard/entity-documents-list';
-import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
 import { FollowUpCard } from '@/components/dashboard/follow-up-card';
 import { MemoryCard } from '@/components/dashboard/memory-card';
 import { FileText } from 'lucide-react';
@@ -119,23 +117,8 @@ function LeadDetailSheetContent({
             </div>
           )}
 
-          <EntityDocumentsList leadId={lead.id} />
           <FollowUpCard leadId={lead.id} />
           <MemoryCard subjectType="lead" subjectId={lead.id} />
-          <div className="flex flex-wrap gap-2">
-            <GenerateDocumentActions
-              sourceType="lead"
-              sourceId={lead.id}
-              primaryType="lead_summary"
-              primaryLabel="Summarize this lead"
-            />
-            <GenerateDocumentActions
-              sourceType="lead"
-              sourceId={lead.id}
-              primaryType="quote_draft"
-              primaryLabel="Make a quote draft"
-            />
-          </div>
         </div>
       </SheetContent>
     </Sheet>

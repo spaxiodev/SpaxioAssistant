@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Sparkles, PlayCircle, Code } from 'lucide-react';
+import { Sparkles, PlayCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useViewMode } from '@/contexts/view-mode-context';
@@ -39,15 +39,15 @@ export function SimpleLaunchPage() {
             <PlayCircle className="h-4 w-4" />
             Set up Chat Widget
           </Button>
-          <Button size="lg" variant="outline" className="gap-2" onClick={() => router.push('/dashboard-preview/overview')}>
+          <Button size="lg" variant="outline" className="gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
             Preview widget
           </Button>
         </CardContent>
       </Card>
 
       <SimpleDeveloperModeLink
-        developerPath="/dashboard/deployments"
-        linkLabel="Open deployments in Developer Mode"
+        developerPath="/dashboard/install"
+        linkLabel="Open Install in Developer Mode"
       />
     </div>
   );

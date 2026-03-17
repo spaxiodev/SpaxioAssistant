@@ -6,26 +6,16 @@ import {
   Bot,
   Users,
   MessageCircle,
-  Inbox,
   BookOpen,
   Workflow,
-  BarChart3,
-  Plug,
-  Code,
   CreditCard,
   ChevronDown,
   User,
   Settings,
   LogOut,
   UserPlus,
-  FileText,
-  Webhook,
-  Zap,
-  Calendar,
   Sparkles,
   Lock,
-  Building2,
-  PlayCircle,
   HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,7 +36,6 @@ import { useViewMode } from '@/contexts/view-mode-context';
 import type { UserDisplay } from '@/types/dashboard';
 import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
 import type { FeatureKey } from '@/lib/plan-config';
-import { ManageBusinessesDialog } from '@/components/dashboard/manage-businesses-dialog';
 
 export type SubmenuItem = { nameKey: string; href: string; featureKey?: FeatureKey };
 
@@ -169,7 +158,6 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
   const tCommon = useTranslations('common');
   const { mode, setMode } = useViewMode();
   const featureAccess = planAccess?.featureAccess ?? {};
-  const [manageBusinessesOpen, setManageBusinessesOpen] = useState(false);
 
   function isLocked(featureKey?: FeatureKey): boolean {
     if (!featureKey) return false;
@@ -186,41 +174,19 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
   const displayName = userDisplay?.fullName?.trim() || userDisplay?.email || t('account');
   const initials = getInitials(userDisplay?.fullName ?? null, userDisplay?.email ?? null);
 
-  const workspaceNav = [
+  const coreNav = [
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
     { href: '/dashboard/ai-setup', key: 'aiSetupAssistant', icon: Sparkles },
-    { href: '/dashboard/business-setup', key: 'businessSetup', icon: Building2 },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
-    { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
-    { href: '/dashboard/actions', key: 'aiActions', icon: Zap, featureKey: 'ai_actions' as FeatureKey },
     { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
-  ];
-
-  const crmSubmenu: SubmenuItem[] = [
-    { nameKey: 'leads', href: '/dashboard/leads' },
-    { nameKey: 'contacts', href: '/dashboard/contacts' },
-    { nameKey: 'companies', href: '/dashboard/companies' },
-    { nameKey: 'deals', href: '/dashboard/deals' },
-    { nameKey: 'tickets', href: '/dashboard/tickets' },
-    { nameKey: 'quoteRequests', href: '/dashboard/quote-requests' },
-  ];
-
-  const activityNav = [
-    { href: '/dashboard/inbox', key: 'inbox', icon: Inbox, featureKey: 'inbox' as FeatureKey },
+    { href: '/dashboard/install', key: 'install', icon: MessageCircle },
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
-    { href: '/dashboard/bookings', key: 'bookings', icon: Calendar, featureKey: 'bookings' as FeatureKey },
-    { href: '/dashboard/documents', key: 'documents', icon: FileText },
-    { href: '/dashboard/analytics', key: 'analytics', icon: BarChart3 },
+    { href: '/dashboard/leads', key: 'leads', icon: Users },
+    { href: '/dashboard/quote-requests', key: 'quoteRequests', icon: Users },
+    { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
+    { href: '/dashboard/team', key: 'teamMembers', icon: UserPlus, featureKey: 'team_members' as FeatureKey },
   ];
 
-  const developersNav = [
-    { href: '/dashboard/deployments', key: 'deployments', icon: Code },
-    { href: '/dashboard/ai-pages', key: 'aiPages', icon: FileText },
-    { href: '/dashboard/webhooks', key: 'webhooks', icon: Webhook, featureKey: 'webhooks' as FeatureKey },
-    { href: '/dashboard/integrations', key: 'integrations', icon: Plug, featureKey: 'integrations' as FeatureKey },
-  ];
-
-  // Single Settings link; Install & Pricing live under Business Setup
   const settingsHref = '/dashboard/settings';
 
   const isSimpleMode = mode === 'simple';
@@ -284,16 +250,6 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="flex cursor-pointer items-center gap-2"
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setManageBusinessesOpen(true);
-                }}
-              >
-                <Building2 className="h-4 w-4" />
-                {t('manageBusinesses')}
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="flex cursor-pointer items-center gap-2 text-muted-foreground focus:text-destructive"
@@ -307,7 +263,6 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <ManageBusinessesDialog open={manageBusinessesOpen} onOpenChange={setManageBusinessesOpen} />
         </div>
       )}
       <nav className="flex flex-1 flex-col overflow-auto p-3" aria-label={t('navAriaLabel')}>
@@ -367,20 +322,20 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Users className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Leads &amp; Sales</span>
+                  <span className="min-w-0 flex-1 truncate">Leads</span>
                 </Link>
                 <Link
-                  href="/dashboard/deployments"
+                  href="/dashboard/install"
                   onClick={onNavClick}
                   className={cn(
                     'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/deployments')
+                    pathname.startsWith('/dashboard/install')
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
                       : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
-                  <PlayCircle className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Launch</span>
+                  <MessageCircle className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">Install</span>
                 </Link>
                 <Link
                   href="/help"
@@ -419,7 +374,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   }}
                   className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
-                  <Code className="h-5 w-5 shrink-0" />
+                  <Lock className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">Switch to Developer Mode</span>
                 </button>
               </NavSection>
@@ -427,7 +382,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
           ) : (
             <>
               <NavSection labelKey="navSectionWorkspace">
-                {workspaceNav.map((item) => {
+                {coreNav.map((item) => {
                   const isActive =
                     pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                   const Icon = item.icon;
@@ -452,64 +407,6 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                         className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')}
                         style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined}
                       />
-                      <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
-                      {locked && (
-                        <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />
-                      )}
-                    </Link>
-                  );
-                })}
-              </NavSection>
-
-              <NavSection labelKey="navSectionCrm">
-                <Menu items={crmSubmenu} labelKey="crm" icon={Users} onNavClick={onNavClick} />
-              </NavSection>
-
-              <NavSection labelKey="navSectionActivity">
-                {activityNav.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                  const Icon = item.icon;
-                  const locked = isLocked(item.featureKey);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onNavClick}
-                      className={cn(
-                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                        isActive
-                          ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                          : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
-                      )}
-                    >
-                      <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
-                      <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
-                      {locked && (
-                        <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />
-                      )}
-                    </Link>
-                  );
-                })}
-              </NavSection>
-
-              <NavSection labelKey="navSectionDevelopers">
-                {developersNav.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                  const Icon = item.icon;
-                  const locked = isLocked(item.featureKey);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onNavClick}
-                      className={cn(
-                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                        isActive
-                          ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                          : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
-                      )}
-                    >
-                      <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
                       <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
                       {locked && (
                         <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />

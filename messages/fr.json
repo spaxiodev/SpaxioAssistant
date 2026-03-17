@@ -679,4 +679,20 @@
     "accept": "Accepter",
     "and": "et"
   }
+  ,
+  "aiPage": {
+    "placeholder": "Écrivez votre message…",
+    "send": "Envoyer",
+    "thinking": "Réflexion…",
+    "quickQuoteButton": "Je veux un devis",
+    "quickQuoteUserMessage": "Je veux un devis",
+    "quoteFormIntro": "Bien sûr — remplissez le formulaire ci-dessous puis envoyez-le pour obtenir votre prix.",
+    "quoteFormTitle": "Formulaire de devis",
+    "backToChat": "Retour au chat",
+    "name": "Nom",
+    "email": "E-mail",
+    "phoneOptional": "Téléphone (optionnel)",
+    "submitAndGetPrice": "Envoyer et obtenir le prix",
+    "currency": "Devise"
+  }
 }

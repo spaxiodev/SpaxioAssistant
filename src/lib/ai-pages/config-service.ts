@@ -19,7 +19,7 @@ export async function getPublishedPageBySlug(
 
   const { data, error } = await supabase
     .from('ai_pages')
-    .select('id, organization_id, title, slug, description, page_type, welcome_message, intro_copy, trust_copy, branding_config, intake_schema')
+    .select('id, organization_id, title, slug, description, page_type, welcome_message, intro_copy, trust_copy, branding_config, intake_schema, pricing_profile_id')
     .eq('slug', normalizedSlug)
     .eq('is_published', true)
     .eq('is_enabled', true)

@@ -2,7 +2,7 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
-import { BarChart3, MessageSquare, Users, FileText, Workflow, Ticket } from 'lucide-react';
+import { BarChart3, MessageSquare, Users, FileText, Workflow } from 'lucide-react';
 import { Link } from '@/components/intl-link';
 
 export default async function AnalyticsPage() {
@@ -20,7 +20,6 @@ export default async function AnalyticsPage() {
     { count: conversationsCount },
     { count: quoteRequestsCount },
     { count: automationRunsCount },
-    { count: ticketsCount },
   ] = await Promise.all([
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     widgetIds.length
@@ -31,7 +30,6 @@ export default async function AnalyticsPage() {
       .from('automation_runs')
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', orgId),
-    supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
   ]);
 
   let messagesCount: number | null = 0;
@@ -123,18 +121,6 @@ export default async function AnalyticsPage() {
             <p className="text-2xl font-bold">{automationRunsCount ?? 0}</p>
             <p className="text-xs text-muted-foreground">
               <Link href="/dashboard/automations" className="underline">View automations</Link>
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('tickets')}</CardTitle>
-            <Ticket className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{ticketsCount ?? 0}</p>
-            <p className="text-xs text-muted-foreground">
-              <Link href="/dashboard/tickets" className="underline">{t('viewAllTickets')}</Link>
             </p>
           </CardContent>
         </Card>

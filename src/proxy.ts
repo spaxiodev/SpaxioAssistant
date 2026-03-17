@@ -49,20 +49,14 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Only dashboard requires sign-in; guests get a preview route
+    // Dashboard requires sign-in
     const isDashboard =
       path === `/${locale}/dashboard` || path.startsWith(`/${locale}/dashboard/`);
-    const isDashboardPreview =
-      path === `/${locale}/dashboard-preview` || path.startsWith(`/${locale}/dashboard-preview/`);
     const isAuthPage =
       path === `/${locale}/login` || path === `/${locale}/signup`;
 
     if (isDashboard && !user) {
-      return NextResponse.redirect(new URL(`/${locale}/dashboard-preview`, request.url));
-    }
-
-    if (isDashboardPreview && user) {
-      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+      return NextResponse.redirect(new URL(`/${locale}/login?redirectTo=/${locale}/dashboard`, request.url));
     }
 
     if (isAuthPage && user) {

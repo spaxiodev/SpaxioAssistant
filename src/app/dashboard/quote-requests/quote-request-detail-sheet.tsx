@@ -7,8 +7,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { formatDate } from '@/lib/utils';
-import { EntityDocumentsList } from '@/components/dashboard/entity-documents-list';
-import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
 import { FollowUpCard } from '@/components/dashboard/follow-up-card';
 
 type QuoteRequestRow = {
@@ -74,14 +72,7 @@ export function QuoteRequestDetailSheet({
             })}
           </dl>
 
-          <EntityDocumentsList quoteRequestId={request.id} />
           <FollowUpCard quoteRequestId={request.id} />
-          <GenerateDocumentActions
-            sourceType="quote_request"
-            sourceId={request.id}
-            primaryType="quote_draft"
-            primaryLabel="Make a quote draft"
-          />
         </div>
       </SheetContent>
     </Sheet>

@@ -7,7 +7,6 @@ import {
   Wand2,
   Upload,
   Users,
-  PlayCircle,
   Globe,
   Loader2,
   CheckCircle2,
@@ -41,9 +40,7 @@ type SetupRunStatus =
 
 type OverviewData = {
   leadsCount?: number;
-  conversationsCount?: number;
-  inbox?: { conversations_total: number; conversations_open: number };
-  actions?: { invocations_last_30d: number };
+  quoteRequestsCount?: number;
 };
 
 export function SimpleDashboardOverview() {
@@ -87,20 +84,19 @@ export function SimpleDashboardOverview() {
     let cancelled = false;
     async function fetchOverview() {
       try {
-        const [analyticsRes, leadsRes] = await Promise.all([
-          fetch('/api/analytics/overview'),
+        const [leadsRes, quotesRes] = await Promise.all([
           fetch('/api/leads?limit=100'),
+          fetch('/api/inbox/leads?type=quote_requests&limit=100'),
         ]);
         if (cancelled) return;
         const overviewData: OverviewData = {};
-        if (analyticsRes.ok) {
-          const analytics = await analyticsRes.json();
-          overviewData.inbox = analytics.inbox;
-          overviewData.actions = analytics.actions;
-        }
         if (leadsRes.ok) {
           const leadsData = await leadsRes.json();
           overviewData.leadsCount = Array.isArray(leadsData.leads) ? leadsData.leads.length : 0;
+        }
+        if (quotesRes.ok) {
+          const quotesData = await quotesRes.json();
+          overviewData.quoteRequestsCount = Array.isArray(quotesData.items) ? quotesData.items.length : 0;
         }
         if (!cancelled) setOverview(overviewData);
       } catch {
@@ -146,7 +142,7 @@ export function SimpleDashboardOverview() {
     percentComplete < 100 && 'Complete setup so your assistant can go live on your website.',
     (overview?.leadsCount ?? 0) === 0 && 'Add your website or content so the assistant can capture leads.',
     (overview?.leadsCount ?? 0) > 0 && 'Review new leads and follow up from the Leads page.',
-    'Preview your chat widget before adding it to your site.',
+    'Install the widget on your site and preview it.',
   ].filter(Boolean) as string[];
 
   if (recommendations.length === 0) {
@@ -228,7 +224,7 @@ export function SimpleDashboardOverview() {
       )}
 
       {/* Business snapshot / recent activity */}
-      {!loadingOverview && (overview?.leadsCount !== undefined || overview?.inbox || overview?.actions) && (
+      {!loadingOverview && (overview?.leadsCount !== undefined || overview?.quoteRequestsCount !== undefined) && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(overview?.leadsCount ?? 0) >= 0 && (
             <SimpleStatusCard
@@ -238,19 +234,12 @@ export function SimpleDashboardOverview() {
               icon={<Users className="h-4 w-4" />}
             />
           )}
-          {overview?.inbox && (
+          {(overview?.quoteRequestsCount ?? 0) >= 0 && (
             <SimpleStatusCard
-              title="Conversations"
-              value={overview.inbox.conversations_total}
-              subtitle={`${overview.inbox.conversations_open} open`}
+              title="Quote requests"
+              value={loadingOverview ? '…' : (overview?.quoteRequestsCount ?? 0)}
+              subtitle="Recent requests"
               icon={<MessageSquare className="h-4 w-4" />}
-            />
-          )}
-          {overview?.actions && (
-            <SimpleStatusCard
-              title="AI actions (30 days)"
-              value={overview.actions.invocations_last_30d}
-              icon={<Zap className="h-4 w-4" />}
             />
           )}
         </div>
@@ -267,10 +256,10 @@ export function SimpleDashboardOverview() {
             onClick={() => router.push('/dashboard/settings')}
           />
           <SimpleQuickActionCard
-            title="Preview widget"
-            description="See how your chat widget looks on desktop and mobile."
-            icon={PlayCircle}
-            onClick={() => router.push('/dashboard-preview/overview')}
+            title="Install & preview widget"
+            description="Copy the code for your website and preview how it looks."
+            icon={Globe}
+            onClick={() => router.push('/dashboard/install')}
           />
           <SimpleQuickActionCard
             title="Review leads"

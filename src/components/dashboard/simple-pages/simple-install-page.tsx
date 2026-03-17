@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { MessageCircle, Copy, ExternalLink, Layout, FileText } from 'lucide-react';
+import { MessageCircle, Copy } from 'lucide-react';
 import { useViewMode } from '@/contexts/view-mode-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,54 +24,25 @@ export function SimpleInstallPage() {
   return (
     <div className="space-y-8">
       <SimplePageHeader
-        title="Get your assistant live"
-        description="Add the chat widget to your website, create a quote or support page, or preview how it looks."
+        title="Install your widget"
+        description="Copy the code snippet for your website and preview how it looks."
         icon={<MessageCircle className="h-6 w-6" />}
       />
 
-      {/* Plain-language options */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SimpleActionCard
-          title="Add chat widget to my site"
-          description="Copy a short code snippet and paste it before the closing body tag on your site."
-          icon={<MessageCircle className="h-5 w-5" />}
-        >
+      <Card>
+        <CardHeader>
+          <CardTitle>Install code</CardTitle>
+          <CardDescription>
+            Copy a short script tag and paste it into your website HTML just before the closing {'</body>'} tag.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <Button className="w-full gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
             <Copy className="h-4 w-4" />
-            Get install code
+            Open Install code
           </Button>
-        </SimpleActionCard>
-        <SimpleActionCard
-          title="Create a quote page"
-          description="A dedicated page where visitors can request a quote."
-          icon={<FileText className="h-5 w-5" />}
-        >
-          <Button variant="outline" className="w-full gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
-            <ExternalLink className="h-4 w-4" />
-            Set up in Developer Mode
-          </Button>
-        </SimpleActionCard>
-        <SimpleActionCard
-          title="Create a support page"
-          description="A page focused on help and support conversations."
-          icon={<Layout className="h-5 w-5" />}
-        >
-          <Button variant="outline" className="w-full gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
-            <ExternalLink className="h-4 w-4" />
-            Set up in Developer Mode
-          </Button>
-        </SimpleActionCard>
-        <SimpleActionCard
-          title="Preview my assistant"
-          description="See how the chat widget looks on desktop and mobile before going live."
-          icon={<MessageCircle className="h-5 w-5" />}
-        >
-          <Button variant="outline" className="w-full gap-2" onClick={() => router.push('/dashboard-preview/overview')}>
-            <ExternalLink className="h-4 w-4" />
-            Preview widget
-          </Button>
-        </SimpleActionCard>
-      </div>
+        </CardContent>
+      </Card>
 
       <SimpleAiAssistPanel
         title="AI can help"

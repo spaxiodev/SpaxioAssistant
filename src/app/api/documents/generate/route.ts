@@ -2,6 +2,10 @@
  * POST /api/documents/generate
  * Body: { generationType, sourceType, sourceId?, templateId? }
  * Loads context from DB, generates document via AI, saves to documents table. Org-scoped.
+ *
+ * DEPRECATED (UI removed):
+ * Document templates / document generation were removed from the dashboard to keep the product focused.
+ * This endpoint is kept temporarily for internal/future use only and should not be linked from any UI.
  */
 
 import { NextResponse } from 'next/server';

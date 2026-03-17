@@ -7,8 +7,6 @@ import { LeadRowActions } from '../../../dashboard/leads/lead-row-actions';
 import { LeadDetailSheet } from '../../../dashboard/leads/lead-detail-sheet';
 import { FollowUpCard } from '@/components/dashboard/follow-up-card';
 import { MemoryCard } from '@/components/dashboard/memory-card';
-import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
-import { EntityDocumentsList } from '@/components/dashboard/entity-documents-list';
 import { getTranslations } from 'next-intl/server';
 
 function priorityLabel(priority: string | null): string {
@@ -93,21 +91,6 @@ function LeadCard({
         )}
         <FollowUpCard leadId={lead.id} />
         <MemoryCard subjectType="lead" subjectId={lead.id} />
-        <div className="flex flex-wrap gap-2">
-          <GenerateDocumentActions
-            sourceType="lead"
-            sourceId={lead.id}
-            primaryType="lead_summary"
-            primaryLabel="Summarize this lead"
-          />
-          <GenerateDocumentActions
-            sourceType="lead"
-            sourceId={lead.id}
-            primaryType="quote_draft"
-            primaryLabel="Make a quote draft"
-          />
-        </div>
-        <EntityDocumentsList leadId={lead.id} />
         <dl className="grid gap-3 sm:grid-cols-2">
           {fields.map(
             (f) =>

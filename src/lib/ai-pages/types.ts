@@ -141,6 +141,7 @@ export interface PublicAiPageConfig {
   branding_config: Record<string, unknown>;
   intake_schema: IntakeFieldSchema[];
   organization_id: string;
+  pricing_profile_id?: string | null;
 }
 
 /** Widget-to-page handoff payload (allowlisted, server-controlled). */

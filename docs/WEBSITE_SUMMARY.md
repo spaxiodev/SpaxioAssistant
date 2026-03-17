@@ -66,36 +66,103 @@ Dashboard is under `/[locale]/dashboard` with a sidebar and header. **Subscripti
 
 ### 4.0 Dashboard view modes (Simple vs Developer)
 
-The dashboard supports two **view modes** that change the entire in-app experience:
+The dashboard supports two **view modes** that change navigation, copy, and (in many cases) which UI renders for the same URL:
 
-- **Simple Mode** — A streamlined experience for non-technical users: plain-language labels (e.g. “Home”, “Setup with AI”, “Chat Widget”, “Leads”, “Team”, “Launch”, “Help”), simplified main content per route, and a “Do It For Me” / AI-guided setup emphasis. The main content area is driven by **Simple Mode** pages (e.g. `SimpleDashboardOverview`, `SimpleAiSetupPage`, `SimpleInstallPage`, `SimpleLeadsPage`, `SimpleLaunchPage`, and generic placeholder pages for Knowledge, Conversations, Analytics, Billing, Account).
-- **Developer Mode** — The full dashboard: all workspace, CRM, activity, and developer sections with full feature set and technical labels.
+- **Simple Mode** — Streamlined, plain-language navigation and “get live fast” workflows. The URL stays under `/dashboard/...`, but the main content is rendered by a **Simple Mode router** that swaps in simplified page components.
+- **Developer Mode** — Full dashboard with all workspace, CRM, activity, and developer sections (including plan-gated sections).
 
-**Behavior:**
+**How it works (implementation details):**
 
-- **Toggle:** In the dashboard header (desktop), a control shows “Simple Mode” and “Developer Mode” with a **Switch**; the chosen mode is persisted in `localStorage` under the key `spaxio-view-mode`.
-- **Context:** `ViewModeProvider` (in `view-mode-context.tsx`) supplies `mode` and `setMode`; `useViewMode()` is used by the header, sidebar, and content.
-- **Content routing:** `ModeAwareContent` wraps the main area: in Developer Mode it renders the normal server-rendered page (children); in Simple Mode it renders `SimpleModeRouter`, which maps the current pathname to the corresponding Simple-mode page component.
-- **Sidebar:** The sidebar (`sidebar-with-submenu`) shows different navigation in Simple Mode (Home, Setup with AI, Chat Widget, Automations, Leads, Team, Launch, Help, Settings, plus a “Switch to Developer Mode” button) vs Developer Mode (full Workspace, CRM, Activity, Developers, Account sections).
-- **Per-page gating:** Some pages (e.g. Knowledge) use `ViewModeClientGate` to show a simplified block (e.g. `SimpleKnowledgeContent` with “Let AI organize your content”) in Simple Mode while still showing the full developer content when needed.
+- **Mode toggle**: In the dashboard header (desktop), a “Simple / Developer” control with a Switch sets the mode.
+- **Persistence**: Saved in `localStorage` under `spaxio-view-mode`.
+- **Context**: `ViewModeProvider` supplies `mode` and `setMode`; `useViewMode()` is used by header, sidebar, and content.
+- **Mode-aware main content**: `ModeAwareContent` renders the normal page in Developer Mode, and renders `SimpleModeRouter` in Simple Mode.
+- **Per-page gating**: Some pages use `ViewModeClientGate` to render a simplified block in Simple Mode while preserving the full Developer Mode UI.
+- **Plan gating**: Some nav items show a lock icon when the current plan does not include the feature (e.g. inbox, automations, webhooks, integrations, bookings, AI actions).
 
-**Simple Mode pages (summary):**
+**Dashboard header options (available regardless of mode):**
 
-| Route / area | Simple Mode component | Purpose |
-|--------------|------------------------|--------|
-| `/dashboard` | `SimpleDashboardOverview` | Welcome, “Do It For Me” AI setup card, quick actions (Set up with AI, Add content, Chat Widget, Leads, Preview widget), setup progress, AI recommendations. |
-| `/dashboard/ai-setup` | `SimpleAiSetupPage` | “Do It For Me” CTA and existing AI setup client. |
-| `/dashboard/install` | `SimpleInstallPage` | Chat widget install flow. |
-| `/dashboard/agents` | `SimpleAgentsPage` | Agents in simple layout. |
-| `/dashboard/automations` | `SimpleAutomationsPage` | Automations in simple layout. |
-| `/dashboard/leads`, contacts, quote-requests | `SimpleLeadsPage` | Leads (and related) in simple layout. |
-| `/dashboard/team` | `SimpleTeamPage` | Team in simple layout. |
-| `/dashboard/settings` | `SimpleSettingsPage` | Settings in simple layout. |
-| `/dashboard/deployments` | `SimpleLaunchPage` | Launch / deploy; link to widget preview. |
-| `/dashboard/knowledge` | `SimpleGenericPage` (“Add your learning materials”) | Placeholder with AI prompt for importing and organizing materials. |
-| `/dashboard/inbox`, conversations | `SimpleGenericPage` (“Conversations”) | Placeholder with title and optional AI prompt. |
-| `/dashboard/analytics` | `SimpleGenericPage` (“Analytics”) | Placeholder. |
-| `/dashboard/billing`, account | `SimpleGenericPage` | Title-only placeholder. |
+- **View mode**: “Simple” button, Switch, “Developer” button.
+- **Desktop quick links**: Locale switcher, theme toggle, Billing, Pricing, Settings, Help, Home, Sign out.
+- **Mobile menu**: Equivalent links in a dropdown (“More options”), plus locale switcher and sign out.
+
+#### 4.0.1 Simple Mode — every navigation option (sidebar)
+
+Simple Mode uses a reduced sidebar with friendly labels:
+
+- **Home** → `/dashboard`
+- **AI Setup** → `/dashboard/ai-setup`
+- **Conversations** → `/dashboard/conversations` (also covers `/dashboard/inbox`)
+- **Leads & Sales** → `/dashboard/leads` (also covers `/dashboard/contacts` and `/dashboard/quote-requests`)
+- **Launch** → `/dashboard/deployments`
+- **Help** → `/help`
+- **Settings** → `/dashboard/settings`
+- **Switch to Developer Mode** (button that flips mode; it does not navigate by itself)
+
+#### 4.0.2 Simple Mode — every route mapping (SimpleModeRouter)
+
+In Simple Mode, these URLs render simplified pages:
+
+| Developer URL (still used) | Simple Mode component | Notes |
+|---|---|---|
+| `/dashboard` | `SimpleDashboardOverview` | Quick actions + setup progress + recommendations. |
+| `/dashboard/ai-setup` | `SimpleAiSetupPage` | Three paths: automatic from website URL, guided AI setup, manual describe. |
+| `/dashboard/business-setup` | `SimpleBusinessSetupPage` | Simplified entry point to Business Setup drafts. |
+| `/dashboard/install` | `SimpleInstallPage` | Plain-language install options; actions that require full UI switch to Developer Mode. |
+| `/dashboard/agents` (and `/dashboard/agents/*`) | `SimpleAgentsPage` | Create/list agents in a simplified layout; links to edit in Developer Mode. |
+| `/dashboard/automations` | `SimpleAutomationsPage` | Recipe-style cards + list; toggles; links to full editor in Developer Mode (plan-gated). |
+| `/dashboard/leads`, `/dashboard/contacts`, `/dashboard/quote-requests` | `SimpleLeadsPage` | Lead list + simple actions; links to full CRM pages. |
+| `/dashboard/team` (and `/dashboard/account/add`) | `SimpleTeamPage` | Team list + invitations; some actions switch to Developer Mode (plan-gated for team size). |
+| `/dashboard/settings` | `SimpleSettingsPage` | Simplified settings form + AI assist actions. |
+| `/dashboard/deployments` | `SimpleLaunchPage` | Launch checklist + “open in Developer Mode” links. |
+| `/dashboard/knowledge` | `SimpleKnowledgePage` | Add URL / upload content + list sources; AI assist; links to full Knowledge (plan-gated by source limits). |
+| `/dashboard/inbox` and `/dashboard/conversations` | `SimpleConversationsPage` | Simplified conversation list; links to full inbox/conversation pages (inbox may be plan-gated). |
+| `/dashboard/analytics` | `SimpleAnalyticsPage` | Simplified “how it’s helping” metrics; links to full analytics. |
+| `/dashboard/billing` | `SimpleBillingPage` | Current plan + usage; “Upgrade” and “Manage subscription” switch to Developer Mode. |
+| `/dashboard/account` | `SimpleAccountPage` | Simplified account page. |
+| Other `/dashboard/*` | `SimpleGenericPage` | Fallback placeholder for uncommon/unsupported simple-mode routes (e.g. webhooks, integrations, documents). |
+
+#### 4.0.3 Developer Mode — every navigation option (sidebar)
+
+Developer Mode renders the full sidebar with grouped sections:
+
+- **Workspace**
+  - **Overview** → `/dashboard`
+  - **AI Setup Assistant** → `/dashboard/ai-setup`
+  - **Business Setup** → `/dashboard/business-setup`
+  - **Agents** → `/dashboard/agents`
+  - **Automations** → `/dashboard/automations` *(plan-gated: `automations`)*
+  - **AI Actions** → `/dashboard/actions` *(plan-gated: `ai_actions`)*
+  - **Knowledge** → `/dashboard/knowledge`
+- **CRM** (submenu)
+  - **Leads** → `/dashboard/leads`
+  - **Contacts** → `/dashboard/contacts`
+  - **Companies** → `/dashboard/companies`
+  - **Deals** → `/dashboard/deals`
+  - **Tickets** → `/dashboard/tickets`
+  - **Quote Requests** → `/dashboard/quote-requests`
+- **Activity**
+  - **Inbox** → `/dashboard/inbox` *(plan-gated: `inbox`)*
+  - **Conversations** → `/dashboard/conversations`
+  - **Bookings** → `/dashboard/bookings` *(plan-gated: `bookings`)*
+  - **Documents** → `/dashboard/documents`
+  - **Analytics** → `/dashboard/analytics`
+- **Developers**
+  - **Deployments** → `/dashboard/deployments`
+  - **AI Pages** → `/dashboard/ai-pages`
+  - **Webhooks** → `/dashboard/webhooks` *(plan-gated: `webhooks`)*
+  - **Integrations** → `/dashboard/integrations` *(plan-gated: `integrations`)*
+- **Account**
+  - **Billing** → `/dashboard/billing`
+  - **Settings** → `/dashboard/settings`
+
+**Account dropdown (top of sidebar, when logged in):**
+
+- **Account** → `/dashboard/account`
+- **Settings** → `/dashboard/settings`
+- **Team Members** → `/dashboard/team` *(plan-gated by team limits; lock may show)*
+- **Manage businesses** (workspace switcher / management dialog)
+- **Sign out**
 
 **Dashboard preview (widget preview):** The route `/[locale]/dashboard-preview` redirects to `/[locale]/dashboard-preview/overview`. A dedicated preview layout provides sections (overview, assistants, widget, knowledge, inbox, analytics, automations, team, billing); some sections may be locked. This is linked from Simple Mode (e.g. “Preview widget” from the overview and from the Launch page).
 

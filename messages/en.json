@@ -85,7 +85,7 @@
       "email": "Email"
     },
     "overview": "Overview",
-    "overviewDescription": "Your AI infrastructure at a glance. Agents, automations, CRM, and knowledge in one place.",
+    "overviewDescription": "Your assistant at a glance: setup, knowledge, install, conversations, leads, and quote requests.",
     "trialEnds": "Your free trial ends on {date}. Subscribe to keep your widget live.",
     "upgrade": "Upgrade",
     "leads": "Leads",
@@ -648,7 +648,7 @@
       "gettingStarted": "Getting started",
       "dashboard": "Dashboard",
       "widget": "Widget & install",
-      "leads": "Leads & CRM",
+      "leads": "Leads",
       "automations": "Automations",
       "knowledge": "Knowledge",
       "billing": "Billing & plans",
@@ -657,15 +657,15 @@
     "articles": {
       "gettingStarted": {
         "title": "Getting started with Spaxio Assistant",
-        "body": "After signing up, you'll land in the dashboard. Start by setting your business name in onboarding or in Settings. Use the Install page to copy a small script tag and add it to your website—that’s how the chat widget appears on your site. Link an AI agent to the widget in Install or in Agents, and optionally use the AI Setup Assistant (Setup with AI) to have the platform configure your chatbot, lead capture, and notifications for you. Your dashboard has two modes: Simple (streamlined, plain-language) and Developer (full workspace, CRM, and technical features); switch between them with the toggle in the top bar."
+        "body": "After signing up, you'll land in the dashboard. Start by setting your business name in Settings. Use Install to copy a small script tag and add it to your website—that’s how the chat widget appears on your site. Create or edit your agent in Agents, add your website/files in Knowledge, and use AI Setup to configure lead capture and quote requests. The dashboard has two modes: Simple (streamlined) and Developer (more controls)."
       },
       "dashboardOverview": {
         "title": "Dashboard overview",
-        "body": "The dashboard is your control center. The Overview (home) shows quick counts for leads, conversations, quote requests, and agents, plus links to Install, Leads, Conversations, and Billing. The sidebar groups sections: Workspace (Agents, Automations, Knowledge), CRM (Leads, Contacts, Companies, Deals, Tickets, Quote requests), Activity (Conversations, Documents, Analytics), Developers (Deployments, Webhooks, Integrations), and Account (Install, Settings, Billing, Account). In Simple Mode the sidebar shows fewer, friendlier labels like Home, Setup with AI, Chat Widget, Leads, Team, Launch, and Help."
+        "body": "The dashboard is your control center. Overview shows counts for leads, conversations, and quote requests, plus quick links to AI Setup, Install, Knowledge, Leads, Conversations, and Billing. The sidebar focuses on: Overview, AI Setup, Agents, Knowledge, Install, Conversations, Leads, Quote Requests, Automations, Team, Billing, and Settings."
       },
       "simpleVsDeveloper": {
         "title": "Simple mode vs Developer mode",
-        "body": "Simple Mode is a streamlined experience with plain-language labels and an emphasis on \"Do It For Me\" AI setup. Use it if you want to get the widget live and capture leads without touching technical options. Developer Mode shows the full dashboard: all workspace, CRM, activity, and developer sections (webhooks, deployments, API, etc.). Switch between the two with the toggle in the dashboard header (Simple / Developer). Your choice is saved in your browser so it persists across visits."
+        "body": "Spaxio Assistant has two dashboard modes that change navigation and (often) the UI shown for the same /dashboard URL.\n\nSimple Mode (streamlined)\n- Focuses on setup and daily use: Overview, AI Setup, Install, Conversations, Leads, and Settings.\n- The main content is rendered by a Simple Mode router that swaps in simplified pages.\n\nDeveloper Mode (more controls)\n- Shows the full (but still focused) menu: Overview, AI Setup, Agents, Knowledge, Install, Conversations, Leads, Quote Requests, Automations, Team, Billing, and Settings.\n\nHow to switch\n- Use the Simple/Developer toggle in the dashboard header (desktop). Your choice is saved in your browser so it persists across visits."
       },
       "agents": {
         "title": "AI agents",
@@ -709,15 +709,15 @@
       },
       "deployments": {
         "title": "Deployments",
-        "body": "Deployments are the ways your agents are exposed: website widget, embedded chat, standalone page, dashboard panel, or API. Go to Deployments to see all deployment configs. Add a new deployment from each agent’s Deployment tab (e.g. create a website widget linked to that agent). The Install page is where you get the script tag for the website widget deployment."
+        "body": "Install is where you get the code snippet for your website widget. Copy the script tag and paste it into your site just before </body>. Use Preview on the Install page to see how it looks."
       },
       "webhooks": {
         "title": "Webhooks",
-        "body": "Webhooks let you connect external systems. Outbound: your automations can call external URLs. Inbound: create webhook endpoints in the Webhooks section; each endpoint has a URL, optional secret, and field mappings. When data is posted to the endpoint URL, it can trigger automations or write to your CRM. Use the endpoint ID or token in the URL. Webhook access is available on higher plans."
+        "body": "Some automations can call an external webhook URL when something happens (like a new lead). If you don’t see webhook options, it may not be enabled on your plan."
       },
       "inbox": {
         "title": "Inbox",
-        "body": "The Inbox is for human-in-the-loop conversations. View conversations that need attention, assign them to team members, add internal notes, reply as a human, or generate an AI draft. You can mark conversations as open, closed, snoozed, or escalated and link them to leads or contacts for CRM context. Use it to hand off from AI to human when needed."
+        "body": "If enabled on your plan, the Inbox lets you reply as a human, assign conversations, and add internal notes. If you don’t see Inbox, you can still review conversations in Conversations."
       }
     }
   },
@@ -763,5 +763,21 @@
     "viewTerms": "View terms",
     "accept": "Accept",
     "and": "and"
+  }
+  ,
+  "aiPage": {
+    "placeholder": "Type your message…",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "quickQuoteButton": "I want a quote",
+    "quickQuoteUserMessage": "I want a quote",
+    "quoteFormIntro": "Sure — please fill out the quote form below and submit to get your price.",
+    "quoteFormTitle": "Quote form",
+    "backToChat": "Back to chat",
+    "name": "Name",
+    "email": "Email",
+    "phoneOptional": "Phone (optional)",
+    "submitAndGetPrice": "Submit & get price",
+    "currency": "Currency"
   }
 }

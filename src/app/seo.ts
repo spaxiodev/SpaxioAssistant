@@ -59,7 +59,6 @@ export const PUBLIC_PATHS = [
   '/privacy-policy',
   '/terms-and-conditions',
   '/demo/ai-chat',
-  '/demo/sign-in',
   '/widget-preview',
   '/ai-chatbot-widget',
   '/ai-chatbot-for-website',

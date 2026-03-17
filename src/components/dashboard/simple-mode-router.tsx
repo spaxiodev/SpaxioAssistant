@@ -8,14 +8,11 @@ import { SimpleAutomationsPage } from '@/components/dashboard/simple-pages/simpl
 import { SimpleLeadsPage } from '@/components/dashboard/simple-pages/simple-leads-page';
 import { SimpleTeamPage } from '@/components/dashboard/simple-pages/simple-team-page';
 import { SimpleSettingsPage } from '@/components/dashboard/simple-pages/simple-settings-page';
-import { SimpleLaunchPage } from '@/components/dashboard/simple-pages/simple-launch-page';
 import { SimpleKnowledgePage } from '@/components/dashboard/simple-pages/simple-knowledge-page';
 import { SimpleConversationsPage } from '@/components/dashboard/simple-pages/simple-conversations-page';
-import { SimpleAnalyticsPage } from '@/components/dashboard/simple-pages/simple-analytics-page';
 import { SimpleBillingPage } from '@/components/dashboard/simple-pages/simple-billing-page';
 import { SimpleAccountPage } from '@/components/dashboard/simple-pages/simple-account-page';
 import { SimpleGenericPage } from '@/components/dashboard/simple-pages/simple-generic-page';
-import { SimpleBusinessSetupPage } from '@/components/dashboard/simple-pages/simple-business-setup-page';
 import { routing } from '@/i18n/routing';
 
 type SimpleModeRouterProps = {
@@ -47,19 +44,18 @@ function getSimplePage(pathname: string): React.ReactNode {
 
   if (base === '/dashboard' || base === '/') return <SimpleDashboardOverview />;
   if (base.startsWith('/dashboard/ai-setup')) return <SimpleAiSetupPage />;
-  if (base.startsWith('/dashboard/business-setup')) return <SimpleBusinessSetupPage />;
   if (base.startsWith('/dashboard/install')) return <SimpleInstallPage />;
   if (base === '/dashboard/agents' || base.startsWith('/dashboard/agents/')) return <SimpleAgentsPage />;
   if (base.startsWith('/dashboard/automations')) return <SimpleAutomationsPage />;
   if (base.startsWith('/dashboard/leads') || base.startsWith('/dashboard/contacts') || base.startsWith('/dashboard/quote-requests')) return <SimpleLeadsPage />;
   if (base.startsWith('/dashboard/team') || base.startsWith('/dashboard/account/add')) return <SimpleTeamPage />;
   if (base.startsWith('/dashboard/settings')) return <SimpleSettingsPage />;
-  if (base.startsWith('/dashboard/deployments')) return <SimpleLaunchPage />;
   if (base.startsWith('/dashboard/knowledge')) return <SimpleKnowledgePage />;
   if (base.startsWith('/dashboard/inbox') || base.startsWith('/dashboard/conversations')) return <SimpleConversationsPage />;
-  if (base.startsWith('/dashboard/analytics')) return <SimpleAnalyticsPage />;
   if (base.startsWith('/dashboard/billing')) return <SimpleBillingPage />;
   if (base.startsWith('/dashboard/account')) return <SimpleAccountPage />;
+  if (base.startsWith('/dashboard/business-setup')) return <SimpleAiSetupPage />;
+  if (base.startsWith('/dashboard/deployments')) return <SimpleInstallPage />;
 
   // True fallback only for unknown dashboard subroutes (e.g. webhooks, integrations, documents)
   const segment = base.replace(/^\/dashboard\/?/, '') || 'dashboard';
