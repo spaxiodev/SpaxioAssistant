@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { Link } from '@/components/intl-link';
 import { AiPageForm } from '@/components/ai-page/ai-page-form';
 import { AiPageInstallCard } from '@/components/ai-page/ai-page-install-card';
+import { AiPageEditActions } from '@/components/ai-page/ai-page-edit-actions';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -31,14 +32,21 @@ export default async function EditAiPagePage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/dashboard/ai-pages" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back to AI Pages
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Edit AI Page</h1>
-        <p className="text-muted-foreground">
-          {page.title} · /a/{page.slug}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/dashboard/ai-pages" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Back to AI Pages
+          </Link>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">Edit AI Page</h1>
+          <p className="text-muted-foreground">
+            {page.title} · /a/{page.slug}
+          </p>
+        </div>
+        <AiPageEditActions
+          pageId={page.id}
+          pageTitle={page.title}
+          isPublished={!!page.is_published}
+        />
       </div>
       <AiPageForm
         agents={agents ?? []}

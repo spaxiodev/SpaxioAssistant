@@ -399,7 +399,7 @@ export function TeamMembersClient() {
                               {t('editPermissions')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-destructive"
+                              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                               onClick={() => {
                                 setRemoveMemberId(m.id);
                                 setRemoveMemberName(m.full_name || m.email || 'this member');

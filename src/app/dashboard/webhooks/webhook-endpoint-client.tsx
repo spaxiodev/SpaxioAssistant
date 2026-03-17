@@ -168,8 +168,8 @@ export function WebhookEndpointClient({ endpoint, initialMappings, baseUrl }: Pr
                   <span className="text-muted-foreground">→</span>
                   <span className="font-mono text-sm">{m.target_key}</span>
                   <span className="text-xs text-muted-foreground">({m.value_type}{m.required ? ', required' : ''})</span>
-                  <Button variant="ghost" size="sm" onClick={() => setMappingToRemove(m)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <Button variant="destructive" size="sm" onClick={() => setMappingToRemove(m)}>
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </li>
               ))}

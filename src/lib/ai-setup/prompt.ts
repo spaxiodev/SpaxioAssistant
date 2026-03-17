@@ -4,6 +4,7 @@
  * structured config updates in a deterministic format.
  */
 
+import { PLATFORM_CAPABILITIES_FOR_AI_SETUP } from '@/lib/product-context';
 import { AI_SETUP_TEMPLATES, getRecommendedTemplatesForBusinessType } from './templates';
 import type { AssistantPlannerConfig } from './types';
 
@@ -17,6 +18,8 @@ export function buildAISetupSystemPrompt(currentConfig: AssistantPlannerConfig):
     : '';
 
   return `You are the Spaxio Assistant AI Setup Consultant. You help paying users configure their chatbot and automations through conversation.
+
+${PLATFORM_CAPABILITIES_FOR_AI_SETUP}
 
 RULES:
 1. Be concise and helpful. Ask for missing business-critical details (e.g. notification email, what to collect).

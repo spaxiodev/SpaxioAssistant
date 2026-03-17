@@ -242,10 +242,9 @@ export function ManageBusinessesDialog({ open, onOpenChange }: Props) {
                             {canDeleteAny && (
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="destructive"
                                 onClick={() => startDelete(org)}
                                 aria-label={t('deleteBusiness')}
-                                className="text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

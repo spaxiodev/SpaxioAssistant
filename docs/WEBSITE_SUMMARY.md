@@ -2,6 +2,8 @@
 
 This document describes what the Spaxio Assistant website and product do, at a level of detail suitable for onboarding, documentation, or product overviews.
 
+**Keeping the AI in sync:** When you change the product (new features, routes, or capabilities), update (1) `src/lib/product-context.ts` (used by the AI Setup Assistant) and (2) the help-chat system prompt and `buildUserAccessBlock` in `src/app/api/help-chat/route.ts` so the in-app AI stays accurate.
+
 ---
 
 ## 1. Product overview
@@ -11,6 +13,9 @@ This document describes what the Spaxio Assistant website and product do, at a l
 - **Embeddable AI chat widgets** — Add one script to a website to show a custom AI chatbot that can learn from the business’s content and settings.
 - **Lead capture** — Collect visitor info (name, email, phone, message, etc.) and optionally trigger automations and email notifications (Resend).
 - **Quote requests** — Let visitors submit quote/project details; businesses see them in the dashboard.
+- **Quote pricing engine** — Configurable pricing profiles (per org), services, variables, and rules; supports exact estimates, estimate ranges, quote drafts, and optional manual review thresholds.
+- **AI pages** — Full-page AI experiences (Quote Assistant, Support, Booking, Intake, Sales, Product Finder, etc.) with hosted or embeddable deployment; sessions tracked via `ai_page_runs`; can link to leads, contacts, quote requests, and support tickets.
+- **Business setup drafts** — AI-generated full-business setup (profile, services, knowledge, pricing, agents, automations, widget, AI pages, branding) for review; user approves sections before publishing; no direct overwrite of live config until approved.
 - **AI agents** — Create multiple agents (website chatbot, support agent, lead qualification, sales, booking, FAQ, etc.) with goals, tone, knowledge, and optional tool-calling.
 - **Knowledge bases** — Upload documents or ingest URLs; content is indexed and used to ground agent responses.
 - **Automations** — Event-driven workflows (e.g. on lead form submit, webhook received) with steps and optional form handling.
@@ -102,6 +107,12 @@ The dashboard supports two **view modes** that change the entire in-app experien
 | **Agents** | `/dashboard/agents` | List of AI agents; create/edit agents (name, role type, goal, tone, knowledge, automations, CRM access, etc.). |
 | **Agents (single)** | `/dashboard/agents/[id]` | Edit agent; agent runs history. |
 | **New agent** | `/dashboard/agents/new` | Create new agent. |
+| **AI Pages** | `/dashboard/ai-pages` | List full-page AI experiences (quote, support, intake, etc.); create/edit; deployment mode (hosted, embedded, widget handoff); link to agents and pricing profiles. |
+| **AI Page (single)** | `/dashboard/ai-pages/[id]` | Edit AI page config, intake schema, outcome config, branding; publish. |
+| **New AI page** | `/dashboard/ai-pages/new` | Create new AI page. |
+| **Pricing (profiles)** | `/dashboard/pricing` | Quote pricing profiles; services, variables, rules; default profile per org. |
+| **Pricing (single)** | `/dashboard/pricing/[id]` | Pricing profile detail: variables, rules, test estimate form. |
+| **Business setup** | `/dashboard/business-setup` | AI-generated business setup drafts; review extracted sections (profile, services, knowledge, pricing, agents, automations, widget, AI pages, branding); approve and publish by section. |
 | **Automations** | `/dashboard/automations` | List automations; create/edit; trigger types (e.g. lead_form_submitted, webhook_received), steps, enable/disable. |
 | **Knowledge** | `/dashboard/knowledge` | Knowledge bases and sources; upload files, ingest URLs; used by agents. |
 
@@ -148,7 +159,8 @@ The dashboard supports two **view modes** that change the entire in-app experien
 
 ## 5. Widget and embed flow
 
-- **Install:** In Dashboard → Install, the user copies a script tag, e.g.  
+- **AI Pages:** Full-page AI experiences can be hosted on Spaxio URLs or embedded via iframe; each page has a slug, optional agent, intake schema, and outcome config; sessions are tracked in `ai_page_runs` and can create or link leads, quote requests, and support tickets. Quote requests from AI pages can include `customer_email` and `customer_phone`.
+- **Install (widget):** In Dashboard → Install, the user copies a script tag, e.g.  
   `<script src="https://<APP_URL>/widget.js" data-widget-id="<WIDGET_UUID>"></script>`  
   and adds it before `</body>` on their site.
 - **Widget script:** `widget.js` (or embed script) loads an iframe that points to the app’s widget page (e.g. `/[locale]/widget`), passing widget ID.
@@ -221,7 +233,16 @@ APIs are under `src/app/api/`. Key groups:
 - `POST /api/webhooks/[token]` — **Inbound webhook:** token is automation’s `webhook_token`; triggers automation (and optionally automation events).
 - `POST /api/webhooks/incoming/[id]` — Incoming webhook to a specific endpoint (by id); may write to `webhook_events` and apply field mappings.
 
-### 6.7 Settings and app
+### 6.7 AI Pages and pricing
+
+- `GET/POST /api/dashboard/ai-pages` — List/create AI pages (org).
+- `GET/PATCH/DELETE /api/dashboard/ai-pages/[id]` — Get/update/delete AI page.
+- `POST /api/dashboard/ai-pages/[id]/publish` — Publish/unpublish AI page.
+- `GET/POST /api/dashboard/pricing-profiles` — List/create quote pricing profiles.
+- `GET/PATCH/DELETE /api/dashboard/pricing-profiles/[id]` — Get/update/delete profile.
+- `GET /api/dashboard/pricing-profiles/[id]/preview` — Preview/test estimate for a profile.
+
+### 6.8 Settings and app
 
 - `GET/PATCH /api/settings/route` — Business settings.
 - `POST /api/settings/learn-website` — “Learn from website” (scrape URL, update business description/FAQs).
@@ -239,14 +260,14 @@ APIs are under `src/app/api/`. Key groups:
 ## 7. Core data model (entities)
 
 - **Auth & org:** `profiles`, `organizations`, `organization_members` (roles).
-- **Product:** `business_settings`, `widgets`, `agents`, `knowledge_bases`, `knowledge_sources`, `knowledge_documents`, `knowledge_index_runs`.
-- **Chat:** `conversations` (per widget), `messages`.
+- **Product:** `business_settings`, `widgets`, `agents`, `ai_pages`, `ai_page_runs`, `knowledge_bases`, `knowledge_sources`, `knowledge_documents`, `knowledge_index_runs`, `business_setup_drafts`.
+- **Chat:** `conversations` (per widget or per `ai_page`), `messages`.
 - **Leads & CRM:** `leads` (status, stage, owner, tags), `contacts`, `companies`, `deals` (stages), `support_tickets`, `tasks`, `notes`, `activities`.
-- **Quotes:** `quote_requests`.
+- **Quotes:** `quote_requests` (including `customer_email`, `customer_phone` from AI page intake); **Quote pricing engine:** `quote_pricing_profiles`, `quote_services`, `quote_pricing_variables`, `quote_pricing_rules`, `quote_estimation_runs`.
 - **Agents:** `agent_runs`, `agent_messages`, `agent_tool_invocations`.
 - **Automations:** `automations` (trigger_type, webhook_token, webhook_secret), `automation_steps`, `automation_runs`, `automation_nodes`, `automation_edges`.
 - **Webhooks:** `webhook_endpoints`, `webhook_events`, `webhook_field_mappings`.
-- **Documents:** `document_templates`, `documents`.
+- **Documents:** `document_templates`, `documents` (optional `conversation_id` for visibility from conversation detail).
 - **Billing:** `plans`, `plan_entitlements`, `subscriptions` (Stripe customer/subscription/price, plan_id, status, trial), `org_usage` (per-period message_count, ai_action_count).
 - **Other:** `memory_records`, `deployment_configs`, `extraction_schemas`, `extraction_runs`, `analytics_events`.
 
@@ -257,7 +278,7 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 ## 8. Billing and entitlements
 
 - **Plans:** Free, Starter, Pro, Business, Enterprise (and legacy “Legacy Assistant Pro” for existing Stripe price).
-- **Entitlements** (examples): `max_agents`, `max_automations`, `monthly_messages`, `monthly_ai_actions`, `max_knowledge_sources`, `max_document_uploads`, `max_team_members`, `widget_branding_removal`, `custom_branding`, `automations_enabled`, `tool_calling_enabled`, `webhook_access`, `api_access`, `analytics_level`, `priority_support`, `white_label`, `integrations_enabled`.
+- **Entitlements** (examples): `max_agents`, `max_automations`, `monthly_messages`, `monthly_ai_actions`, `max_knowledge_sources`, `max_document_uploads`, `max_team_members`, `widget_branding_removal`, `custom_branding`, `automations_enabled`, `tool_calling_enabled`, `webhook_access`, `api_access`, `analytics_level`, `priority_support`, `white_label`, `integrations_enabled`, `ai_pages_enabled`.
 - **Usage:** `org_usage` stores per-org, per-period `message_count` and `ai_action_count`; incremented by widget chat and tool runs. Enforced in chat API and tool/agent APIs (return `message_limit_reached` or 403 with `plan_limit` when over limit).
 - **Checkout:** Billing checkout accepts `planId` or Stripe price ID; creates Stripe session; webhook sets `subscriptions.plan_id` and status.
 - **Admin bypass:** Optional `ADMIN_USER_IDS` env allows listed users to bypass plan limits and see billing debug.
@@ -289,4 +310,4 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 ## 11. One-line summary
 
-**Spaxio Assistant** is an AI infrastructure SaaS that lets businesses deploy a customizable website AI widget, capture leads and quote requests, run multiple AI agents with knowledge bases and tool-calling, automate workflows (events and webhooks), manage CRM data (leads, contacts, companies, deals, tickets), and subscribe via multi-tier Stripe plans with usage-based and entitlement-based limits—all on a single multi-tenant Next.js + Supabase platform. The dashboard offers **Simple Mode** (streamlined, AI-guided setup and plain-language navigation) and **Developer Mode** (full workspace, CRM, and developer features), with the choice persisted in the browser.
+**Spaxio Assistant** is an AI infrastructure SaaS that lets businesses deploy a customizable website AI widget and full-page AI experiences (AI Pages), capture leads and quote requests (with an optional quote pricing engine), run multiple AI agents with knowledge bases and tool-calling, automate workflows (events and webhooks), manage CRM data (leads, contacts, companies, deals, tickets), use AI-generated business setup drafts (review and publish by section), and subscribe via multi-tier Stripe plans with usage-based and entitlement-based limits—all on a single multi-tenant Next.js + Supabase platform. The dashboard offers **Simple Mode** (streamlined, AI-guided setup and plain-language navigation) and **Developer Mode** (full workspace, CRM, and developer features), with the choice persisted in the browser.

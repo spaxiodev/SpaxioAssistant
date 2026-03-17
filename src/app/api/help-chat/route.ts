@@ -20,6 +20,9 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   have.push('Install (copy a code and put it on their website so the chat appears)');
   have.push('Billing (see their plan, upgrade, or manage payment)');
   have.push('AI Setup Assistant (describe what you want in natural language; AI configures agent, lead capture, notifications—then Publish; requires active subscription)');
+  have.push('Business Setup (AI-generated full-business setup from website/description—profile, services, knowledge, pricing, agents, automations, AI pages; review and approve sections; requires active subscription; under Workspace)');
+  have.push('Pricing (quote pricing profiles, services, variables, rules; test estimates; under Workspace in Developer Mode, or via Business Setup)');
+  have.push('Documents (templates and generated documents linked to leads, contacts, deals; under Activity)');
   have.push('Deployments (get embed code per agent; under Developers in the sidebar)');
 
   if (entitlements.inbox_enabled) {
@@ -88,6 +91,12 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
     dontHave.push('Advanced analytics (that\'s on a higher plan)');
   }
 
+  if (entitlements.ai_pages_enabled && entitlements.max_ai_pages > 0) {
+    have.push(`AI Pages (full-page AI experiences: Quote, Support, Booking, etc.; create up to ${entitlements.max_ai_pages}; under Developers → AI Pages)`);
+  } else {
+    dontHave.push('AI Pages (full-page quote/support/booking experiences—that\'s on a higher plan)');
+  }
+
   const lines: string[] = [
     `This user is on the **${planName}** plan.`,
     '',
@@ -129,8 +138,14 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
 - **Widget:** What the widget does (chat, capture leads, quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
 - **AI Setup Assistant:** In the sidebar under Workspace. User describes what they want in natural language; the AI suggests agent setup, lead capture, email notification, webhook. They review and click Publish when ready. Requires an active subscription. If they don't have a subscription, tell them to go to Billing first.
+- **Business Setup:** Workspace → Business Setup. AI-generated full-business setup from a website URL or description (profile, services, knowledge, pricing, agents, automations, widget, AI pages, branding). User reviews section cards and approves before anything goes live. Requires active subscription. For "set up my whole business from my website," direct them here.
+- **Pricing (quote pricing engine):** Workspace → Pricing (Developer Mode). Quote pricing profiles with services, variables, and rules; exact estimates or ranges; optional manual review. Link AI Pages to a pricing profile for quote flows. In Simple Mode they can use Business Setup to get pricing suggested.
+- **AI Pages:** Only if they have it—Developers → AI Pages. Full-page AI experiences (Quote Assistant, Support, Booking, Intake, etc.); hosted or embeddable; link to agents and pricing profiles. Create and edit under AI Pages.
+- **View modes:** The dashboard has Simple Mode (plain-language: Home, Setup with AI, Chat Widget, Leads, Team, Launch, Help) and Developer Mode (full Workspace, CRM, Activity, Developers). Toggle in the top bar; choice is saved. "Switch to Developer Mode" at the bottom of the Simple sidebar shows the full menu.
+- **Dashboard preview:** From Launch or overview, "Preview widget" opens the widget preview flow (overview, assistants, widget, knowledge, etc.); some sections may be locked by plan.
 - **Agents:** How to create or edit agents (Workspace → Agents), where they appear; if they have multiple agents, explain that. Voice can be enabled per agent (Voice or agent settings) if they have the Voice feature.
 - **Knowledge:** Only if they have it - how to add a source, upload a doc, or add a URL; what the limits are (Workspace → Knowledge).
+- **Documents:** Activity → Documents; document templates and generated documents linked to leads, contacts, deals.
 - **Inbox:** Only if they have it - Activity → Inbox; assign conversations, reply as a human, add notes and tags, view voice transcripts.
 - **Bookings:** Only if they have it - Activity → Bookings; appointments created from the widget or AI actions.
 - **Voice:** Only if they have it - enable voice per agent (Voice settings or agent); monthly voice minutes limit; widget can offer voice button.

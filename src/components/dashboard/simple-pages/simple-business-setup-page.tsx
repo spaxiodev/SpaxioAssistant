@@ -19,9 +19,11 @@ import {
   ThumbsUp,
   Send,
 } from 'lucide-react';
+import { Link } from '@/components/intl-link';
 import type { SourceInputs } from '@/lib/business-setup/types';
 import { SECTION_LABELS } from '@/lib/business-setup/ai-business-review-service';
 import type { DraftSectionKey } from '@/lib/business-setup/types';
+import { useTranslations } from 'next-intl';
 
 type WizardStep = 'input' | 'extracting' | 'review' | 'publish_done';
 
@@ -38,6 +40,7 @@ const SECTION_ORDER: DraftSectionKey[] = [
 ];
 
 export function SimpleBusinessSetupPage() {
+  const t = useTranslations('dashboard');
   const [step, setStep] = useState<WizardStep>('input');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [pastedText, setPastedText] = useState('');
@@ -163,6 +166,16 @@ export function SimpleBusinessSetupPage() {
         description="Let AI build your assistant setup from your website, documents, or a short description. Review what we find, then approve and go live."
         icon={<Building2 className="h-6 w-6" />}
       />
+      <p className="text-sm text-muted-foreground -mt-4">
+        {t('businessSetupIntro')}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <Link href="/dashboard/install" className="text-primary hover:underline">{t('install')}</Link>
+        <span className="text-muted-foreground">·</span>
+        <Link href="/dashboard/pricing" className="text-primary hover:underline">{t('pricingRules')}</Link>
+        <span className="text-muted-foreground">·</span>
+        <Link href="/dashboard/settings" className="text-primary hover:underline">{t('settingsTitle')}</Link>
+      </div>
 
       {step === 'input' && (
         <Card>

@@ -78,3 +78,34 @@ export async function PATCH(
     rules: context!.rules,
   });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const orgId = await getOrganizationId();
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { id } = await params;
+  const supabase = createAdminClient();
+
+  const { data: existing } = await supabase
+    .from('quote_pricing_profiles')
+    .select('id')
+    .eq('id', id)
+    .eq('organization_id', orgId)
+    .single();
+  if (!existing) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from('quote_pricing_profiles')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', orgId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ success: true });
+}

@@ -4,13 +4,21 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MoreHorizontal, Calculator, Loader2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Calculator, Loader2, Trash2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { Link } from '@/components/intl-link';
 import { useTranslations } from 'next-intl';
@@ -30,6 +38,8 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function createFromTemplate(industryType: string) {
     setCreating(true);
@@ -80,6 +90,24 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
       console.error(e);
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleDeleteProfile() {
+    if (!profileToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/dashboard/pricing-profiles/${profileToDelete.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to delete');
+      }
+      setProfileToDelete(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -159,6 +187,13 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/pricing/${p.id}`}>{t('preview')}</Link>
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          onClick={() => setProfileToDelete(p)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -172,6 +207,25 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
       <p className="text-xs text-muted-foreground">
         Link a pricing profile to a Quote AI page in AI Pages → edit page → Pricing profile. The AI will collect variables and calculate estimates using these rules.
       </p>
+
+      <Dialog open={!!profileToDelete} onOpenChange={(open) => !open && setProfileToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete pricing profile?</DialogTitle>
+            <DialogDescription>
+              Delete &quot;{profileToDelete?.name}&quot;? Variables and rules will be removed. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-4">
+            <Button variant="outline" onClick={() => setProfileToDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProfile} disabled={deleting}>
+              {deleting ? '…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

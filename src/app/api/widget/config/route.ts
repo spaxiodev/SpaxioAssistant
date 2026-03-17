@@ -77,6 +77,38 @@ export async function GET(request: Request) {
     ? (settings.widget_action_mappings as Record<string, { selector?: string; url?: string; section_id?: string }>)
     : undefined;
 
+  // Default pricing profile for inline quote form (AI can prompt this form; user gets estimate on the spot)
+  let quoteProfileId: string | undefined;
+  let quoteVariables: { key: string; label: string; variable_type: string; unit_label?: string | null; required: boolean; default_value?: string | null; options?: unknown }[] | undefined;
+  let quoteCurrency: string | undefined;
+  const { data: defaultProfile } = await supabase
+    .from('quote_pricing_profiles')
+    .select('id, currency')
+    .eq('organization_id', widget.organization_id)
+    .order('is_default', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (defaultProfile?.id) {
+    quoteProfileId = defaultProfile.id;
+    quoteCurrency = defaultProfile.currency ?? 'USD';
+    const { data: vars } = await supabase
+      .from('quote_pricing_variables')
+      .select('key, label, variable_type, unit_label, required, default_value, options')
+      .eq('pricing_profile_id', defaultProfile.id)
+      .order('sort_order');
+    if (vars && vars.length > 0) {
+      quoteVariables = vars.map((v) => ({
+        key: v.key,
+        label: v.label,
+        variable_type: v.variable_type,
+        unit_label: v.unit_label ?? undefined,
+        required: v.required ?? false,
+        default_value: v.default_value ?? undefined,
+        options: v.options ?? undefined,
+      }));
+    }
+  }
+
   return NextResponse.json(
     {
       enabled,
@@ -96,6 +128,9 @@ export async function GET(request: Request) {
       showLanguageSwitcher: settings?.show_language_switcher === true,
       customTranslations: customTranslations ?? undefined,
       actionMappings: actionMappings ?? undefined,
+      quoteProfileId: quoteProfileId ?? undefined,
+      quoteVariables: quoteVariables ?? undefined,
+      quoteCurrency: quoteCurrency ?? undefined,
     },
     { headers: corsHeaders }
   );

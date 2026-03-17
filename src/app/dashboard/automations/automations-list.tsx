@@ -222,7 +222,7 @@ export function AutomationsList({ automations, agents, runs, onEdit }: Props) {
                           {t('duplicate')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-600 focus:bg-red-500/10 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-500/10 dark:focus:text-red-400"
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                           onClick={() => handleDeleteClick(a)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

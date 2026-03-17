@@ -195,8 +195,8 @@ export function WebhooksClient({ initialEndpoints, initialAgents, baseUrl }: Pro
                 <Button variant="ghost" size="sm" asChild>
                   <a href={`/dashboard/webhooks/${ep.id}`}>Configure</a>
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setEndpointToDelete(ep)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button variant="destructive" size="sm" onClick={() => setEndpointToDelete(ep)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </li>

@@ -21,7 +21,14 @@ export type WidgetTranslationKey =
   | 'chatTab'
   | 'close'
   | 'poweredBy'
-  | 'loading';
+  | 'loading'
+  | 'quoteFormTitle'
+  | 'quoteFormCalculate'
+  | 'quoteFormYourEstimate'
+  | 'quoteFormSubmitRequest'
+  | 'quoteFormBackToChat'
+  | 'quoteFormMissing'
+  | 'quoteFormTotal';
 
 export const DEFAULT_WELCOME = 'Hi! How can I help you today?';
 
@@ -41,6 +48,13 @@ const en: Record<WidgetTranslationKey, string> = {
   close: 'Close',
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Loading...',
+  quoteFormTitle: 'Get a quote',
+  quoteFormCalculate: 'Calculate',
+  quoteFormYourEstimate: 'Your estimate',
+  quoteFormSubmitRequest: 'Submit quote request',
+  quoteFormBackToChat: 'Back to chat',
+  quoteFormMissing: 'Missing',
+  quoteFormTotal: 'Total',
 };
 
 const fr: Record<WidgetTranslationKey, string> = {
@@ -59,6 +73,13 @@ const fr: Record<WidgetTranslationKey, string> = {
   close: 'Fermer',
   poweredBy: 'Propulsé par Spaxio Assistant',
   loading: 'Chargement...',
+  quoteFormTitle: 'Obtenir un devis',
+  quoteFormCalculate: 'Calculer',
+  quoteFormYourEstimate: 'Votre estimation',
+  quoteFormSubmitRequest: 'Envoyer la demande',
+  quoteFormBackToChat: 'Retour au chat',
+  quoteFormMissing: 'Manquant',
+  quoteFormTotal: 'Total',
 };
 
 const es: Record<WidgetTranslationKey, string> = {
@@ -77,6 +98,13 @@ const es: Record<WidgetTranslationKey, string> = {
   close: 'Cerrar',
   poweredBy: 'Desarrollado por Spaxio Assistant',
   loading: 'Cargando...',
+  quoteFormTitle: 'Obtener un presupuesto',
+  quoteFormCalculate: 'Calcular',
+  quoteFormYourEstimate: 'Su estimación',
+  quoteFormSubmitRequest: 'Enviar solicitud',
+  quoteFormBackToChat: 'Volver al chat',
+  quoteFormMissing: 'Faltan',
+  quoteFormTotal: 'Total',
 };
 
 const de: Record<WidgetTranslationKey, string> = {
@@ -95,6 +123,13 @@ const de: Record<WidgetTranslationKey, string> = {
   close: 'Schließen',
   poweredBy: 'Unterstützt von Spaxio Assistant',
   loading: 'Laden...',
+  quoteFormTitle: 'Angebot anfordern',
+  quoteFormCalculate: 'Berechnen',
+  quoteFormYourEstimate: 'Ihre Schätzung',
+  quoteFormSubmitRequest: 'Anfrage senden',
+  quoteFormBackToChat: 'Zurück zum Chat',
+  quoteFormMissing: 'Fehlend',
+  quoteFormTotal: 'Gesamt',
 };
 
 const pt: Record<WidgetTranslationKey, string> = {
@@ -113,6 +148,13 @@ const pt: Record<WidgetTranslationKey, string> = {
   close: 'Fechar',
   poweredBy: 'Desenvolvido por Spaxio Assistant',
   loading: 'Carregando...',
+  quoteFormTitle: 'Solicitar orçamento',
+  quoteFormCalculate: 'Calcular',
+  quoteFormYourEstimate: 'Sua estimativa',
+  quoteFormSubmitRequest: 'Enviar pedido',
+  quoteFormBackToChat: 'Voltar ao chat',
+  quoteFormMissing: 'Em falta',
+  quoteFormTotal: 'Total',
 };
 
 const it: Record<WidgetTranslationKey, string> = {
@@ -131,6 +173,13 @@ const it: Record<WidgetTranslationKey, string> = {
   close: 'Chiudi',
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Caricamento...',
+  quoteFormTitle: 'Richiedi preventivo',
+  quoteFormCalculate: 'Calcola',
+  quoteFormYourEstimate: 'La tua stima',
+  quoteFormSubmitRequest: 'Invia richiesta',
+  quoteFormBackToChat: 'Torna alla chat',
+  quoteFormMissing: 'Mancante',
+  quoteFormTotal: 'Totale',
 };
 
 export const WIDGET_TRANSLATIONS: Record<string, Record<WidgetTranslationKey, string>> = {

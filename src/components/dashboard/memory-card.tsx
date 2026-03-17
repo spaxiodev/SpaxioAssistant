@@ -97,9 +97,9 @@ export function MemoryCard({ subjectType, subjectId }: Props) {
                     </span>
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="destructive"
                     size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 shrink-0"
                     onClick={() => archive(m.id)}
                     disabled={deletingId === m.id}
                   >

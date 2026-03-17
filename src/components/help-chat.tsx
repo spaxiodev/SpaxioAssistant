@@ -98,7 +98,7 @@ export function HelpChat() {
                 <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-sm">
                   <p className="font-medium text-foreground">Welcome!</p>
                   <p className="mt-1 text-muted-foreground">
-                    Ask how to use the dashboard, install the widget, set up the AI (AI Setup Assistant), manage leads, inbox, bookings, billing, widget languages, or anything about Spaxio Assistant. I only explain things you have access to on your plan. When you're done, close the chat with the X above.
+                    Ask how to use the dashboard, install the widget, set up the AI (AI Setup Assistant or Business Setup), pricing, AI pages, manage leads, inbox, bookings, billing, widget languages, or anything about Spaxio Assistant. I only explain things you have access to on your plan. When you're done, close the chat with the X above.
                   </p>
                 </div>
               </div>

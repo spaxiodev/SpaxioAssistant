@@ -3,8 +3,21 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations';
 import type { CustomTranslations } from '@/lib/widget/translations';
+
+type QuoteVariable = {
+  key: string;
+  label: string;
+  variable_type: string;
+  unit_label?: string | null;
+  required: boolean;
+  default_value?: string | null;
+  options?: unknown;
+};
 
 type WidgetConfig = {
   welcomeMessage?: string;
@@ -19,6 +32,9 @@ type WidgetConfig = {
   matchAIResponseToWebsiteLanguage?: boolean;
   showLanguageSwitcher?: boolean;
   customTranslations?: CustomTranslations | null;
+  quoteProfileId?: string;
+  quoteVariables?: QuoteVariable[];
+  quoteCurrency?: string;
 };
 
 function WidgetContent() {
@@ -41,6 +57,18 @@ function WidgetContent() {
     button_label: string;
     context_token?: string;
   } | null>(null);
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteFormInputs, setQuoteFormInputs] = useState<Record<string, string>>({});
+  const [quoteEstimateResult, setQuoteEstimateResult] = useState<{
+    valid: boolean;
+    total: number;
+    estimate_low?: number | null;
+    estimate_high?: number | null;
+    applied_rules: { rule_name: string; amount: number; label?: string }[];
+    currency: string;
+    missing_required: string[];
+  } | null>(null);
+  const [quoteEstimateLoading, setQuoteEstimateLoading] = useState(false);
 
   useEffect(() => {
     if (!widgetId) return;
@@ -104,7 +132,7 @@ function WidgetContent() {
       clearTimeout(tId);
       ro.disconnect();
     };
-  }, [config, resolvedLocale]);
+  }, [config, resolvedLocale, showQuoteForm, quoteEstimateResult]);
 
   const color = config?.primaryBrandColor || '#0f172a';
   const baseUrl =
@@ -160,6 +188,15 @@ function WidgetContent() {
         ]);
       }
       if (data.action && typeof data.action === 'object' && typeof data.action.type === 'string') {
+        if (data.action.type === 'open_quote_form' && config?.quoteVariables?.length) {
+          setShowQuoteForm(true);
+          setQuoteEstimateResult(null);
+          const defaults: Record<string, string> = {};
+          config.quoteVariables.forEach((v) => {
+            if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
+          });
+          setQuoteFormInputs(defaults);
+        }
         try {
           window.parent?.postMessage?.({ type: 'spaxio-action', action: data.action }, '*');
         } catch {
@@ -191,6 +228,51 @@ function WidgetContent() {
     setActiveLocale(next);
     window.parent?.postMessage?.({ type: 'spaxio-lang-change', language: next }, '*');
   }, []);
+
+  async function runQuoteEstimate() {
+    if (!widgetId || !config?.quoteVariables?.length || quoteEstimateLoading) return;
+    setQuoteEstimateLoading(true);
+    setQuoteEstimateResult(null);
+    try {
+      const body: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(quoteFormInputs)) {
+        if (v === 'true') body[k] = true;
+        else if (v === 'false') body[k] = false;
+        else if (v === '') continue;
+        else if (/^\d+$/.test(v)) body[k] = Number(v);
+        else if (/^\d+\.\d+$/.test(v)) body[k] = parseFloat(v);
+        else body[k] = v;
+      }
+      const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
+      const res = await fetch(`${base}/api/widget/estimate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ widgetId, inputs: body }),
+      });
+      const data = await res.json();
+      setQuoteEstimateResult({
+        valid: data.valid ?? false,
+        total: data.total ?? 0,
+        estimate_low: data.estimate_low,
+        estimate_high: data.estimate_high,
+        applied_rules: data.applied_rules ?? [],
+        currency: data.currency ?? 'USD',
+        missing_required: data.missing_required ?? [],
+      });
+    } catch {
+      setQuoteEstimateResult({
+        valid: false,
+        total: 0,
+        applied_rules: [],
+        currency: config?.quoteCurrency ?? 'USD',
+        missing_required: [],
+      });
+    } finally {
+      setQuoteEstimateLoading(false);
+    }
+  }
+
+  const quoteVars = config?.quoteVariables ?? [];
 
   return (
     <div
@@ -224,6 +306,98 @@ function WidgetContent() {
           {pageHandoff.button_label}
         </a>
       )}
+      {showQuoteForm && quoteVars.length > 0 ? (
+        <div className="flex w-full max-w-[360px] flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-foreground">{t('quoteFormTitle')}</h2>
+            <Button variant="ghost" size="sm" onClick={() => { setShowQuoteForm(false); setQuoteEstimateResult(null); }}>
+              {t('quoteFormBackToChat')}
+            </Button>
+          </div>
+          <div className="grid gap-3">
+            {quoteVars.map((v) => (
+              <div key={v.key}>
+                <Label htmlFor={`quote-${v.key}`} className="text-sm text-foreground">
+                  {v.label}
+                  {v.required ? ' *' : ''}
+                </Label>
+                {v.variable_type === 'boolean' ? (
+                  <select
+                    id={`quote-${v.key}`}
+                    value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
+                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                ) : v.variable_type === 'select' && Array.isArray(v.options) ? (
+                  <select
+                    id={`quote-${v.key}`}
+                    value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
+                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {(v.options as { value: string; label: string }[]).map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id={`quote-${v.key}`}
+                    type={v.variable_type === 'number' || v.variable_type === 'area' || v.variable_type === 'quantity' ? 'number' : 'text'}
+                    placeholder={v.unit_label ?? ''}
+                    value={quoteFormInputs[v.key] ?? ''}
+                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                    className="mt-1"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <Button onClick={runQuoteEstimate} disabled={quoteEstimateLoading} className="w-full">
+            {quoteEstimateLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {t('loading')}
+              </span>
+            ) : (
+              t('quoteFormCalculate')
+            )}
+          </Button>
+          {quoteEstimateResult && (
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+              <p className="mb-2 font-medium text-foreground">{t('quoteFormYourEstimate')}</p>
+              {quoteEstimateResult.missing_required.length > 0 && (
+                <p className="mb-2 text-amber-600">
+                  {t('quoteFormMissing')}: {quoteEstimateResult.missing_required.join(', ')}
+                </p>
+              )}
+              {quoteEstimateResult.applied_rules.length > 0 && (
+                <ul className="mb-2 space-y-1">
+                  {quoteEstimateResult.applied_rules.map((item, i) => (
+                    <li key={i} className="flex justify-between">
+                      <span className="text-muted-foreground">{item.label ?? item.rule_name}</span>
+                      <span>
+                        {quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}
+                        {Number(item.amount).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex justify-between border-t pt-2 font-semibold">
+                <span>{t('quoteFormTotal')}</span>
+                <span>
+                  {quoteEstimateResult.estimate_low != null && quoteEstimateResult.estimate_high != null
+                    ? `${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_low).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })} – ${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_high).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`
+                    : `${quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}${Number(quoteEstimateResult.total).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
       <AIChatCard
         className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
         primaryBrandColor={color}
@@ -241,6 +415,7 @@ function WidgetContent() {
         ariaLabelClose={t('close')}
         poweredByText={t('poweredBy')}
       />
+      )}
     </div>
   );
 }

@@ -220,11 +220,8 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
     { href: '/dashboard/integrations', key: 'integrations', icon: Plug, featureKey: 'integrations' as FeatureKey },
   ];
 
-  const setupSubmenu: SubmenuItem[] = [
-    { nameKey: 'install', href: '/dashboard/install' },
-    { nameKey: 'pricingRules', href: '/dashboard/pricing' },
-    { nameKey: 'settingsTitle', href: '/dashboard/settings' },
-  ];
+  // Single Settings link; Install & Pricing live under Business Setup
+  const settingsHref = '/dashboard/settings';
 
   const isSimpleMode = mode === 'simple';
 
@@ -342,33 +339,20 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Sparkles className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Setup with AI</span>
+                  <span className="min-w-0 flex-1 truncate">AI Setup</span>
                 </Link>
                 <Link
-                  href="/dashboard/install"
+                  href="/dashboard/conversations"
                   onClick={onNavClick}
                   className={cn(
                     'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/install')
+                    pathname.startsWith('/dashboard/inbox') || pathname.startsWith('/dashboard/conversations')
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
                       : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
                   <MessageCircle className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Chat Widget</span>
-                </Link>
-                <Link
-                  href="/dashboard/automations"
-                  onClick={onNavClick}
-                  className={cn(
-                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/automations')
-                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
-                  )}
-                >
-                  <Workflow className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Automations</span>
+                  <span className="min-w-0 flex-1 truncate">Conversations</span>
                 </Link>
                 <Link
                   href="/dashboard/leads"
@@ -383,20 +367,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Users className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Leads</span>
-                </Link>
-                <Link
-                  href="/dashboard/team"
-                  onClick={onNavClick}
-                  className={cn(
-                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/team')
-                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
-                  )}
-                >
-                  <UserPlus className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Team</span>
+                  <span className="min-w-0 flex-1 truncate">Leads &amp; Sales</span>
                 </Link>
                 <Link
                   href="/dashboard/deployments"
@@ -564,7 +535,21 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   />
                   {t('billingTitle')}
                 </Link>
-                <Menu items={setupSubmenu} labelKey="installAndSettings" icon={Settings} onNavClick={onNavClick} />
+                <Link
+                  href={settingsHref}
+                  onClick={onNavClick}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                    pathname === settingsHref || pathname.startsWith(settingsHref + '/')
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
+                      : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <Settings
+                    className={cn('h-5 w-5 shrink-0', pathname.startsWith(settingsHref) && 'text-primary')}
+                  />
+                  {t('settingsTitle')}
+                </Link>
               </NavSection>
             </>
           )}

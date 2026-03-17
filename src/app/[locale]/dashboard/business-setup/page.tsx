@@ -9,7 +9,7 @@ export default async function BusinessSetupPage() {
   const supabase = createAdminClient();
   const { data: draftList } = await supabase
     .from('business_setup_drafts')
-    .select('id, status, updated_at')
+    .select('id, status, created_at, updated_at')
     .eq('organization_id', orgId)
     .order('updated_at', { ascending: false })
     .limit(5);
