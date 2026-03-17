@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,33 +9,19 @@ export type AIChatMessage = { sender: "ai" | "user"; text: string };
 
 export type AIChatCardProps = {
   className?: string;
-  /** Client-customizable accent (border, user bubble, focus). Defaults to a neutral accent. */
   primaryBrandColor?: string;
-  /** Header title, e.g. chatbot name. */
   chatbotName?: string;
-  /** Initial/welcome message when there are no messages (demo mode only). */
   welcomeMessage?: string;
-  /** Controlled mode: messages from parent (e.g. widget chat API). */
   messages?: AIChatMessage[];
-  /** Controlled mode: send handler. */
   onSend?: (text: string) => void;
-  /** Controlled mode: loading/typing state. */
   isTyping?: boolean;
-  /** Controlled mode: input value. */
   input?: string;
-  /** Controlled mode: input change handler. */
   onInputChange?: (value: string) => void;
-  /** Input placeholder. */
   placeholder?: string;
-  /** When set, show close button and call on close (e.g. widget iframe). */
   onClose?: () => void;
-  /** Show "Powered by" footer (e.g. in widget). */
   showPoweredBy?: boolean;
-  /** Aria-label for send button (e.g. for i18n). */
   ariaLabelSend?: string;
-  /** Aria-label for close button (e.g. for i18n). */
   ariaLabelClose?: string;
-  /** Override "Powered by" text (e.g. for i18n). */
   poweredByText?: string;
 };
 
@@ -68,10 +53,7 @@ function isLightColor(hex: string): boolean {
 }
 
 function isControlled(props: AIChatCardProps): boolean {
-  return (
-    Array.isArray(props.messages) &&
-    typeof props.onSend === "function"
-  );
+  return Array.isArray(props.messages) && typeof props.onSend === "function";
 }
 
 export default function AIChatCard({
@@ -116,7 +98,6 @@ export default function AIChatCard({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Auto-grow textarea: reset height then set to scrollHeight (capped)
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -148,97 +129,46 @@ export default function AIChatCard({
   };
 
   const rgb = primaryBrandColor ? hexToRgb(primaryBrandColor) : null;
-  const borderColor =
-    rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)` : "rgba(255,255,255,0.2)";
   const accentStyle = primaryBrandColor
-    ? { borderColor, ["--accent" as string]: primaryBrandColor }
+    ? { ["--accent" as string]: primaryBrandColor }
     : undefined;
 
   return (
     <div
       className={cn(
-        "relative w-[360px] h-[460px] rounded-2xl overflow-hidden p-[2px]",
+        "flex h-[460px] w-[360px] max-w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gray-900",
         className
       )}
+      style={accentStyle}
     >
-      {/* Animated Outer Border - uses client colour when provided */}
-      <motion.div
-        className="absolute inset-0 rounded-2xl border-2"
-        style={{ borderColor }}
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-      />
+      {/* Header: title + close button */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+        <h2 className="min-w-0 truncate text-lg font-semibold text-white">
+          {chatbotName}
+        </h2>
+        {onClose && (
+          <button
+            type="button"
+            aria-label={ariaLabelClose}
+            onClick={onClose}
+            className="shrink-0 rounded-full p-1.5 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+          >
+            <X className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        )}
+      </header>
 
-      {/* Inner Card */}
-      <div
-        className="relative flex flex-col w-full h-full rounded-xl border border-white/10 overflow-hidden bg-black/90 backdrop-blur-xl"
-        style={accentStyle}
-      >
-        {/* Inner Animated Background - optional tint from brand colour */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-gray-800 via-black to-gray-900"
-          animate={{
-            backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          style={{
-            backgroundSize: "200% 200%",
-            ...(rgb && {
-              backgroundImage: `linear-gradient(to bottom right, rgba(${rgb.r},${rgb.g},${rgb.b},0.12), black 40%, rgba(${rgb.r},${rgb.g},${rgb.b},0.06))`,
-            }),
-          }}
-        />
-
-        {/* Floating Particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-white/10"
-            animate={{
-              y: ["0%", "-140%"],
-              x: [Math.random() * 200 - 100, Math.random() * 200 - 100],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 5 + Math.random() * 3,
-              repeat: Infinity,
-              delay: i * 0.5,
-              ease: "easeInOut",
-            }}
-            style={{ left: `${Math.random() * 100}%`, bottom: "-10%" }}
-          />
-        ))}
-
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-white/10 relative z-10 flex items-center justify-between gap-2 shrink-0">
-          <h2 className="text-lg font-semibold text-white truncate min-w-0">
-            {chatbotName}
-          </h2>
-          {onClose && (
-            <button
-              type="button"
-              aria-label={ariaLabelClose}
-              onClick={onClose}
-              className="shrink-0 rounded-full p-1.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black/50"
-            >
-              <X className="w-4 h-4" strokeWidth={2.5} />
-            </button>
-          )}
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 px-4 py-3 overflow-y-auto space-y-3 text-sm flex flex-col relative z-10">
+      {/* Messages: scrollable, fills remaining space */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex flex-col gap-3 text-sm">
           {messages.map((msg, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
               className={cn(
-                "px-3 py-2 rounded-xl max-w-[80%] shadow-md backdrop-blur-md",
+                "max-w-[80%] rounded-xl px-3 py-2 shadow-md",
                 msg.sender === "ai"
-                  ? "bg-white/10 text-white self-start"
-                  : "font-semibold self-end"
+                  ? "self-start bg-white/10 text-white"
+                  : "self-end font-semibold"
               )}
               style={
                 msg.sender === "user" && primaryBrandColor
@@ -256,73 +186,66 @@ export default function AIChatCard({
               ) : (
                 msg.text
               )}
-            </motion.div>
+            </div>
           ))}
-
           {isTyping && (
-            <motion.div
-              className="flex items-center gap-1 px-3 py-2 rounded-xl max-w-[30%] bg-white/10 self-start"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 0.6, 1] }}
-              transition={{ repeat: Infinity, duration: 1.2 }}
-            >
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <div className="flex max-w-[30%] items-center gap-1 self-start rounded-xl bg-white/10 px-3 py-2">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
               <span
-                className="w-2 h-2 rounded-full bg-white animate-pulse"
+                className="h-2 w-2 animate-pulse rounded-full bg-white"
                 style={{ animationDelay: "0.2s" }}
               />
               <span
-                className="w-2 h-2 rounded-full bg-white animate-pulse"
+                className="h-2 w-2 animate-pulse rounded-full bg-white"
                 style={{ animationDelay: "0.4s" }}
               />
-            </motion.div>
+            </div>
           )}
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
-
-        {/* Input: auto-growing textarea, Enter to send, Shift+Enter for newline */}
-        <div className="flex shrink-0 items-end gap-2 p-3 pt-2 pb-2 border-t border-white/10 relative z-10">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-y-auto px-3 py-2 text-sm bg-black/50 rounded-lg border border-white/10 text-white placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-white/50"
-            style={
-              primaryBrandColor
-                ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
-                : undefined
-            }
-            placeholder={placeholder}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            aria-label={placeholder}
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            aria-label={ariaLabelSend}
-            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-            style={
-              primaryBrandColor
-                ? { color: primaryBrandColor }
-                : { color: "#fff" }
-            }
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-
-        {showPoweredBy && (
-          <div className="px-3 py-1 border-t border-white/5 flex shrink-0 items-center justify-between gap-2 relative z-10">
-            <span className="text-[10px] text-white/40">{poweredByText}</span>
-          </div>
-        )}
       </div>
+
+      {/* Input row */}
+      <div className="flex shrink-0 items-end gap-2 border-t border-white/10 p-3">
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+          style={
+            primaryBrandColor
+              ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
+              : undefined
+          }
+          placeholder={placeholder}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          aria-label={placeholder}
+        />
+        <button
+          type="button"
+          onClick={handleSend}
+          aria-label={ariaLabelSend}
+          className="shrink-0 rounded-lg bg-white/10 p-2 hover:bg-white/20"
+          style={
+            primaryBrandColor ? { color: primaryBrandColor } : { color: "#fff" }
+          }
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Footer: compact, no empty space */}
+      {showPoweredBy && (
+        <footer className="shrink-0 border-t border-white/5 px-3 py-1.5">
+          <span className="text-[10px] text-white/40">{poweredByText}</span>
+        </footer>
+      )}
     </div>
   );
 }
