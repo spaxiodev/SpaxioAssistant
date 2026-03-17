@@ -491,7 +491,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
   const { open, setOpen } = useDashboardSidebar();
 
   const sidebarClass =
-    'h-screen w-56 border-r border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10';
+    'h-screen w-56 border-r border-white/30 bg-card shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] dark:border-white/10';
 
   return (
     <>
@@ -504,7 +504,7 @@ export function SidebarWithSubmenu({ organizationId, userDisplay, planAccess }: 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="left"
-          className="w-56 max-w-[85vw] border-white/30 bg-card/75 shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] backdrop-blur dark:border-white/10"
+          className="w-56 max-w-[85vw] border-white/30 bg-card shadow-[12px_0_40px_-28px_rgba(91,33,182,0.5)] dark:border-white/10"
           showCloseButton={true}
         >
           <div className="flex h-full flex-col">

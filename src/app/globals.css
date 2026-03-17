@@ -22,6 +22,8 @@
     --border-soft: 0 0% 94%;
     --input: 0 0% 90%;
     --ring: 0 0% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
     --radius: 0.75rem;
   }
 
@@ -44,6 +46,8 @@
     --border-soft: 0 0% 16%;
     --input: 0 0% 18%;
     --ring: 0 0% 75%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 90%;
   }
 }
 
