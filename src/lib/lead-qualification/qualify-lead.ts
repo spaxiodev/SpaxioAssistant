@@ -5,11 +5,14 @@
 import OpenAI from 'openai';
 import type { LeadQualificationResult } from './types';
 
-const SYSTEM_PROMPT = `You analyze leads (name, email, message, service requested, timeline, project details, location) and optionally a short transcript snippet.
+const SYSTEM_PROMPT = `You analyze leads (name, email, message, service requested, timeline, project details, location) and optionally a short transcript snippet from a website assistant.
+
+Your main job is to give a clear PRIORITY and a SHORT SUMMARY that a small business owner can understand at a glance.
+
 Return a JSON object with exactly these keys:
 - score: number 0-100 (100 = ready to buy, 0 = cold/incomplete)
 - priority: "low" | "medium" | "high"
-- summary: 1-3 sentence plain-language summary of the lead
+- summary: 1-2 short sentences in plain language summarizing who this lead is and what they want
 - service_or_project_type: string or null
 - urgency: string or null (e.g. "immediate", "this month", "exploring")
 - budget_mentioned: string or null (exact phrase if any)
@@ -17,7 +20,8 @@ Return a JSON object with exactly these keys:
 - sentiment_intent: string or null (e.g. "ready to buy", "comparing options", "information only")
 - recommended_deal_stage: string or null (e.g. "qualified", "proposal", "negotiation", "new")
 - estimated_deal_value: number or null (only if clearly stated; otherwise null)
-- next_recommended_action: string or null (one short sentence for the sales team)
+- next_recommended_action: string or null (one short sentence for the sales team, e.g. "Call today" or "Email a quote this week")
+
 Use only the provided data. Do not invent contact details. Reply with only the JSON, no markdown.`;
 
 export async function qualifyLeadWithAI(

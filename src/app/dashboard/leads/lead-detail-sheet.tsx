@@ -102,7 +102,7 @@ function LeadDetailSheetContent({
 
           {lead.qualification_summary && (
             <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
-              <dt className="text-xs font-medium text-muted-foreground">AI Summary</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Lead summary</dt>
               <dd className="mt-1 text-sm">{lead.qualification_summary}</dd>
               {lead.next_recommended_action && (
                 <dd className="mt-1 text-xs text-muted-foreground">Next: {lead.next_recommended_action}</dd>

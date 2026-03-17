@@ -76,19 +76,19 @@ function LeadCard({
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        {(lead.qualification_summary || lead.next_recommended_action) && (
-          <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 p-3">
-            <dt className="text-xs font-medium text-muted-foreground">AI Summary</dt>
-            {lead.qualification_summary && (
-              <dd className="mt-1 text-sm">{lead.qualification_summary}</dd>
+            {(lead.qualification_summary || lead.next_recommended_action) && (
+              <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 p-3">
+                <dt className="text-xs font-medium text-muted-foreground">Lead summary</dt>
+                {lead.qualification_summary && (
+                  <dd className="mt-1 text-sm">{lead.qualification_summary}</dd>
+                )}
+                {lead.next_recommended_action && (
+                  <dd className="mt-1 text-xs text-muted-foreground">
+                    Next: {lead.next_recommended_action}
+                  </dd>
+                )}
+              </div>
             )}
-            {lead.next_recommended_action && (
-              <dd className="mt-1 text-xs text-muted-foreground">
-                Next: {lead.next_recommended_action}
-              </dd>
-            )}
-          </div>
-        )}
         <FollowUpCard leadId={lead.id} />
         <MemoryCard subjectType="lead" subjectId={lead.id} />
         <dl className="grid gap-3 sm:grid-cols-2">
