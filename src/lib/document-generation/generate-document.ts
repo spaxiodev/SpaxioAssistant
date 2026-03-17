@@ -6,11 +6,11 @@
 import OpenAI from 'openai';
 import type { GenerateDocumentInput, GeneratedDocument, GenerationType } from './types';
 
-const QUOTE_DRAFT_PROMPT = `You generate a professional quote draft for a business. Use the provided context. Output a single document with these sections (use clear headings):
+const QUOTE_DRAFT_PROMPT = `You generate a professional quote draft for a business. Use the provided context. If the context includes estimate_line_items and estimate_total (or estimate_low/estimate_high), use those exact numbers and line items in the pricing section—do not invent or change them. Output a single document with these sections (use clear headings):
 1. Customer/Project Info - name, contact, project summary
 2. Scope Overview - what is included
 3. Assumptions - any conditions or assumptions
-4. Estimated Pricing - use "[To be quoted]" or placeholders if exact pricing unavailable; otherwise brief line items
+4. Estimated Pricing - if context has estimate_line_items and estimate_total, list each line item and the total; otherwise use "[To be quoted]" or placeholders
 5. Next Steps - what happens next
 
 Write in professional tone. Output only the document body, no meta-commentary.`;

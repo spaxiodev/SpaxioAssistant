@@ -76,6 +76,7 @@ export async function POST(request: Request) {
   }
 
   const context: DocumentContext = {};
+  let conversationId: string | null = null;
 
   const [{ data: settings }, ...rest] = await Promise.all([
     supabase.from('business_settings').select('business_name, industry, services_offered').eq('organization_id', orgId).single(),
@@ -88,6 +89,9 @@ export async function POST(request: Request) {
     sourceType === 'deal' && sourceId
       ? supabase.from('deals').select('*').eq('id', sourceId).eq('organization_id', orgId).single()
       : Promise.resolve({ data: null }),
+    sourceType === 'conversation' && sourceId
+      ? supabase.from('conversations').select('id').eq('id', sourceId).eq('organization_id', orgId).single()
+      : Promise.resolve({ data: null }),
   ]);
 
   context.businessName = (settings as { business_name?: string } | null)?.business_name ?? null;
@@ -97,6 +101,9 @@ export async function POST(request: Request) {
   const leadData = rest[0]?.data as Record<string, unknown> | null;
   const quoteData = rest[1]?.data as Record<string, unknown> | null;
   const dealData = rest[2]?.data as Record<string, unknown> | null;
+  if (sourceType === 'lead' && leadData?.conversation_id) conversationId = leadData.conversation_id as string;
+  if (sourceType === 'quote_request' && quoteData?.conversation_id) conversationId = quoteData.conversation_id as string;
+  if (sourceType === 'conversation' && sourceId) conversationId = sourceId;
 
   if (leadData) {
     context.lead = {
@@ -114,6 +121,8 @@ export async function POST(request: Request) {
   if (quoteData) {
     context.quoteRequest = {
       customer_name: String(quoteData.customer_name ?? ''),
+      customer_email: (quoteData.customer_email as string) ?? null,
+      customer_phone: (quoteData.customer_phone as string) ?? null,
       service_type: (quoteData.service_type as string) ?? null,
       project_details: (quoteData.project_details as string) ?? null,
       dimensions_size: (quoteData.dimensions_size as string) ?? null,
@@ -121,6 +130,10 @@ export async function POST(request: Request) {
       budget_text: (quoteData.budget_text as string) ?? null,
       budget_amount: typeof quoteData.budget_amount === 'number' ? quoteData.budget_amount : null,
       notes: (quoteData.notes as string) ?? null,
+      estimate_total: typeof quoteData.estimate_total === 'number' ? quoteData.estimate_total : null,
+      estimate_low: typeof quoteData.estimate_low === 'number' ? quoteData.estimate_low : null,
+      estimate_high: typeof quoteData.estimate_high === 'number' ? quoteData.estimate_high : null,
+      estimate_line_items: Array.isArray(quoteData.estimate_line_items) ? quoteData.estimate_line_items : null,
     };
   }
   if (dealData) {
@@ -149,6 +162,7 @@ export async function POST(request: Request) {
       lead_id: sourceType === 'lead' ? sourceId : null,
       contact_id: null,
       deal_id: sourceType === 'deal' ? sourceId : null,
+      conversation_id: conversationId,
       metadata: {
         generation_type: generationType,
         source_type: sourceType,

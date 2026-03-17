@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Wand2, Sparkles, Settings, Globe } from 'lucide-react';
+import { Link } from '@/components/intl-link';
+import { Wand2, Sparkles, Settings, Globe, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SimplePageHeader, SimpleActionCard, SimpleDeveloperModeLink } from '@/components/dashboard/simple';
@@ -35,6 +36,20 @@ export function SimpleAiSetupPage() {
 
       {/* Path 1: Fully automatic from website */}
       <AiWebsiteSetupCard />
+
+      {/* Full business setup: wizard with review & publish */}
+      <SimpleActionCard
+        title="Full business setup"
+        description="Tell us about your business (website, paste, or describe). We’ll extract your profile, services, pricing, and suggest agents and automations. Review and approve before going live."
+        icon={<Building2 className="h-5 w-5" />}
+      >
+        <Button asChild variant="secondary" className="gap-2">
+          <Link href="/dashboard/business-setup">
+            <Building2 className="h-4 w-4" />
+            Set up my whole business
+          </Link>
+        </Button>
+      </SimpleActionCard>
 
       {/* Path 2: Guided setup with AI */}
       <SimpleActionCard

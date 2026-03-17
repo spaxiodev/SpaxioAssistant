@@ -15,6 +15,7 @@ import { SimpleAnalyticsPage } from '@/components/dashboard/simple-pages/simple-
 import { SimpleBillingPage } from '@/components/dashboard/simple-pages/simple-billing-page';
 import { SimpleAccountPage } from '@/components/dashboard/simple-pages/simple-account-page';
 import { SimpleGenericPage } from '@/components/dashboard/simple-pages/simple-generic-page';
+import { SimpleBusinessSetupPage } from '@/components/dashboard/simple-pages/simple-business-setup-page';
 import { routing } from '@/i18n/routing';
 
 type SimpleModeRouterProps = {
@@ -46,6 +47,7 @@ function getSimplePage(pathname: string): React.ReactNode {
 
   if (base === '/dashboard' || base === '/') return <SimpleDashboardOverview />;
   if (base.startsWith('/dashboard/ai-setup')) return <SimpleAiSetupPage />;
+  if (base.startsWith('/dashboard/business-setup')) return <SimpleBusinessSetupPage />;
   if (base.startsWith('/dashboard/install')) return <SimpleInstallPage />;
   if (base === '/dashboard/agents' || base.startsWith('/dashboard/agents/')) return <SimpleAgentsPage />;
   if (base.startsWith('/dashboard/automations')) return <SimpleAutomationsPage />;

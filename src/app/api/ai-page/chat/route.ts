@@ -14,7 +14,8 @@ import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage } from '@/lib/billing/usage';
 import { getPageRun, updatePageRunState } from '@/lib/ai-pages/session-service';
 import { mergeExtractedIntoState } from '@/lib/ai-pages/intake-service';
-import type { SessionState, IntakeFieldSchema } from '@/lib/ai-pages/types';
+import type { SessionState, IntakeFieldSchema, SessionStateEstimate } from '@/lib/ai-pages/types';
+import { getPricingContext, runEstimate } from '@/lib/quote-pricing/estimate-quote-service';
 import type { Agent } from '@/lib/supabase/database.types';
 import { searchKnowledge } from '@/lib/knowledge/search';
 
@@ -175,9 +176,28 @@ export async function POST(request: Request) {
     matchAIResponseToWebsiteLanguage: true,
   });
 
+  let pricingPromptBlock = '';
+  if (page.page_type === 'quote') {
+    try {
+      const pricingContext = await getPricingContext(supabase, { organizationId: orgId, aiPageId: pageId });
+      if (pricingContext && pricingContext.variables.length > 0) {
+        const varList = pricingContext.variables
+          .map((v) => `- ${v.key}: ${v.label}${v.required ? ' (required)' : ''}${v.unit_label ? ` in ${v.unit_label}` : ''}`)
+          .join('\n');
+        const serviceList =
+          pricingContext.services.length > 0
+            ? pricingContext.services.map((s) => `${s.name} (slug: ${s.slug})`).join(', ')
+            : 'general';
+        pricingPromptBlock = `\n\nPricing rules are configured for this quote page. You must collect the following variables from the user; do not invent or guess prices—the system will calculate the estimate from their answers.\nServices offered: ${serviceList}.\nVariables to collect:\n${varList}\nWhen the user provides these details, the system will show an estimate. Do not make up numbers.`;
+      }
+    } catch {
+      // omit block if load fails
+    }
+  }
+
   const messagesForApi: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     ...(languageInstruction ? [{ role: 'system' as const, content: languageInstruction }] : []),
-    { role: 'system', content: systemContent },
+    { role: 'system', content: systemContent + pricingPromptBlock },
     ...(pageInstruction ? [{ role: 'system' as const, content: pageInstruction }] : []),
     ...(history ?? []).map((m) => ({
       role: m.role as 'user' | 'assistant',
@@ -255,7 +275,57 @@ export async function POST(request: Request) {
       const raw = extract.choices[0]?.message?.content?.trim();
       if (raw) {
         const extracted = JSON.parse(raw) as Record<string, unknown>;
-        const nextState = mergeExtractedIntoState(currentState, extracted, schema);
+        let nextState = mergeExtractedIntoState(currentState, extracted, schema);
+
+        // Quote pages: run pricing engine when we have a profile and collected inputs
+        if (page.page_type === 'quote') {
+          try {
+            const pricingContext = await getPricingContext(supabase, {
+              organizationId: orgId,
+              aiPageId: pageId,
+            });
+            if (pricingContext && pricingContext.rules.length > 0) {
+              const collected = nextState.collected_fields ?? {};
+              const serviceSlug = typeof collected.service_slug === 'string' ? collected.service_slug.trim() : null;
+              const serviceType = typeof collected.service_type === 'string' ? collected.service_type.trim() : null;
+              let serviceId: string | null = nextState.selected_service_id ?? null;
+              if (!serviceId && (serviceSlug || serviceType)) {
+                const match = pricingContext.services.find(
+                  (s) => s.slug === serviceSlug || s.name.toLowerCase() === (serviceType ?? '').toLowerCase()
+                );
+                serviceId = match?.id ?? (pricingContext.services.length === 1 ? pricingContext.services[0]!.id : null);
+              }
+              if (!serviceId && pricingContext.services.length === 1) {
+                serviceId = pricingContext.services[0]!.id;
+              }
+              const result = runEstimate({
+                inputs: collected,
+                context: pricingContext,
+                serviceId,
+              });
+              if (result.applied_rules.length > 0) {
+                const estimate: SessionStateEstimate = {
+                  subtotal: result.subtotal,
+                  total: result.total,
+                  estimate_low: result.estimate_low,
+                  estimate_high: result.estimate_high,
+                  line_items: result.applied_rules.map((r) => ({ rule_name: r.rule_name, amount: r.amount, label: r.label })),
+                  confidence: result.confidence,
+                  human_review_recommended: result.human_review_recommended,
+                  output_mode: result.output_mode,
+                };
+                nextState = {
+                  ...nextState,
+                  selected_service_id: serviceId,
+                  estimate,
+                };
+              }
+            }
+          } catch {
+            // non-fatal: continue without estimate
+          }
+        }
+
         await updatePageRunState(supabase, runId, {
           session_state: nextState,
           completion_percent: nextState.completion_percent ?? runRow.completion_percent ?? 0,

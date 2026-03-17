@@ -22,6 +22,12 @@ export async function Footer() {
           >
             {t('contact')}
           </Link>
+          <Link
+            href="/demo/ai-chat"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Demo
+          </Link>
           <a
             href={SPAXIO_BLOG_URL}
             target="_blank"

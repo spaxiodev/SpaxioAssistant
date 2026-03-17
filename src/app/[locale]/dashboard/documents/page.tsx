@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getTranslations } from 'next-intl/server';
 import { FileText } from 'lucide-react';
 import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
+import { Link } from '@/components/intl-link';
 
 export default async function DocumentsPage() {
   const orgId = await getOrganizationId();
@@ -24,7 +25,7 @@ export default async function DocumentsPage() {
       .limit(50),
     supabase
       .from('documents')
-      .select('id, name, template_id, created_at')
+      .select('id, name, template_id, metadata, created_at')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
       .limit(50),
@@ -83,14 +84,20 @@ export default async function DocumentsPage() {
             <p className="py-4 text-center text-sm text-muted-foreground">{t('noDocuments')}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {documents.map((doc) => (
-                <li key={doc.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                  <p className="font-medium">{doc.name}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
+              {documents.map((doc) => {
+                const meta = (doc.metadata as { generation_type?: string }) ?? {};
+                const typeLabel = (meta.generation_type ?? 'document').replace(/_/g, ' ');
+                return (
+                  <li key={doc.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <Link href={`/dashboard/documents/${doc.id}`} className="font-medium text-primary hover:underline min-w-0 truncate">
+                      {doc.name}
+                    </Link>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {typeLabel} · {new Date(doc.created_at).toLocaleDateString()}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

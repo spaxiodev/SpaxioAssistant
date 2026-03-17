@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   const pageType = (typeof body.page_type === 'string' && ['quote', 'support', 'booking', 'intake', 'sales', 'product_finder', 'general', 'custom'].includes(body.page_type))
     ? body.page_type
     : 'general';
-  const deploymentMode = (typeof body.deployment_mode === 'string' && ['widget_only', 'page_only', 'widget_and_page', 'widget_handoff_to_page'].includes(body.deployment_mode))
+  const deploymentMode = (typeof body.deployment_mode === 'string' && ['widget_only', 'page_only', 'widget_and_page', 'widget_handoff_to_page', 'hosted_page', 'embedded_page', 'both'].includes(body.deployment_mode))
     ? body.deployment_mode
     : 'page_only';
   const agentId = typeof body.agent_id === 'string' && body.agent_id.trim() ? body.agent_id.trim() : null;

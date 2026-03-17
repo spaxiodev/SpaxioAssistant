@@ -189,6 +189,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
   const workspaceNav = [
     { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
     { href: '/dashboard/ai-setup', key: 'aiSetupAssistant', icon: Sparkles },
+    { href: '/dashboard/business-setup', key: 'businessSetup', icon: Building2 },
     { href: '/dashboard/agents', key: 'agents', icon: Bot },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
     { href: '/dashboard/actions', key: 'aiActions', icon: Zap, featureKey: 'ai_actions' as FeatureKey },
@@ -221,6 +222,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
 
   const setupSubmenu: SubmenuItem[] = [
     { nameKey: 'install', href: '/dashboard/install' },
+    { nameKey: 'pricingRules', href: '/dashboard/pricing' },
     { nameKey: 'settingsTitle', href: '/dashboard/settings' },
   ];
 

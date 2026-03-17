@@ -1,11 +1,13 @@
 /**
  * Finalize AI page run and create outcomes (quote request, lead, ticket). Public; validated by run_id.
+ * Validates required intake fields (e.g. email for quote/support) before creating outcomes.
  */
 
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPageRun, updatePageRunState } from '@/lib/ai-pages/session-service';
 import { createOutcomesForRun } from '@/lib/ai-pages/outcome-service';
+import { validateCollectedFields } from '@/lib/ai-pages/intake-service';
+import type { IntakeFieldSchema } from '@/lib/ai-pages/types';
 import { getClientIp, isUuid, normalizeUuid } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -50,12 +52,28 @@ export async function POST(request: Request) {
 
   const { data: page } = await supabase
     .from('ai_pages')
-    .select('page_type, outcome_config')
+    .select('page_type, outcome_config, intake_schema')
     .eq('id', run.ai_page_id)
     .single();
 
   const outcomeConfig = (page?.outcome_config as { create_quote_request?: boolean; create_lead?: boolean; create_ticket?: boolean }) ?? {};
   const sessionState = (run.session_state as { collected_fields?: Record<string, unknown> }) ?? {};
+  const collected = sessionState.collected_fields ?? {};
+  const intakeSchema = (page?.intake_schema ?? []) as IntakeFieldSchema[];
+
+  // Validate required fields before creating outcomes (e.g. email for quote/lead)
+  const { valid, missing } = validateCollectedFields(collected, intakeSchema);
+  if (!valid && missing.length > 0) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'missing_required',
+        missing_required: missing,
+        message: `Please provide: ${missing.join(', ')}`,
+      },
+      { status: 400, headers: corsHeaders }
+    );
+  }
 
   const result = await createOutcomesForRun(supabase, {
     organizationId: run.organization_id,

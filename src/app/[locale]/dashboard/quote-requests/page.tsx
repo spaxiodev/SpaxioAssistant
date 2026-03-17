@@ -1,28 +1,7 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/utils';
-import type { QuoteRequest } from '@/lib/supabase/database.types';
-import { QuoteRequestRowActions } from '../../../dashboard/quote-requests/quote-request-row-actions';
 import { getTranslations } from 'next-intl/server';
-
-function formatBudget(r: QuoteRequest): string {
-  if (r.budget_text) return r.budget_text;
-  if (r.budget_amount != null) return `$${Number(r.budget_amount).toLocaleString()}`;
-  return '—';
-}
-
-function getWorthItStatus(
-  r: QuoteRequest,
-  basePrices: Record<string, number> | null
-): 'worth_it' | 'not_worth_it' | null {
-  if (r.budget_amount == null || !Number.isFinite(r.budget_amount)) return null;
-  const base = basePrices && r.service_type ? basePrices[r.service_type] : undefined;
-  if (base == null || !Number.isFinite(base)) return null;
-  return r.budget_amount >= base ? 'worth_it' : 'not_worth_it';
-}
+import { QuoteRequestsTableClient } from '../../../dashboard/quote-requests/quote-requests-table-client';
 
 export default async function QuoteRequestsPage() {
   const orgId = await getOrganizationId();
@@ -53,6 +32,21 @@ export default async function QuoteRequestsPage() {
       ? (settings.service_base_prices as Record<string, number>)
       : null;
 
+  const labels = {
+    customer: t('customer'),
+    service: t('service'),
+    budget: t('budget'),
+    worthIt: t('worthIt'),
+    location: t('location'),
+    details: t('details'),
+    date: t('date'),
+    worthItYes: t('worthItYes'),
+    worthItNo: t('worthItNo'),
+    allQuoteRequests: t('allQuoteRequests'),
+    quoteRequestsCardDescription: t('quoteRequestsCardDescription'),
+    noQuoteRequests: t('noQuoteRequests'),
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -60,63 +54,11 @@ export default async function QuoteRequestsPage() {
         <p className="text-muted-foreground">{t('quoteRequestsDescription')}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('allQuoteRequests')}</CardTitle>
-          <CardDescription>{t('quoteRequestsCardDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!requests?.length ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">{t('noQuoteRequests')}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('customer')}</TableHead>
-                  <TableHead>{t('service')}</TableHead>
-                  <TableHead>{t('budget')}</TableHead>
-                  <TableHead>{t('worthIt')}</TableHead>
-                  <TableHead>{t('location')}</TableHead>
-                  <TableHead>{t('details')}</TableHead>
-                  <TableHead>{t('date')}</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((r) => {
-                  const worthIt = getWorthItStatus(r, basePrices);
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.customer_name}</TableCell>
-                      <TableCell>{r.service_type ?? '—'}</TableCell>
-                      <TableCell>{formatBudget(r)}</TableCell>
-                      <TableCell>
-                        {worthIt === 'worth_it' && (
-                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                            {t('worthItYes')}
-                          </Badge>
-                        )}
-                        {worthIt === 'not_worth_it' && (
-                          <Badge variant="destructive">{t('worthItNo')}</Badge>
-                        )}
-                        {worthIt === null && <span className="text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell>{r.location ?? '—'}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                        {r.project_details ?? '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(r.created_at)}</TableCell>
-                      <TableCell>
-                        <QuoteRequestRowActions quoteRequestId={r.id} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <QuoteRequestsTableClient
+        requests={requests ?? []}
+        basePrices={basePrices}
+        labels={labels}
+      />
     </div>
   );
 }

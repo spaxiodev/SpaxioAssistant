@@ -1,9 +1,12 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPageById } from '@/lib/ai-pages/config-service';
+import { getPublicAppUrl } from '@/lib/app-url';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { Link } from '@/components/intl-link';
 import { AiPageForm } from '@/components/ai-page/ai-page-form';
+import { AiPageInstallCard } from '@/components/ai-page/ai-page-install-card';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -18,11 +21,13 @@ export default async function EditAiPagePage({ params }: Props) {
   const page = await getPageById(supabase, id, orgId);
   if (!page) notFound();
 
-  const { data: agents } = await supabase
-    .from('agents')
-    .select('id, name')
-    .eq('organization_id', orgId)
-    .order('name');
+  const headersList = await headers();
+  const baseUrl = getPublicAppUrl({ headers: headersList });
+
+  const [{ data: agents }, { data: pricingProfiles }] = await Promise.all([
+    supabase.from('agents').select('id, name').eq('organization_id', orgId).order('name'),
+    supabase.from('quote_pricing_profiles').select('id, name').eq('organization_id', orgId).order('name'),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -37,6 +42,7 @@ export default async function EditAiPagePage({ params }: Props) {
       </div>
       <AiPageForm
         agents={agents ?? []}
+        pricingProfiles={pricingProfiles ?? []}
         initial={{
           id: page.id,
           title: page.title,
@@ -48,7 +54,13 @@ export default async function EditAiPagePage({ params }: Props) {
           welcome_message: page.welcome_message,
           intro_copy: page.intro_copy,
           trust_copy: page.trust_copy,
+          pricing_profile_id: page.pricing_profile_id ?? undefined,
         }}
+      />
+      <AiPageInstallCard
+        slug={page.slug}
+        baseUrl={baseUrl}
+        isPublished={!!page.is_published}
       />
     </div>
   );

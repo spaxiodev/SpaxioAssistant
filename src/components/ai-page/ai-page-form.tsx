@@ -17,9 +17,12 @@ const PAGE_TYPES = [
 ] as const;
 
 const DEPLOYMENT_MODES = [
-  { value: 'page_only', label: 'Page only' },
+  { value: 'page_only', label: 'Page only (hosted on Spaxio)' },
+  { value: 'hosted_page', label: 'Hosted page (Spaxio URL only)' },
+  { value: 'embedded_page', label: 'Embeddable (iframe on your website)' },
   { value: 'widget_and_page', label: 'Widget + Page' },
   { value: 'widget_handoff_to_page', label: 'Widget can hand off to this page' },
+  { value: 'both', label: 'Both hosted and embeddable' },
 ] as const;
 
 const TEMPLATES: Record<string, { title: string; slug: string; welcome_message: string; intro_copy: string }> = {
@@ -50,9 +53,11 @@ const TEMPLATES: Record<string, { title: string; slug: string; welcome_message: 
 };
 
 type Agent = { id: string; name: string };
+type PricingProfile = { id: string; name: string };
 
 type Props = {
   agents: Agent[];
+  pricingProfiles?: PricingProfile[];
   initial?: {
     id: string;
     title: string;
@@ -64,10 +69,11 @@ type Props = {
     welcome_message: string | null;
     intro_copy: string | null;
     trust_copy: string | null;
+    pricing_profile_id?: string | null;
   };
 };
 
-export function AiPageForm({ agents, initial }: Props) {
+export function AiPageForm({ agents, pricingProfiles = [], initial }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -77,6 +83,7 @@ export function AiPageForm({ agents, initial }: Props) {
   const [pageType, setPageType] = useState(initial?.page_type ?? 'quote');
   const [deploymentMode, setDeploymentMode] = useState(initial?.deployment_mode ?? 'page_only');
   const [agentId, setAgentId] = useState(initial?.agent_id ?? '');
+  const [pricingProfileId, setPricingProfileId] = useState(initial?.pricing_profile_id ?? '');
   const [welcomeMessage, setWelcomeMessage] = useState(initial?.welcome_message ?? TEMPLATES.quote.welcome_message);
   const [introCopy, setIntroCopy] = useState(initial?.intro_copy ?? TEMPLATES.quote.intro_copy);
   const [trustCopy, setTrustCopy] = useState(initial?.trust_copy ?? '');
@@ -103,7 +110,7 @@ export function AiPageForm({ agents, initial }: Props) {
         ? `/api/dashboard/ai-pages/${initial.id}`
         : '/api/dashboard/ai-pages';
       const method = initial ? 'PUT' : 'POST';
-      const body = {
+      const body: Record<string, unknown> = {
         title: trimmedTitle,
         slug: slug.trim() || trimmedTitle.toLowerCase().replace(/\s+/g, '-'),
         description: description.trim() || null,
@@ -114,6 +121,7 @@ export function AiPageForm({ agents, initial }: Props) {
         intro_copy: introCopy.trim() || null,
         trust_copy: trustCopy.trim() || null,
       };
+      if (initial) body.pricing_profile_id = pricingProfileId.trim() || null;
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -173,6 +181,25 @@ export function AiPageForm({ agents, initial }: Props) {
               Public URL: /a/{slug || '…'}
             </p>
           </div>
+          {pageType === 'quote' && pricingProfiles.length > 0 && (
+            <div className="grid gap-2">
+              <Label htmlFor="pricing_profile">Pricing rules profile</Label>
+              <select
+                id="pricing_profile"
+                value={pricingProfileId}
+                onChange={(e) => setPricingProfileId(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">None (no structured pricing)</option>
+                {pricingProfiles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Link a profile from Pricing rules so the AI uses your variables and rules for estimates.
+              </p>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
             <Input

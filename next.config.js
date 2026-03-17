@@ -26,6 +26,8 @@ const nextConfig = {
       // Locale-prefixed routes: allow /widget-preview and /widget to work without locale (default: en)
       { source: '/widget-preview', destination: '/en/widget-preview' },
       { source: '/widget', destination: '/en/widget' },
+      { source: '/ai', destination: '/en/ai' },
+      { source: '/ai/:path*', destination: '/en/ai/:path*' },
       { source: '/a', destination: '/en/a' },
       { source: '/a/:path*', destination: '/en/a/:path*' },
       // Fallback so /dashboard and /dashboard/* resolve if proxy redirect is ever skipped
@@ -54,6 +56,21 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
           { key: 'Access-Control-Max-Age', value: '86400' },
+        ],
+      },
+      // Allow embedding full-page AI assistant on customer websites
+      {
+        source: '/:locale(en|fr-CA|fr|es|de|pt|it)/a/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
+        ],
+      },
+      {
+        source: '/a/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
         ],
       },
       {

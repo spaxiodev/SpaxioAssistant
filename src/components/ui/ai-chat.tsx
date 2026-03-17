@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import { Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -109,9 +110,20 @@ export default function AIChatCard({
   const isTyping = controlled ? controlledIsTyping : demoTyping;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Auto-grow textarea: reset height then set to scrollHeight (capped)
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const capped = Math.min(el.scrollHeight, 120);
+    el.style.height = `${capped}px`;
+  }, [input]);
 
   const handleSend = () => {
     const text = input.trim();
@@ -237,7 +249,13 @@ export default function AIChatCard({
                   : undefined
               }
             >
-              {msg.text}
+              {msg.sender === "ai" ? (
+                <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              ) : (
+                msg.text
+              )}
             </motion.div>
           ))}
 
@@ -262,10 +280,12 @@ export default function AIChatCard({
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
-        {/* Input */}
-        <div className="flex items-center gap-2 p-3 border-t border-white/10 relative z-10">
-          <input
-            className="flex-1 px-3 py-2 text-sm bg-black/50 rounded-lg border border-white/10 text-white placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-white/50"
+        {/* Input: auto-growing textarea, Enter to send, Shift+Enter for newline */}
+        <div className="flex items-end gap-2 p-3 border-t border-white/10 relative z-10">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-y-auto px-3 py-2 text-sm bg-black/50 rounded-lg border border-white/10 text-white placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-white/50"
             style={
               primaryBrandColor
                 ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
@@ -274,7 +294,13 @@ export default function AIChatCard({
             placeholder={placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            aria-label={placeholder}
           />
           <button
             type="button"

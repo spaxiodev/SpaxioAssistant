@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SessionState } from './types';
+import { getPricingContext, runEstimate, persistEstimationRun } from '@/lib/quote-pricing/estimate-quote-service';
 
 function str(v: unknown, max = 500): string | null {
   if (v == null) return null;
@@ -36,12 +37,17 @@ export async function createQuoteRequestFromSession(
     .maybeSingle();
   if (existing) return existing.id;
 
+  const email = str(params.collected.contact_email ?? params.collected.email, 255);
+  const phone = str(params.collected.phone, 100);
+
   const { data: row } = await supabase
     .from('quote_requests')
     .insert({
       organization_id: params.organizationId,
       conversation_id: params.conversationId,
       customer_name: name,
+      customer_email: email,
+      customer_phone: phone,
       service_type: str(params.collected.service_type ?? params.collected.service_category),
       project_details: str(params.collected.project_details ?? params.collected.notes, 2000),
       dimensions_size: str(params.collected.dimensions ?? params.collected.dimensions_size),
@@ -158,6 +164,50 @@ export async function createOutcomesForRun(
 
   if (params.outcomeConfig.create_quote_request && (params.pageType === 'quote' || params.pageType === 'general')) {
     out.quoteRequestId = await createQuoteRequestFromSession(supabase, base);
+
+    // If quote page has pricing estimate, persist estimation run and link to quote_request
+    if (out.quoteRequestId && (params.pageType === 'quote') && Object.keys(collected).length > 0) {
+      try {
+        const pricingContext = await getPricingContext(supabase, {
+          organizationId: params.organizationId,
+          aiPageId: params.aiPageId,
+        });
+        if (pricingContext && pricingContext.rules.length > 0) {
+          const serviceId = (params.sessionState.selected_service_id as string) ?? null;
+          const result = runEstimate({
+            inputs: collected,
+            context: pricingContext,
+            serviceId,
+          });
+          if (result.applied_rules.length > 0) {
+            const runId = await persistEstimationRun(supabase, {
+              organizationId: params.organizationId,
+              pricingProfileId: pricingContext.profile.id,
+              aiPageId: params.aiPageId,
+              quoteRequestId: out.quoteRequestId,
+              leadId: out.leadId ?? undefined,
+              conversationId: params.conversationId ?? undefined,
+              serviceId,
+              result,
+            });
+            if (runId) {
+              await supabase
+                .from('quote_requests')
+                .update({
+                  estimation_run_id: runId,
+                  estimate_total: result.total,
+                  estimate_low: result.estimate_low,
+                  estimate_high: result.estimate_high,
+                  estimate_line_items: result.applied_rules.map((r) => ({ name: r.rule_name, amount: r.amount, label: r.label })),
+                })
+                .eq('id', out.quoteRequestId);
+            }
+          }
+        }
+      } catch {
+        // non-fatal
+      }
+    }
   }
   if (params.outcomeConfig.create_lead) {
     out.leadId = await createLeadFromSession(supabase, base);

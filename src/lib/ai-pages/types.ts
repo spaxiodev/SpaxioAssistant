@@ -20,6 +20,9 @@ export const DEPLOYMENT_MODES = [
   'page_only',
   'widget_and_page',
   'widget_handoff_to_page',
+  'hosted_page',
+  'embedded_page',
+  'both',
 ] as const;
 
 export type DeploymentMode = (typeof DEPLOYMENT_MODES)[number];
@@ -74,6 +77,7 @@ export interface AiPageRow {
   handoff_config: HandoffConfig;
   is_published: boolean;
   is_enabled: boolean;
+  pricing_profile_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -97,6 +101,18 @@ export interface AiPageRunRow {
   updated_at: string;
 }
 
+/** Minimal estimate shape for session state (from pricing engine). */
+export interface SessionStateEstimate {
+  subtotal: number;
+  total: number;
+  estimate_low?: number | null;
+  estimate_high?: number | null;
+  line_items: { rule_name: string; amount: number; label?: string }[];
+  confidence: number;
+  human_review_recommended?: boolean;
+  output_mode?: string;
+}
+
 export interface SessionState {
   intent?: string;
   collected_fields?: Record<string, unknown>;
@@ -106,6 +122,9 @@ export interface SessionState {
   summary?: string;
   next_question?: string;
   final_status?: 'draft' | 'submitted' | 'escalated';
+  /** Set when pricing engine runs (quote pages). */
+  selected_service_id?: string | null;
+  estimate?: SessionStateEstimate | null;
   [key: string]: unknown;
 }
 

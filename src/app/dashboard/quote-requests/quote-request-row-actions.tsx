@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/sheet';
 import { FollowUpCard } from '@/components/dashboard/follow-up-card';
 import { GenerateDocumentActions } from '@/components/dashboard/generate-document-actions';
+import { EntityDocumentsList } from '@/components/dashboard/entity-documents-list';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslations } from 'next-intl';
 
@@ -65,6 +66,7 @@ export function QuoteRequestRowActions({ quoteRequestId }: QuoteRequestRowAction
             <SheetTitle>Follow-up & documents</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-4">
+            <EntityDocumentsList quoteRequestId={quoteRequestId} />
             <FollowUpCard quoteRequestId={quoteRequestId} />
             <GenerateDocumentActions
               sourceType="quote_request"

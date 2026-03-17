@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { FileText, Loader2 } from 'lucide-react';
+import { Link } from '@/components/intl-link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,7 +71,37 @@ export function GenerateDocumentActions({
         toast({ title: 'Error', description: data.error || 'Generation failed', variant: 'destructive' });
         return;
       }
-      toast({ title: 'Document created', description: data.name });
+      const docId = data.documentId as string | undefined;
+      const name = data.name as string | undefined;
+      if (generationType === 'quote_draft' && docId) {
+        toast({
+          title: 'Quote draft created',
+          description: (
+            <span className="flex flex-wrap gap-2 mt-1">
+              <Link href={`/dashboard/documents/${docId}`} className="text-sm font-medium underline">
+                Open draft
+              </Link>
+              <Link href="/dashboard/documents" className="text-sm font-medium underline">
+                View in Documents
+              </Link>
+            </span>
+          ),
+        });
+      } else {
+        toast({
+          title: 'Document created',
+          description: docId ? (
+            <span className="flex flex-wrap gap-2 mt-1">
+              <Link href={`/dashboard/documents/${docId}`} className="text-sm font-medium underline">
+                Open
+              </Link>
+              <Link href="/dashboard/documents" className="text-sm font-medium underline">
+                Documents
+              </Link>
+            </span>
+          ) : (data.name as string),
+        });
+      }
       router.refresh();
     } finally {
       setLoading(false);

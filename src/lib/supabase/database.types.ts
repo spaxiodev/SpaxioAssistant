@@ -86,6 +86,8 @@ export interface Database {
           organization_id: string;
           conversation_id: string | null;
           customer_name: string;
+          customer_email: string | null;
+          customer_phone: string | null;
           service_type: string | null;
           project_details: string | null;
           dimensions_size: string | null;
@@ -93,6 +95,11 @@ export interface Database {
           notes: string | null;
           budget_text: string | null;
           budget_amount: number | null;
+          estimation_run_id: string | null;
+          estimate_total: number | null;
+          estimate_low: number | null;
+          estimate_high: number | null;
+          estimate_line_items: unknown;
           created_at: string;
         };
         Insert: Record<string, unknown>;

@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
-import { SITE_URL } from './seo';
+import { getSiteUrl } from './seo';
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = getSiteUrl();
   return {
     rules: [
       {
@@ -13,12 +14,12 @@ export default function robots(): MetadataRoute.Robots {
           '/api',
           '/api/',
           '/widget',
-          '/widget-preview',
           '/login',
           '/signup',
+          '/invite',
         ],
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

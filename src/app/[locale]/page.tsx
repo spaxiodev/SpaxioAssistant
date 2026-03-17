@@ -101,6 +101,12 @@ export default async function HomePage({ params }: Props) {
             <Link href="/contact" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
               Contact
             </Link>
+            <Link href="/demo/ai-chat" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+              AI chatbot demo
+            </Link>
+            <Link href="/widget-preview" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+              Widget preview
+            </Link>
             <Link href="/ai-chatbot-widget" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
               Chat widget
             </Link>
@@ -109,6 +115,9 @@ export default async function HomePage({ params }: Props) {
             </Link>
             <Link href="/ai-customer-support-ai" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
               Support & lead capture
+            </Link>
+            <Link href="/ai/ai-chatbot-for-website" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+              Use cases
             </Link>
           </div>
         </nav>

@@ -39,6 +39,8 @@ export interface DocumentContext {
   } | null;
   quoteRequest?: {
     customer_name: string;
+    customer_email?: string | null;
+    customer_phone?: string | null;
     service_type?: string | null;
     project_details?: string | null;
     dimensions_size?: string | null;
@@ -46,6 +48,10 @@ export interface DocumentContext {
     budget_text?: string | null;
     budget_amount?: number | null;
     notes?: string | null;
+    estimate_total?: number | null;
+    estimate_low?: number | null;
+    estimate_high?: number | null;
+    estimate_line_items?: { name?: string; label?: string; amount: number }[] | null;
   } | null;
   deal?: { title: string; stage: string; value_cents?: number | null } | null;
   conversationSummary?: string | null;

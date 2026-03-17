@@ -22,6 +22,7 @@ export function AiPageClient({ slug, handoffToken }: Props) {
     intro_copy: string | null;
     trust_copy: string | null;
     page_type: string;
+    intake_schema?: { key: string; label: string; required?: boolean }[];
     handoff_context?: { intro_message?: string; context_snippet?: Record<string, unknown> };
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function AiPageClient({ slug, handoffToken }: Props) {
   const [completionPercent, setCompletionPercent] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const url = handoffToken
@@ -99,6 +101,7 @@ export function AiPageClient({ slug, handoffToken }: Props) {
   const handleComplete = useCallback(async () => {
     if (!runId || submitting || submitted) return;
     setSubmitting(true);
+    setCompleteError(null);
     try {
       const res = await fetch(`${baseUrl}/api/ai-page/complete`, {
         method: 'POST',
@@ -106,7 +109,15 @@ export function AiPageClient({ slug, handoffToken }: Props) {
         body: JSON.stringify({ run_id: runId }),
       });
       const data = await res.json();
-      if (data.success) setSubmitted(true);
+      if (data.success) {
+        setSubmitted(true);
+        return;
+      }
+      if (res.status === 400 && data.error === 'missing_required' && Array.isArray(data.missing_required)) {
+        setCompleteError(data.message ?? `Please provide: ${(data.missing_required as string[]).join(', ')}`);
+        return;
+      }
+      setCompleteError(data.message ?? 'Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -143,7 +154,9 @@ export function AiPageClient({ slug, handoffToken }: Props) {
         }));
 
   const collected = sessionState?.collected_fields ?? {};
+  const missingRequired = sessionState?.missing_required ?? [];
   const hasCollected = Object.keys(collected).length > 0;
+  const canSubmit = hasCollected && missingRequired.length === 0;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-6 md:py-8">
@@ -178,10 +191,13 @@ export function AiPageClient({ slug, handoffToken }: Props) {
           </Card>
 
           {hasCollected && completionPercent >= 50 && !submitted && (
-            <div className="mt-4 flex justify-center">
+            <div className="mt-4 flex flex-col items-center gap-2">
+              {completeError && (
+                <p className="text-sm text-destructive" role="alert">{completeError}</p>
+              )}
               <Button
                 onClick={handleComplete}
-                disabled={submitting}
+                disabled={submitting || !canSubmit}
                 size="lg"
               >
                 {submitting ? (
@@ -189,6 +205,8 @@ export function AiPageClient({ slug, handoffToken }: Props) {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Submitting...
                   </>
+                ) : missingRequired.length > 0 ? (
+                  `Please provide: ${missingRequired.map((k) => k.replace(/_/g, ' ')).join(', ')}`
                 ) : (
                   'Submit and finish'
                 )}
@@ -217,11 +235,46 @@ export function AiPageClient({ slug, handoffToken }: Props) {
                         <span className="text-muted-foreground">
                           {key.replace(/_/g, ' ')}:
                         </span>{' '}
-                        {String(value).slice(0, 200)}
+                        {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value).slice(0, 200)}
                       </div>
                     ) : null
                   )}
                 </div>
+                {missingRequired.length > 0 && (
+                  <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                    <span className="font-medium">Still needed:</span>{' '}
+                    {missingRequired.map((k) => k.replace(/_/g, ' ')).join(', ')}
+                  </div>
+                )}
+                {sessionState?.estimate && (
+                  <div className="mt-4 border-t pt-3">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estimate</h4>
+                    {sessionState.estimate.line_items.length > 0 && (
+                      <ul className="mb-2 space-y-1 text-xs">
+                        {sessionState.estimate.line_items.map((item, i) => (
+                          <li key={i} className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">{item.label ?? item.rule_name}</span>
+                            <span>${Number(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex justify-between border-t pt-2 font-semibold">
+                      <span>Total</span>
+                      <span>
+                        {sessionState.estimate.estimate_low != null && sessionState.estimate.estimate_high != null
+                          ? `$${Number(sessionState.estimate.estimate_low).toLocaleString('en-US', { minimumFractionDigits: 2 })} – $${Number(sessionState.estimate.estimate_high).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                          : `$${Number(sessionState.estimate.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                      </span>
+                    </div>
+                    {sessionState.estimate.confidence < 0.7 && (
+                      <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">This is an approximate range; we&apos;ll confirm after review.</p>
+                    )}
+                    {sessionState.estimate.human_review_recommended && (
+                      <p className="mt-1 text-xs text-muted-foreground">A team member will review before final quote.</p>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 text-xs text-muted-foreground">
                   Progress: {completionPercent}%
                 </div>
