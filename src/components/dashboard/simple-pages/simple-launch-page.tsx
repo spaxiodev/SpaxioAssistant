@@ -1,22 +1,28 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Sparkles, PlayCircle, Code } from 'lucide-react';
-import { Link } from '@/components/intl-link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useViewMode } from '@/contexts/view-mode-context';
+import { SimplePageHeader, SimpleDeveloperModeLink } from '@/components/dashboard/simple';
 
 export function SimpleLaunchPage() {
+  const router = useRouter();
   const { setMode } = useViewMode();
+
+  const openInDeveloperMode = (path: string) => {
+    setMode('developer');
+    router.push(path);
+  };
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Launch your chatbot</h1>
-        <p className="text-muted-foreground">
-          Get your widget code, preview how it looks, and deploy to your website.
-        </p>
-      </div>
+      <SimplePageHeader
+        title="Launch your chatbot"
+        description="Get your widget code, preview how it looks, and deploy to your website."
+        icon={<PlayCircle className="h-6 w-6" />}
+      />
 
       <Card className="border-primary/40 bg-primary/5">
         <CardHeader>
@@ -25,42 +31,24 @@ export function SimpleLaunchPage() {
             Ready to go live?
           </CardTitle>
           <CardDescription>
-            Add the chat widget to your site from the Chat Widget page, then preview it here.
+            Add the chat widget to your site from the Install page, then preview it.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button size="lg" className="gap-2" asChild>
-            <Link href="/dashboard/install">
-              <PlayCircle className="h-4 w-4" />
-              Set up Chat Widget
-            </Link>
+          <Button size="lg" className="gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
+            <PlayCircle className="h-4 w-4" />
+            Set up Chat Widget
           </Button>
-          <Button size="lg" variant="outline" className="gap-2" asChild>
-            <Link href="/dashboard-preview/overview">Preview widget</Link>
+          <Button size="lg" variant="outline" className="gap-2" onClick={() => router.push('/dashboard-preview/overview')}>
+            Preview widget
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PlayCircle className="h-5 w-5 text-primary" />
-            Deployments
-          </CardTitle>
-          <CardDescription>
-            View all deployments and embed options in Developer Mode.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button className="w-full gap-2 sm:w-auto" asChild>
-            <Link href="/dashboard/deployments">Open deployments in Developer Mode</Link>
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => setMode('developer')}>
-            <Code className="h-4 w-4" />
-            Switch to Developer Mode
-          </Button>
-        </CardContent>
-      </Card>
+      <SimpleDeveloperModeLink
+        developerPath="/dashboard/deployments"
+        linkLabel="Open deployments in Developer Mode"
+      />
     </div>
   );
 }

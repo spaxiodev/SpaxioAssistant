@@ -24,5 +24,5 @@ export function ModeAwareContent({ children }: ModeAwareContentProps) {
     return <Fragment key="developer-mode">{children}</Fragment>;
   }
 
-  return <SimpleModeRouter key="simple-mode" pathname={pathname} />;
+  return <SimpleModeRouter key={`simple-mode-${pathname ?? ''}`} pathname={pathname ?? ''} />;
 }

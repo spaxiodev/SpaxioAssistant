@@ -2,21 +2,61 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Wand2, Upload, BookOpen, Users, PlayCircle, Globe, Loader2, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Sparkles,
+  Wand2,
+  Upload,
+  Users,
+  PlayCircle,
+  Globe,
+  Loader2,
+  CheckCircle2,
+  MessageSquare,
+  Zap,
+  FileText,
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  SimplePageHeader,
+  SimpleQuickActionCard,
+  SimpleStatusCard,
+  SimpleRecommendations,
+  SimpleActionCard,
+} from '@/components/dashboard/simple';
 
 const INTENT_STORAGE_KEY = 'spaxio-ai-setup-intent';
 
-type SetupRunStatus = 'pending' | 'scanning' | 'building_knowledge' | 'creating_agents' | 'creating_automations' | 'configuring_widget' | 'done' | 'failed';
+type SetupRunStatus =
+  | 'pending'
+  | 'scanning'
+  | 'building_knowledge'
+  | 'creating_agents'
+  | 'creating_automations'
+  | 'configuring_widget'
+  | 'done'
+  | 'failed';
+
+type OverviewData = {
+  leadsCount?: number;
+  conversationsCount?: number;
+  inbox?: { conversations_total: number; conversations_open: number };
+  actions?: { invocations_last_30d: number };
+};
 
 export function SimpleDashboardOverview() {
   const router = useRouter();
   const [intent, setIntent] = useState('');
   const [runningDoItForMe, setRunningDoItForMe] = useState(false);
-  const [websiteSetupStatus, setWebsiteSetupStatus] = useState<{ status: SetupRunStatus; current_step?: string; run_id?: string } | null>(null);
+  const [websiteSetupStatus, setWebsiteSetupStatus] = useState<{
+    status: SetupRunStatus;
+    current_step?: string;
+    run_id?: string;
+  } | null>(null);
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [loadingOverview, setLoadingOverview] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,20 +78,52 @@ export function SimpleDashboardOverview() {
       }
     }
     fetchLatestRun();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchOverview() {
+      try {
+        const [analyticsRes, leadsRes] = await Promise.all([
+          fetch('/api/analytics/overview'),
+          fetch('/api/leads?limit=100'),
+        ]);
+        if (cancelled) return;
+        const overviewData: OverviewData = {};
+        if (analyticsRes.ok) {
+          const analytics = await analyticsRes.json();
+          overviewData.inbox = analytics.inbox;
+          overviewData.actions = analytics.actions;
+        }
+        if (leadsRes.ok) {
+          const leadsData = await leadsRes.json();
+          overviewData.leadsCount = Array.isArray(leadsData.leads) ? leadsData.leads.length : 0;
+        }
+        if (!cancelled) setOverview(overviewData);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoadingOverview(false);
+      }
+    }
+    fetchOverview();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const totalSteps = 5;
-  const completedSteps = 0;
-  const percentComplete = Math.round((completedSteps / totalSteps) * 100);
+  const completedSteps = websiteSetupStatus?.status === 'done' ? 2 : 0;
+  const percentComplete = Math.min(100, Math.round((completedSteps / totalSteps) * 100) + (overview?.leadsCount ? 20 : 0));
 
   const handleGoToAiSetup = () => {
     try {
-      if (intent.trim()) {
-        window.localStorage.setItem(INTENT_STORAGE_KEY, intent.trim());
-      }
+      if (intent.trim()) window.localStorage.setItem(INTENT_STORAGE_KEY, intent.trim());
     } catch {
-      // ignore storage errors
+      // ignore
     }
     router.push('/dashboard/ai-setup');
   };
@@ -65,91 +137,71 @@ export function SimpleDashboardOverview() {
           'Set up my chatbot, lead capture, and automations. Ask me a few simple questions and configure everything for me.'
       );
     } catch {
-      // ignore storage errors
+      // ignore
     }
     router.push('/dashboard/ai-setup?mode=guided');
   };
 
+  const recommendations = [
+    percentComplete < 100 && 'Complete setup so your assistant can go live on your website.',
+    (overview?.leadsCount ?? 0) === 0 && 'Add your website or content so the assistant can capture leads.',
+    (overview?.leadsCount ?? 0) > 0 && 'Review new leads and follow up from the Leads page.',
+    'Preview your chat widget before adding it to your site.',
+  ].filter(Boolean) as string[];
+
+  if (recommendations.length === 0) {
+    recommendations.push('Check Analytics to see how your assistant is performing.');
+  }
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome to Spaxio Assistant</h1>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Tell Spaxio what you want, and it sets everything up for you. Your AI chatbot, lead capture, and automations—configured in plain language.
-        </p>
+      <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary w-fit">
+        Simple Mode
       </div>
+      <SimplePageHeader
+        title="Welcome to Spaxio Assistant"
+        description="Your AI assistant for leads, conversations, and automations. Use the steps below or quick actions to get things done."
+      />
 
-      <Card className="border-primary/40 bg-primary/5">
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Setup AI control center
-            </CardTitle>
-            <CardDescription>
-              Tell Spaxio what you want to build. The AI will configure your chatbot, lead capture, automations, and notifications.
-            </CardDescription>
-          </div>
-          <Button
-            size="lg"
-            className="gap-2"
-            onClick={handleDoItForMe}
-            disabled={runningDoItForMe}
-          >
-            <Wand2 className="h-4 w-4" />
-            Do It For Me
-          </Button>
+      {/* Setup progress */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base">Setup progress</CardTitle>
+          <span className="text-sm text-muted-foreground">{percentComplete}%</span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-xl border bg-background/70 p-4">
-            <p className="mb-2 text-sm font-medium text-muted-foreground">
-              Tell Spaxio what you want to build
-            </p>
-            <Textarea
-              value={intent}
-              onChange={(e) => setIntent(e.target.value)}
-              placeholder="e.g. Build my chatbot, set up lead capture, and send me an email when someone fills out the form."
-              className="min-h-[96px] resize-vertical"
-            />
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span>Example prompts:</span>
-              <button
-                type="button"
-                className="rounded-full border bg-background px-3 py-1 hover:border-primary/40 hover:text-foreground"
-                onClick={() => setIntent('Build my chatbot and add it to my website')}
-              >
-                Build my chatbot
-              </button>
-              <button
-                type="button"
-                className="rounded-full border bg-background px-3 py-1 hover:border-primary/40 hover:text-foreground"
-                onClick={() => setIntent('Set up lead capture and email me new leads')}
-              >
-                Set up lead capture
-              </button>
-              <button
-                type="button"
-                className="rounded-full border bg-background px-3 py-1 hover:border-primary/40 hover:text-foreground"
-                onClick={() => setIntent('Create automations when someone becomes a lead')}
-              >
-                Create automations
-              </button>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <Button size="sm" className="gap-1.5" onClick={handleGoToAiSetup}>
-                <Sparkles className="h-4 w-4" />
-                Set up with AI
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Spaxio will guide you and configure everything based on your answers.
-              </p>
-            </div>
-          </div>
+          <Progress value={percentComplete} />
+          <ul className="space-y-2 text-sm">
+            <StepItem label="Business & assistant set up" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
+            <StepItem label="Knowledge or website added" done={!!overview?.leadsCount || completedSteps > 0} />
+            <StepItem label="Lead capture ready" done={(overview?.leadsCount ?? 0) > 0} />
+            <StepItem label="Widget on your site" done={false} />
+            <StepItem label="Ready to launch" done={percentComplete >= 80} />
+          </ul>
         </CardContent>
       </Card>
 
+      {/* Widget / auto-setup status */}
+      {websiteSetupStatus?.status && ['pending', 'scanning', 'building_knowledge', 'creating_agents', 'creating_automations', 'configuring_widget'].includes(websiteSetupStatus.status) && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex items-center gap-3 pt-6">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div>
+              <p className="font-medium">Setup in progress</p>
+              <p className="text-sm text-muted-foreground">{websiteSetupStatus.current_step ?? websiteSetupStatus.status}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {(websiteSetupStatus?.status === 'done' || websiteSetupStatus?.status === 'failed') && (
-        <Card className={websiteSetupStatus.status === 'done' ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'}>
+        <Card
+          className={
+            websiteSetupStatus.status === 'done'
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-amber-500/30 bg-amber-500/5'
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-2">
               {websiteSetupStatus.status === 'done' ? (
@@ -168,133 +220,124 @@ export function SimpleDashboardOverview() {
           <CardContent>
             <CardDescription>
               {websiteSetupStatus.status === 'done'
-                ? 'Your site was scanned and your chatbot, knowledge base, and automations were configured.'
-                : (websiteSetupStatus as { error_message?: string }).error_message || 'Something went wrong. You can run setup again.'}
+                ? 'Your site was scanned and your assistant, knowledge, and automations were configured.'
+                : 'Something went wrong. You can run setup again from AI Setup.'}
             </CardDescription>
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Do it from your website</CardTitle>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/ai-setup')}>
-            Set up from URL
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <CardDescription>
-            Enter your website URL and we&apos;ll scan it, learn your business, and configure your chatbot, knowledge base, and automations automatically.
-          </CardDescription>
-          {websiteSetupStatus?.status && ['pending', 'scanning', 'building_knowledge', 'creating_agents', 'creating_automations', 'configuring_widget'].includes(websiteSetupStatus.status) && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{websiteSetupStatus.current_step ?? websiteSetupStatus.status}</span>
-            </div>
+      {/* Business snapshot / recent activity */}
+      {!loadingOverview && (overview?.leadsCount !== undefined || overview?.inbox || overview?.actions) && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(overview?.leadsCount ?? 0) >= 0 && (
+            <SimpleStatusCard
+              title="Leads captured"
+              value={loadingOverview ? '…' : (overview?.leadsCount ?? 0)}
+              subtitle="From your assistant"
+              icon={<Users className="h-4 w-4" />}
+            />
           )}
-        </CardContent>
-      </Card>
+          {overview?.inbox && (
+            <SimpleStatusCard
+              title="Conversations"
+              value={overview.inbox.conversations_total}
+              subtitle={`${overview.inbox.conversations_open} open`}
+              icon={<MessageSquare className="h-4 w-4" />}
+            />
+          )}
+          {overview?.actions && (
+            <SimpleStatusCard
+              title="AI actions (30 days)"
+              value={overview.actions.invocations_last_30d}
+              icon={<Zap className="h-4 w-4" />}
+            />
+          )}
+        </div>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-5">
-        <QuickActionCard
-          title="Set up with AI"
-          description="Let the AI ask a few simple questions and configure everything for you."
-          icon={Sparkles}
-          onClick={() => router.push('/dashboard/ai-setup')}
-        />
-        <QuickActionCard
-          title="Add your content"
-          description="Add URLs and documents so your AI can answer using your business knowledge."
-          icon={Upload}
-          onClick={() => router.push('/dashboard/knowledge')}
-        />
-        <QuickActionCard
-          title="Chat Widget"
-          description="Get the code to add your chatbot to your website."
-          icon={BookOpen}
-          onClick={() => router.push('/dashboard/install')}
-        />
-        <QuickActionCard
-          title="Leads"
-          description="View and manage leads captured from your chatbot."
-          icon={Users}
-          onClick={() => router.push('/dashboard/leads')}
-        />
-        <QuickActionCard
-          title="Preview widget"
-          description="See how your chatbot looks on desktop and mobile."
-          icon={PlayCircle}
-          onClick={() => router.push('/dashboard-preview/overview')}
-        />
+      {/* Quick actions */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SimpleQuickActionCard
+            title="Add business info"
+            description="Set your business name, description, and how the assistant should sound."
+            icon={FileText}
+            onClick={() => router.push('/dashboard/settings')}
+          />
+          <SimpleQuickActionCard
+            title="Preview widget"
+            description="See how your chat widget looks on desktop and mobile."
+            icon={PlayCircle}
+            onClick={() => router.push('/dashboard-preview/overview')}
+          />
+          <SimpleQuickActionCard
+            title="Review leads"
+            description="View and manage people who contacted you through the assistant."
+            icon={Users}
+            onClick={() => router.push('/dashboard/leads')}
+          />
+          <SimpleQuickActionCard
+            title="Add website content"
+            description="Add a URL or file so the assistant can answer from your content."
+            icon={Upload}
+            onClick={() => router.push('/dashboard/knowledge')}
+          />
+          <SimpleQuickActionCard
+            title="Create your first automation"
+            description="Notify your team or save leads when something happens."
+            icon={Zap}
+            onClick={() => router.push('/dashboard/automations')}
+          />
+          <SimpleQuickActionCard
+            title="Set up from website URL"
+            description="We scan your site and configure the assistant for you."
+            icon={Globe}
+            onClick={() => router.push('/dashboard/ai-setup')}
+          />
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Setup progress</CardTitle>
-          <CardDescription>You're {percentComplete}% ready to launch.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Progress value={percentComplete} />
-          <ul className="space-y-2 text-sm">
-            <StepItem label="AI setup" done={completedSteps > 0} />
-            <StepItem label="Chatbot configured" done={false} />
-            <StepItem label="Lead capture set up" done={false} />
-            <StepItem label="Widget on your site" done={false} />
-            <StepItem label="Ready to launch" done={false} />
-          </ul>
-        </CardContent>
-      </Card>
+      {/* Do It For Me – one option among others */}
+      <SimpleActionCard
+        title="Do it for me with AI"
+        description="Describe what you want and we’ll guide you through setup step by step."
+        icon={<Wand2 className="h-5 w-5" />}
+        variant="primary"
+      >
+        <div className="space-y-3">
+          <Textarea
+            value={intent}
+            onChange={(e) => setIntent(e.target.value)}
+            placeholder="e.g. Set up my chatbot and email me when someone becomes a lead."
+            className="min-h-[80px] resize-y text-sm"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="gap-2" onClick={handleDoItForMe} disabled={runningDoItForMe}>
+              <Wand2 className="h-4 w-4" />
+              Do it for me
+            </Button>
+            <Button size="sm" variant="outline" className="gap-2" onClick={handleGoToAiSetup}>
+              <Sparkles className="h-4 w-4" />
+              Set up with AI
+            </Button>
+          </div>
+        </div>
+      </SimpleActionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>AI recommendations</CardTitle>
-          <CardDescription>Next best steps for your assistant.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>&ldquo;You&apos;re {percentComplete}% ready to launch.&rdquo;</p>
-          <p>&ldquo;Set up your chatbot with the AI—it only takes a few answers.&rdquo;</p>
-          <p>&ldquo;Add your website and documents so the AI can answer from your content.&rdquo;</p>
-          <p>&ldquo;Get your install code and add the widget to your site.&rdquo;</p>
-        </CardContent>
-      </Card>
+      <SimpleRecommendations items={recommendations} />
     </div>
-  );
-}
-
-type QuickActionCardProps = {
-  title: string;
-  description: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  onClick: () => void;
-};
-
-function QuickActionCard({ title, description, icon: Icon, onClick }: QuickActionCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-start gap-2 rounded-xl border bg-card px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-    >
-      <div className="flex items-center gap-2">
-        <span className="rounded-full bg-primary/10 p-2 text-primary">
-          <Icon className="h-4 w-4" />
-        </span>
-        <span className="text-sm font-semibold">{title}</span>
-      </div>
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </button>
   );
 }
 
 function StepItem({ label, done }: { label: string; done: boolean }) {
   return (
     <li className="flex items-center gap-2">
-      <span className={`h-2.5 w-2.5 rounded-full ${done ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
+      <span
+        className={`h-2.5 w-2.5 rounded-full ${done ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+      />
       <span className={done ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
     </li>
   );
 }
-

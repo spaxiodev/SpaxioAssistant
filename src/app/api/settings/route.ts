@@ -6,6 +6,43 @@ import { handleApiError } from '@/lib/api-error';
 import { canRemoveBranding } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 
+/** GET /api/settings – return business settings for Simple Mode / client forms. */
+export async function GET() {
+  try {
+    const organizationId = await getOrganizationId();
+    if (!organizationId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('business_settings')
+      .select(
+        'business_name, industry, company_description, services_offered, contact_email, phone, lead_notification_email, primary_brand_color, chatbot_name, chatbot_welcome_message'
+      )
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({});
+    }
+
+    const row = data as Record<string, unknown>;
+    return NextResponse.json({
+      business_name: row.business_name ?? null,
+      industry: row.industry ?? null,
+      company_description: row.company_description ?? null,
+      services_offered: row.services_offered ?? null,
+      contact_email: row.contact_email ?? null,
+      phone: row.phone ?? null,
+      lead_notification_email: row.lead_notification_email ?? null,
+      primary_brand_color: row.primary_brand_color ?? null,
+      chatbot_name: row.chatbot_name ?? null,
+      chatbot_welcome_message: row.chatbot_welcome_message ?? null,
+    });
+  } catch (err) {
+    return handleApiError(err, 'settings/GET');
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const organizationId = await getOrganizationId();
