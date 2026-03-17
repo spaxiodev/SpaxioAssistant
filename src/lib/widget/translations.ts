@@ -94,6 +94,7 @@ const fr: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Veuillez entrer une adresse e-mail valide.',
   quoteFormNameRequired: 'Le nom est requis.',
   quoteFormEmailRequired: 'L\'e-mail est requis.',
+  quoteFormPhoneRequired: 'Le téléphone est requis.',
 };
 
 const es: Record<WidgetTranslationKey, string> = {
@@ -123,6 +124,7 @@ const es: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Por favor, introduce una dirección de correo válida.',
   quoteFormNameRequired: 'El nombre es obligatorio.',
   quoteFormEmailRequired: 'El correo es obligatorio.',
+  quoteFormPhoneRequired: 'El teléfono es obligatorio.',
 };
 
 const de: Record<WidgetTranslationKey, string> = {
@@ -152,6 +154,7 @@ const de: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
   quoteFormNameRequired: 'Name ist erforderlich.',
   quoteFormEmailRequired: 'E-Mail ist erforderlich.',
+  quoteFormPhoneRequired: 'Telefon ist erforderlich.',
 };
 
 const pt: Record<WidgetTranslationKey, string> = {
@@ -181,6 +184,7 @@ const pt: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Por favor, introduza um endereço de e-mail válido.',
   quoteFormNameRequired: 'O nome é obrigatório.',
   quoteFormEmailRequired: 'O e-mail é obrigatório.',
+  quoteFormPhoneRequired: 'O telefone é obrigatório.',
 };
 
 const it: Record<WidgetTranslationKey, string> = {
@@ -210,6 +214,7 @@ const it: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Inserisci un indirizzo email valido.',
   quoteFormNameRequired: 'Il nome è obbligatorio.',
   quoteFormEmailRequired: 'L\'email è obbligatoria.',
+  quoteFormPhoneRequired: 'Il telefono è obbligatorio.',
 };
 
 export const WIDGET_TRANSLATIONS: Record<string, Record<WidgetTranslationKey, string>> = {
