@@ -286,7 +286,7 @@ export function BusinessSettingsForm({
             </div>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="chatbotName" className="text-muted-foreground">Chatbot name</Label>
+                <Label htmlFor="chatbotName" className="text-muted-foreground">Assistant name</Label>
                 <Input
                   id="chatbotName"
                   value={chatbotName}
@@ -309,7 +309,7 @@ export function BusinessSettingsForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="chatbotWelcomeMessage" className="text-muted-foreground">Chatbot welcome message</Label>
+                <Label htmlFor="chatbotWelcomeMessage" className="text-muted-foreground">Welcome message</Label>
                 <Input
                   id="chatbotWelcomeMessage"
                   value={chatbotWelcomeMessage}
@@ -391,10 +391,10 @@ export function BusinessSettingsForm({
               />
               <div className="flex-1">
                 <Label htmlFor="widgetEnabled" className="cursor-pointer font-medium text-foreground">
-                  Show chatbot on my website
+                  Show the assistant on my website
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Turn off to hide the chat bubble and widget on your client&apos;s site. The install code can stay in place; visitors will not see the chatbot until you turn this back on.
+                  Turn off to hide the widget on your site. The install code can stay in place; visitors will not see the assistant until you turn this back on.
                 </p>
               </div>
             </div>

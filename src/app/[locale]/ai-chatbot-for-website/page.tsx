@@ -6,30 +6,30 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'AI Chatbot for Website',
+    title: 'AI Website Assistant',
     description:
-      'Deploy a custom AI chatbot for your website. Spaxio Assistant helps you create an AI chatbot that learns from your content, captures leads, and automates support.',
-    keywords: ['AI chatbot for website', 'custom AI chatbot', 'website chatbot', 'AI chat integration'],
+      'Add an AI website assistant that learns your business, answers customer questions, captures leads, and collects quote requests.',
+    keywords: ['AI website assistant', 'website AI assistant', 'AI chat widget', 'lead capture', 'quote requests'],
     openGraph: {
-      title: 'AI Chatbot for Website | Spaxio Assistant',
+      title: 'AI Website Assistant | Spaxio Assistant',
       description:
-        'Deploy a custom AI chatbot for your website. Learns from your content, captures leads, and automates support.',
+        'Add an AI website assistant that learns your content, captures leads, and helps customers get answers faster.',
     },
   };
 }
 
 const FEATURES = [
   {
-    title: 'Custom AI chatbot',
-    body: 'Build a chatbot that reflects your brand and knows your products, services, and FAQs so visitors get relevant answers.',
+    title: 'An assistant that learns your business',
+    body: 'Teach it your services, FAQs, and policies from your website and files so customers get accurate answers.',
   },
   {
     title: 'Easy integration',
-    body: 'Embed your AI chatbot on any website with one script. Works with WordPress, Shopify, custom sites, and more.',
+    body: 'Install on your website with one script. Works with WordPress, Shopify, custom sites, and more.',
   },
   {
-    title: 'Conversations that convert',
-    body: 'Every chat can capture leads, book demos, or trigger automations so you never miss an opportunity.',
+    title: 'Capture leads and quote requests',
+    body: 'Turn conversations into measurable results: capture leads, collect quote requests, and automate simple follow‑up.',
   },
 ];
 
@@ -38,8 +38,8 @@ export default async function AiChatbotForWebsitePage({ params }: Props) {
   setRequestLocale(locale);
   return (
     <SeoLandingPage
-      title="AI Chatbot for Your Website"
-      description="A custom AI chatbot for your website answers visitor questions, qualifies leads, and automates support without extra headcount. Spaxio Assistant lets you create an AI chatbot trained on your content and embed it with one line of code. Perfect for businesses that want 24/7 engagement and higher conversion."
+      title="AI Website Assistant"
+      description="An AI assistant on your website that answers customer questions, captures leads, collects quote requests, and helps you follow up faster. Spaxio Assistant learns from your content and installs with one line of code."
       features={FEATURES}
     />
   );

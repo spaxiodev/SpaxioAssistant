@@ -18,7 +18,7 @@ export function SimpleAiSetupPage() {
     try {
       window.localStorage.setItem(
         INTENT_STORAGE_KEY,
-        'Set up my chatbot, lead capture, and automations. Ask me a few simple questions and configure everything for me.'
+        'Set up my website assistant, lead capture, and follow-up. Ask me a few simple questions and configure everything for me.'
       );
     } catch {
       // ignore
@@ -40,7 +40,7 @@ export function SimpleAiSetupPage() {
       {/* Full business setup: wizard with review & publish */}
       <SimpleActionCard
         title="Full business setup"
-        description="Tell us about your business (website, paste, or describe). We’ll extract your profile, services, pricing, and suggest agents and automations. Review and approve before going live."
+        description="Tell us about your business (website URL, paste, or describe). We’ll build a business profile, draft helpful answers, and set up lead + quote capture. Review and approve before going live."
         icon={<Building2 className="h-5 w-5" />}
       >
         <Button asChild variant="secondary" className="gap-2">
@@ -54,7 +54,7 @@ export function SimpleAiSetupPage() {
       {/* Path 2: Guided setup with AI */}
       <SimpleActionCard
         title="Guided setup with AI"
-        description="Answer a few questions and we’ll configure your assistant, lead capture, and automations for you."
+        description="Answer a few questions and we’ll configure your assistant, lead capture, and follow-up for you."
         icon={<Wand2 className="h-5 w-5" />}
         variant="primary"
       >
@@ -82,7 +82,7 @@ export function SimpleAiSetupPage() {
 
       <SimpleDeveloperModeLink
         title="Advanced setup"
-        description="Developer Mode gives you full control over agents, knowledge sources, and workflow steps."
+        description="Developer Mode is for advanced settings and technical setup (assistants, knowledge, and automations)."
         developerPath="/dashboard/ai-setup"
         linkLabel="Open AI Setup in Developer Mode"
       />

@@ -121,7 +121,7 @@ export function AiWebsiteSetupCard() {
           Do it for me: set up from my website
         </CardTitle>
         <CardDescription>
-          Enter your website URL. We&apos;ll scan it, learn your business, and configure your chatbot, knowledge base, and automations.
+          Enter your website URL. We&apos;ll scan it, learn your business, and set up your website assistant, starting knowledge, and follow-up options.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

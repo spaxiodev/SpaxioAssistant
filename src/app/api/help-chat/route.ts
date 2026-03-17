@@ -13,16 +13,16 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   const dontHave: string[] = [];
 
   have.push('Overview (counts and quick links)');
-  have.push('AI Setup (set up your assistant with AI)');
-  have.push('Agents (create and edit assistants)');
-  have.push('Knowledge (learn from website and files)');
-  have.push('Install (copy widget code and preview)');
+  have.push('AI Setup (set up your website assistant with AI)');
+  have.push('AI Assistants (create and adjust how your assistant behaves)');
+  have.push('Knowledge (teach your assistant from your website and files)');
+  have.push('Install (install the assistant on your website and preview it)');
   have.push('Conversations (read chat history with visitors)');
   have.push('Leads (see people who shared contact info)');
   have.push('Quote requests (see quote requests from the widget)');
   have.push('Team (invite and manage team members)');
   have.push('Billing (see plan and manage payment)');
-  have.push('Settings (business info, widget look, tone, notifications)');
+  have.push('Settings (business info, widget look, assistant tone, notifications)');
 
   if (entitlements.inbox_enabled) {
     have.push('Inbox (human replies and internal notes for conversations)');
@@ -37,15 +37,15 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   }
 
   if (entitlements.voice_enabled) {
-    have.push(`Voice (voice conversations in the widget; enable per agent; monthly minutes apply)`);
+    have.push(`Voice (voice conversations in the widget; enable per assistant; monthly minutes apply)`);
   } else {
     dontHave.push('Voice (that\'s on a higher plan)');
   }
 
   if (entitlements.max_agents > 1) {
-    have.push('Multiple Agents (create more than one AI assistant; each can have different settings)');
+    have.push('Multiple assistants (create more than one website assistant; each can have different settings)');
   } else {
-    dontHave.push('Multiple Agents (only one AI assistant on this plan)');
+    dontHave.push('Multiple assistants (only one website assistant on this plan)');
   }
 
   if (entitlements.widget_branding_removal) {
@@ -111,15 +111,15 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 
 **Topics you can explain (only if the user has access - see below):**
 - **Overview:** What the numbers mean (leads, conversations, quote requests), trial banner, upgrade button.
-- **AI Setup:** How to set up the assistant in natural language and publish.
-- **Agents:** How to create and edit agents.
-- **Knowledge:** How to add a source (upload a file or add a URL) and what limits mean.
-- **Install:** How to get the code and put it on their website: 1) Click Install in the sidebar. 2) Copy the script. 3) Paste just before </body>. 4) Save and publish.
+- **AI Setup:** How to set up the website assistant in natural language, learn from a website URL, and publish/go live.
+- **AI Assistants:** How to create and edit assistants (how the assistant behaves and what it should do).
+- **Knowledge:** How to add a source (add a website URL or upload a file) and what limits mean.
+- **Install:** How to install the assistant on their website: 1) Click Install in the sidebar. 2) Copy the script. 3) Paste just before </body>. 4) Save and publish.
 - **Conversations:** Where to see the list of chats and how to open them.
 - **Leads:** Where leads appear and how to follow up.
 - **Quote requests:** Where quote requests appear and what the fields mean.
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
-- **Widget:** What the widget does (chat, capture leads, quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
+- **Widget:** What the widget does (answers questions, captures leads, collects quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
  - **Team:** How to invite teammates and what roles mean.
  - **Automations:** Basic automations (if enabled on their plan).
  - **Inbox / Bookings / Voice / Tools / Advanced analytics:** Only if enabled on their plan.

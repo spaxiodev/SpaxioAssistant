@@ -16,11 +16,11 @@ export type UseCase = {
 export const AI_USE_CASES: UseCase[] = [
   {
     slug: 'ai-chatbot-for-electricians',
-    title: 'AI Chatbot for Electricians',
+    title: 'AI Website Assistant for Electricians',
     description:
-      'Deploy an AI chatbot for your electrical business. Answer FAQs, collect service requests, and qualify leads 24/7. Spaxio Assistant powers AI chatbots for electricians.',
-    headline: 'AI Chatbot for Electricians — Qualify Leads & Book Jobs Around the Clock',
-    body: 'Electricians waste time on the phone answering the same questions. An AI chatbot for electricians handles after-hours inquiries, explains your services and pricing, and captures contact info so you follow up with hot leads. Spaxio Assistant lets you train an AI on your services, areas served, and FAQs, then embed it on your website with one script. No coding required.',
+      'Add an AI website assistant for your electrical business. Answer FAQs, collect service requests, and capture leads 24/7.',
+    headline: 'AI Website Assistant for Electricians — Qualify Leads & Book Jobs Around the Clock',
+    body: 'Electricians waste time on the phone answering the same questions. A website assistant handles after-hours inquiries, explains your services and pricing, and captures contact info so you can follow up with hot leads. Spaxio Assistant lets you teach the assistant your services, areas served, and FAQs from your website content—then install it with one script. No coding required.',
     benefits: [
       {
         title: '24/7 availability',
@@ -39,11 +39,11 @@ export const AI_USE_CASES: UseCase[] = [
   },
   {
     slug: 'ai-chatbot-for-landscaping',
-    title: 'AI Chatbot for Landscaping',
+    title: 'AI Website Assistant for Landscaping',
     description:
-      'AI chatbot for landscaping companies. Engage visitors, explain services and seasonal offers, and capture leads for quotes. Spaxio Assistant helps landscapers automate first contact.',
-    headline: 'AI Chatbot for Landscaping — Engage Visitors and Capture Quote Requests',
-    body: 'Landscaping leads often browse at night or on weekends. An AI chatbot for landscaping answers questions about your services, seasonal packages, and pricing, and collects contact details for estimates. Spaxio Assistant gives you a custom AI trained on your offerings so every conversation stays on-brand and converts.',
+      'AI website assistant for landscaping companies. Engage visitors, explain services and seasonal offers, and capture quote requests.',
+    headline: 'AI Website Assistant for Landscaping — Engage Visitors and Capture Quote Requests',
+    body: 'Landscaping leads often browse at night or on weekends. A website assistant answers questions about your services, seasonal packages, and pricing, and collects contact details for estimates. Spaxio Assistant learns from your offerings so every conversation stays on-brand and converts.',
     benefits: [
       {
         title: 'Service and pricing answers',
@@ -62,11 +62,11 @@ export const AI_USE_CASES: UseCase[] = [
   },
   {
     slug: 'ai-chatbot-for-web-design',
-    title: 'AI Chatbot for Web Design',
+    title: 'AI Website Assistant for Web Design',
     description:
-      'AI chatbot for web design agencies and freelancers. Qualify project inquiries, show portfolios, and book discovery calls. Spaxio Assistant helps web designers capture more leads.',
-    headline: 'AI Chatbot for Web Design — Qualify Inquiries and Book Discovery Calls',
-    body: 'Web design leads want to know your process, timeline, and ballpark cost before they book a call. An AI chatbot for web design can answer FAQs, link to your portfolio, and collect project details so you only get on calls with serious prospects. Spaxio Assistant powers custom AI chatbots that match your brand and messaging.',
+      'AI website assistant for web design agencies and freelancers. Qualify project inquiries, share portfolio links, and capture details for discovery calls.',
+    headline: 'AI Website Assistant for Web Design — Qualify Inquiries and Book Discovery Calls',
+    body: 'Web design leads want to know your process, timeline, and ballpark cost before they book a call. A website assistant can answer FAQs, link to your portfolio, and collect project details so you only get on calls with serious prospects. Spaxio Assistant powers assistants that match your brand and messaging.',
     benefits: [
       {
         title: 'Qualify before the call',
@@ -87,9 +87,9 @@ export const AI_USE_CASES: UseCase[] = [
     slug: 'ai-lead-generation-for-small-business',
     title: 'AI Lead Generation for Small Business',
     description:
-      'AI lead generation for small business: capture leads 24/7 with a website chatbot. Qualify visitors, collect contact info, and automate follow-up. Spaxio Assistant makes AI lead capture simple.',
+      'AI lead generation for small business: capture leads 24/7 with an AI website assistant. Qualify visitors, collect contact info, and automate follow-up.',
     headline: 'AI Lead Generation for Small Business — Capture Leads Without a Big Team',
-    body: 'Small businesses can’t afford to miss leads when the office is closed. AI lead generation captures visitor questions and contact details around the clock. Spaxio Assistant gives you an AI chatbot that learns your services and FAQs, so every conversation qualifies and nurtures leads until you’re ready to follow up.',
+    body: 'Small businesses can’t afford to miss leads when the office is closed. An AI website assistant captures visitor questions and contact details around the clock. Spaxio Assistant learns your services and FAQs, so conversations qualify and capture leads until you’re ready to follow up.',
     benefits: [
       {
         title: 'Always-on capture',
@@ -110,9 +110,9 @@ export const AI_USE_CASES: UseCase[] = [
     slug: 'ai-quote-generator-for-contractors',
     title: 'AI Quote Generator for Contractors',
     description:
-      'AI quote generator for contractors: let visitors get instant estimates and submit quote requests via an AI chatbot. Spaxio Assistant powers AI-driven quote intake for contractors.',
+      'AI quote generator for contractors: let visitors get instant estimates and submit quote requests via an AI website assistant.',
     headline: 'AI Quote Generator for Contractors — Instant Estimates and Quote Requests',
-    body: 'Contractors lose jobs when leads have to wait for a callback to get a ballpark price. An AI quote generator for contractors can ask a few questions (project type, size, location) and either give a range or collect details for a formal quote. Spaxio Assistant lets you build an AI that knows your pricing logic and captures structured quote requests 24/7.',
+    body: 'Contractors lose jobs when leads have to wait for a callback to get a ballpark price. An AI quote flow can ask a few questions (project type, size, location) and either give a range or collect details for a formal quote request. Spaxio Assistant captures structured quote requests 24/7 so you can respond faster.',
     benefits: [
       {
         title: 'Faster first response',
@@ -131,11 +131,11 @@ export const AI_USE_CASES: UseCase[] = [
   },
   {
     slug: 'ai-chatbot-for-website',
-    title: 'AI Chatbot for Website',
+    title: 'AI Website Assistant',
     description:
-      'Add an AI chatbot to your website in minutes. Custom answers, lead capture, and 24/7 availability. Spaxio Assistant is the AI chatbot for website owners who want more leads and less busywork.',
-    headline: 'AI Chatbot for Website — Custom AI That Answers, Qualifies, and Converts',
-    body: 'An AI chatbot for your website can answer visitor questions, explain your products or services, and capture leads without you being online. Spaxio Assistant lets you train an AI on your content and deploy it as a widget or full-page experience. One script, no coding—just add it to your site and start capturing more leads.',
+      'Add an AI website assistant in minutes. Custom answers, lead capture, and 24/7 availability—so you get more leads with less busywork.',
+    headline: 'AI Website Assistant — Answers Questions, Captures Leads, and Collects Quote Requests',
+    body: 'An AI assistant on your website can answer visitor questions, explain your products or services, and capture leads without you being online. Spaxio Assistant learns from your content and installs as a widget with one script—so you can start capturing more leads quickly.',
     benefits: [
       {
         title: 'Trained on your content',

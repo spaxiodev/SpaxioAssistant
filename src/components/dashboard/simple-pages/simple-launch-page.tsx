@@ -19,8 +19,8 @@ export function SimpleLaunchPage() {
   return (
     <div className="space-y-8">
       <SimplePageHeader
-        title="Launch your chatbot"
-        description="Get your widget code, preview how it looks, and deploy to your website."
+        title="Launch your website assistant"
+        description="Get your install code, preview how it looks, and go live on your website."
         icon={<PlayCircle className="h-6 w-6" />}
       />
 
@@ -31,13 +31,13 @@ export function SimpleLaunchPage() {
             Ready to go live?
           </CardTitle>
           <CardDescription>
-            Add the chat widget to your site from the Install page, then preview it.
+            Add the widget to your site from the Install page, then preview it.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button size="lg" className="gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
             <PlayCircle className="h-4 w-4" />
-            Set up Chat Widget
+            Open Install
           </Button>
           <Button size="lg" variant="outline" className="gap-2" onClick={() => openInDeveloperMode('/dashboard/install')}>
             Preview widget

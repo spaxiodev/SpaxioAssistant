@@ -16,9 +16,9 @@ type SimpleDeveloperModeLinkProps = {
 
 export function SimpleDeveloperModeLink({
   title = 'Need more control?',
-  description = 'Developer Mode gives you access to all settings and advanced options.',
+  description = 'Developer Mode is for advanced settings and technical setup. Most businesses can stay in Simple Mode.',
   developerPath,
-  linkLabel = 'Open in Developer Mode',
+  linkLabel = 'Open advanced settings',
 }: SimpleDeveloperModeLinkProps) {
   const { setMode } = useViewMode();
   const router = useRouter();

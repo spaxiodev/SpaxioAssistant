@@ -66,14 +66,14 @@ export function Header({ showUpgradeButton }: HeaderProps) {
             <Switch
               checked={mode === 'developer'}
               onCheckedChange={(checked) => setMode(checked ? 'developer' : 'simple')}
-              aria-label="Toggle Developer Mode"
+              aria-label="Toggle advanced Developer Mode"
             />
             <button
               type="button"
               className={`transition-colors ${mode === 'developer' ? 'font-semibold text-foreground' : ''}`}
               onClick={() => setMode('developer')}
             >
-              Developer
+              Developer (Advanced)
             </button>
           </div>
         </div>

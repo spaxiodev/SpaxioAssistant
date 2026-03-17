@@ -81,7 +81,7 @@ export default async function AiUseCasePage({ params }: Props) {
             View pricing
           </Link>
           <Link href="/demo/ai-chat" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-            Try AI chatbot demo
+            Try the demo
           </Link>
           <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
             Contact us

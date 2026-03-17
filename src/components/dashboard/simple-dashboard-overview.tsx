@@ -130,7 +130,7 @@ export function SimpleDashboardOverview() {
       window.localStorage.setItem(
         INTENT_STORAGE_KEY,
         intent.trim() ||
-          'Set up my chatbot, lead capture, and automations. Ask me a few simple questions and configure everything for me.'
+          'Set up my website assistant, lead capture, and follow-up. Ask me a few simple questions and configure everything for me.'
       );
     } catch {
       // ignore
@@ -139,8 +139,8 @@ export function SimpleDashboardOverview() {
   };
 
   const recommendations = [
-    percentComplete < 100 && 'Complete setup so your assistant can go live on your website.',
-    (overview?.leadsCount ?? 0) === 0 && 'Add your website or content so the assistant can capture leads.',
+    percentComplete < 100 && 'Finish setup so your assistant can go live on your website.',
+    (overview?.leadsCount ?? 0) === 0 && 'Add your website URL so the assistant learns your business and can answer accurately.',
     (overview?.leadsCount ?? 0) > 0 && 'Review new leads and follow up from the Leads page.',
     'Install the widget on your site and preview it.',
   ].filter(Boolean) as string[];
@@ -155,24 +155,24 @@ export function SimpleDashboardOverview() {
         Simple Mode
       </div>
       <SimplePageHeader
-        title="Welcome to Spaxio Assistant"
-        description="Your AI assistant for leads, conversations, and automations. Use the steps below or quick actions to get things done."
+        title="Your website assistant, ready to launch"
+        description="Teach it your business, answer customer questions, capture leads, collect quote requests, and automate follow-up—without extra admin work."
       />
 
       {/* Setup progress */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Setup progress</CardTitle>
+          <CardTitle className="text-base">Launch checklist</CardTitle>
           <span className="text-sm text-muted-foreground">{percentComplete}%</span>
         </CardHeader>
         <CardContent className="space-y-4">
           <Progress value={percentComplete} />
           <ul className="space-y-2 text-sm">
-            <StepItem label="Business & assistant set up" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
-            <StepItem label="Knowledge or website added" done={!!overview?.leadsCount || completedSteps > 0} />
-            <StepItem label="Lead capture ready" done={(overview?.leadsCount ?? 0) > 0} />
-            <StepItem label="Widget on your site" done={false} />
-            <StepItem label="Ready to launch" done={percentComplete >= 80} />
+            <StepItem label="Add your website URL" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
+            <StepItem label="Review business info" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
+            <StepItem label="Set what to capture (leads + quote requests)" done={(overview?.leadsCount ?? 0) > 0} />
+            <StepItem label="Install the widget on your site" done={false} />
+            <StepItem label="Go live" done={percentComplete >= 80} />
           </ul>
         </CardContent>
       </Card>
@@ -216,7 +216,7 @@ export function SimpleDashboardOverview() {
           <CardContent>
             <CardDescription>
               {websiteSetupStatus.status === 'done'
-                ? 'Your site was scanned and your assistant, knowledge, and automations were configured.'
+                ? 'Your site was scanned and your website assistant was set up with starting knowledge and follow-up options.'
                 : 'Something went wrong. You can run setup again from AI Setup.'}
             </CardDescription>
           </CardContent>
@@ -250,14 +250,20 @@ export function SimpleDashboardOverview() {
         <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SimpleQuickActionCard
-            title="Add business info"
-            description="Set your business name, description, and how the assistant should sound."
+            title="Set up from your website URL"
+            description="Scan your site so the assistant learns your business and you can go live faster."
+            icon={Globe}
+            onClick={() => router.push('/dashboard/ai-setup')}
+          />
+          <SimpleQuickActionCard
+            title="Review business info"
+            description="Make sure your services, pricing notes, and FAQ are accurate."
             icon={FileText}
             onClick={() => router.push('/dashboard/settings')}
           />
           <SimpleQuickActionCard
             title="Install & preview widget"
-            description="Copy the code for your website and preview how it looks."
+            description="Install the assistant on your website and preview it."
             icon={Globe}
             onClick={() => router.push('/dashboard/install')}
           />
@@ -268,30 +274,24 @@ export function SimpleDashboardOverview() {
             onClick={() => router.push('/dashboard/leads')}
           />
           <SimpleQuickActionCard
-            title="Add website content"
-            description="Add a URL or file so the assistant can answer from your content."
+            title="Add more knowledge"
+            description="Add pages or files so the assistant answers from your real content."
             icon={Upload}
             onClick={() => router.push('/dashboard/knowledge')}
           />
           <SimpleQuickActionCard
-            title="Create your first automation"
-            description="Notify your team or save leads when something happens."
+            title="Set up follow-up"
+            description="Notify your team or follow up automatically when someone reaches out."
             icon={Zap}
             onClick={() => router.push('/dashboard/automations')}
-          />
-          <SimpleQuickActionCard
-            title="Set up from website URL"
-            description="We scan your site and configure the assistant for you."
-            icon={Globe}
-            onClick={() => router.push('/dashboard/ai-setup')}
           />
         </div>
       </div>
 
       {/* Do It For Me – one option among others */}
       <SimpleActionCard
-        title="Do it for me with AI"
-        description="Describe what you want and we’ll guide you through setup step by step."
+        title="Tell us what you want to achieve"
+        description="Describe your business and what you want the assistant to handle. We’ll guide you through setup step by step."
         icon={<Wand2 className="h-5 w-5" />}
         variant="primary"
       >
@@ -299,17 +299,17 @@ export function SimpleDashboardOverview() {
           <Textarea
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
-            placeholder="e.g. Set up my chatbot and email me when someone becomes a lead."
+            placeholder="e.g. Answer common questions, capture leads, and collect quote requests. Email me when someone needs a quote."
             className="min-h-[80px] resize-y text-sm"
           />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" className="gap-2" onClick={handleDoItForMe} disabled={runningDoItForMe}>
               <Wand2 className="h-4 w-4" />
-              Do it for me
+              Start guided setup
             </Button>
             <Button size="sm" variant="outline" className="gap-2" onClick={handleGoToAiSetup}>
               <Sparkles className="h-4 w-4" />
-              Set up with AI
+              Open AI Setup
             </Button>
           </div>
         </div>

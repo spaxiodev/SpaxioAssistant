@@ -377,7 +377,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   <Lock className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Switch to Developer Mode</span>
+                  <span className="min-w-0 flex-1 truncate">Developer Mode (Advanced)</span>
                 </button>
               </NavSection>
             </>

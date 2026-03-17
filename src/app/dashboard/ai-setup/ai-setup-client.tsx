@@ -281,7 +281,7 @@ export function AISetupClient() {
         logs: data.logs ?? [],
       });
       setPlannerConfig((c) => ({ ...c, publish_status: 'published' }));
-      toast({ title: 'Setup published', description: 'Your chatbot and automations are live.' });
+      toast({ title: 'Setup published', description: 'Your website assistant and follow-up are live.' });
     } catch {
       clearInterval(stepInterval);
       setProgressStep(null);
@@ -346,7 +346,7 @@ export function AISetupClient() {
                 <Sparkles className="h-5 w-5 text-primary" />
                 Chat
               </CardTitle>
-              <CardDescription>Describe your chatbot and automations. The AI will configure them.</CardDescription>
+              <CardDescription>Describe what you want your assistant to do. The AI will configure it and suggest follow-up options.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
               {!sessionId ? (

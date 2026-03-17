@@ -52,7 +52,7 @@ export default async function AccountPage() {
           </Link>
         </div>
         <p className="text-sm text-muted-foreground">
-          This information is used by the AI chatbot to represent your company. You can also edit it in Settings.
+          This information is used by your website assistant to represent your company. You can also edit it in Settings.
         </p>
       </div>
       <BusinessSettingsForm initial={settings?.data ?? undefined} />

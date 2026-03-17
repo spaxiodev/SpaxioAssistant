@@ -8,23 +8,31 @@ This document describes what the Spaxio Assistant website and product do, at a l
 
 ## 1. Product overview
 
-**Spaxio Assistant** is a **multi-tenant SaaS platform** that gives businesses:
+**Spaxio Assistant** is an **AI website assistant for businesses**. It learns the business, answers customer questions, captures leads, collects quote requests, and automates simple follow-up.
 
-- **Embeddable AI chat widgets** — Add one script to a website to show a custom AI chatbot that can learn from the business’s content and settings.
-- **Lead capture** — Collect visitor info (name, email, phone, message, etc.) and optionally trigger automations and email notifications (Resend).
-- **Quote requests** — Let visitors submit quote/project details; businesses see them in the dashboard.
-- **Quote pricing engine** — Configurable pricing profiles (per org), services, variables, and rules; supports exact estimates, estimate ranges, quote drafts, and optional manual review thresholds.
-- **AI pages** — Full-page AI experiences (Quote Assistant, Support, Booking, Intake, Sales, Product Finder, etc.) with hosted or embeddable deployment; sessions tracked via `ai_page_runs`; can link to leads, contacts, quote requests, and support tickets.
-- **Business setup drafts** — AI-generated full-business setup (profile, services, knowledge, pricing, agents, automations, widget, AI pages, branding) for review; user approves sections before publishing; no direct overwrite of live config until approved.
-- **AI agents** — Create multiple agents (website chatbot, support agent, lead qualification, sales, booking, FAQ, etc.) with goals, tone, knowledge, and optional tool-calling.
-- **Knowledge bases** — Upload documents or ingest URLs; content is indexed and used to ground agent responses.
-- **Automations** — Event-driven workflows (e.g. on lead form submit, webhook received) with steps and optional form handling.
-- **CRM-style data** — Leads, contacts, companies, deals, support tickets, tasks, notes, activities.
-- **Webhooks** — Outbound (trigger automations) and inbound (webhook endpoints with field mappings).
-- **Documents & templates** — Document templates (quote, proposal, invoice, etc.) and generated documents linked to leads/contacts/deals.
-- **Billing** — Multi-tier plans (Free, Starter, Pro, Business, Enterprise) with Stripe subscriptions, trials, usage tracking, and plan-based entitlements.
+- **Install on your website** — Add one script to your website to show the assistant widget.
+- **Answer customer questions** — The assistant responds using your business info and knowledge sources.
+- **Capture leads** — Collect visitor contact info (name, email, phone, message, etc.) and notify your team.
+- **Collect quote requests** — Capture project details in a structured form so you can respond faster.
+- **Learn from your website** — Paste a website URL (and/or upload files) so the assistant answers from your real content.
+- **Automate follow-up** — Simple rules like “notify me when a lead comes in” or “follow up after a quote request.”
+- **Team, billing, and settings** — Invite team members, manage your plan, and control your assistant and widget settings.
 
-The site is **i18n-ready** (e.g. English and French) and uses **Next.js App Router**, **Supabase** (Postgres, Auth, RLS), **OpenAI** (chat, server-side only), **Stripe**, and **Resend**.
+The site is **i18n-ready** (e.g. English and French) and uses Next.js, Supabase (Postgres/Auth/RLS), OpenAI (server-side), Stripe, and Resend.
+
+### Non-core areas removed or hidden
+
+To keep the dashboard focused, these areas are removed from navigation and (in many cases) removed entirely:
+
+- CRM sections that are not essential (companies, deals, tickets, tasks/notes/activities UI)
+- Support tickets UI
+- Documents and document templates UI
+- Standalone AI Actions UI
+- Integrations UI (when not fully implemented)
+- Dashboard preview routes and preview-only maintenance code
+- Demo sign-in route and test/dev routes
+- Advanced multi-business/workspace management UI (hidden)
+- Public webhook management UI unless in explicit developer-only mode (hidden)
 
 ---
 
@@ -40,12 +48,8 @@ The site is **i18n-ready** (e.g. English and French) and uses **Next.js App Rout
 | `/[locale]/privacy-policy` | Privacy policy page. |
 | `/[locale]/terms-and-conditions` | Terms and conditions page. |
 | `/[locale]/widget-preview` | Preview of the chat widget (for testing). |
-| `/[locale]/dashboard-preview` | Redirects to dashboard-preview overview (logged-in widget preview flow). |
-| `/[locale]/dashboard-preview/[section]` | Dashboard preview sections: overview, assistants, widget, knowledge, inbox, analytics, automations, team, billing (some sections may be locked). |
 | `/[locale]/demo/ai-chat` | Demo AI chat page. |
-| `/[locale]/demo/sign-in` | Demo sign-in flow. |
 | `/[locale]/widget` | Widget UI (iframe/embed target). |
-| `/[locale]/test-route` | Test route (dev). |
 
 **Locale:** Routes are under `[locale]` (e.g. `en`, `fr`). Navigation and copy come from `messages/en.json` and `messages/fr.json`.
 
@@ -69,7 +73,7 @@ Dashboard is under `/[locale]/dashboard` with a sidebar and header. **Subscripti
 The dashboard supports two **view modes** that change navigation, copy, and (in many cases) which UI renders for the same URL:
 
 - **Simple Mode** — Streamlined, plain-language navigation and “get live fast” workflows. The URL stays under `/dashboard/...`, but the main content is rendered by a **Simple Mode router** that swaps in simplified page components.
-- **Developer Mode** — Full dashboard with all workspace, CRM, activity, and developer sections (including plan-gated sections).
+- **Developer Mode** — More controls, but still focused on the core product areas (including plan-gated sections).
 
 **How it works (implementation details):**
 
@@ -93,8 +97,8 @@ Simple Mode uses a reduced sidebar with friendly labels:
 - **Home** → `/dashboard`
 - **AI Setup** → `/dashboard/ai-setup`
 - **Conversations** → `/dashboard/conversations` (also covers `/dashboard/inbox`)
-- **Leads & Sales** → `/dashboard/leads` (also covers `/dashboard/contacts` and `/dashboard/quote-requests`)
-- **Launch** → `/dashboard/deployments`
+- **Leads** → `/dashboard/leads` (also covers `/dashboard/contacts` and `/dashboard/quote-requests`)
+- **Install** → `/dashboard/install`
 - **Help** → `/help`
 - **Settings** → `/dashboard/settings`
 - **Switch to Developer Mode** (button that flips mode; it does not navigate by itself)
@@ -107,115 +111,65 @@ In Simple Mode, these URLs render simplified pages:
 |---|---|---|
 | `/dashboard` | `SimpleDashboardOverview` | Quick actions + setup progress + recommendations. |
 | `/dashboard/ai-setup` | `SimpleAiSetupPage` | Three paths: automatic from website URL, guided AI setup, manual describe. |
-| `/dashboard/business-setup` | `SimpleBusinessSetupPage` | Simplified entry point to Business Setup drafts. |
-| `/dashboard/install` | `SimpleInstallPage` | Plain-language install options; actions that require full UI switch to Developer Mode. |
+| `/dashboard/install` | `SimpleInstallPage` | Plain-language install flow; opens full Install page in Developer Mode for copy/paste code + preview. |
 | `/dashboard/agents` (and `/dashboard/agents/*`) | `SimpleAgentsPage` | Create/list agents in a simplified layout; links to edit in Developer Mode. |
 | `/dashboard/automations` | `SimpleAutomationsPage` | Recipe-style cards + list; toggles; links to full editor in Developer Mode (plan-gated). |
 | `/dashboard/leads`, `/dashboard/contacts`, `/dashboard/quote-requests` | `SimpleLeadsPage` | Lead list + simple actions; links to full CRM pages. |
 | `/dashboard/team` (and `/dashboard/account/add`) | `SimpleTeamPage` | Team list + invitations; some actions switch to Developer Mode (plan-gated for team size). |
 | `/dashboard/settings` | `SimpleSettingsPage` | Simplified settings form + AI assist actions. |
-| `/dashboard/deployments` | `SimpleLaunchPage` | Launch checklist + “open in Developer Mode” links. |
 | `/dashboard/knowledge` | `SimpleKnowledgePage` | Add URL / upload content + list sources; AI assist; links to full Knowledge (plan-gated by source limits). |
 | `/dashboard/inbox` and `/dashboard/conversations` | `SimpleConversationsPage` | Simplified conversation list; links to full inbox/conversation pages (inbox may be plan-gated). |
-| `/dashboard/analytics` | `SimpleAnalyticsPage` | Simplified “how it’s helping” metrics; links to full analytics. |
 | `/dashboard/billing` | `SimpleBillingPage` | Current plan + usage; “Upgrade” and “Manage subscription” switch to Developer Mode. |
 | `/dashboard/account` | `SimpleAccountPage` | Simplified account page. |
 | Other `/dashboard/*` | `SimpleGenericPage` | Fallback placeholder for uncommon/unsupported simple-mode routes (e.g. webhooks, integrations, documents). |
 
 #### 4.0.3 Developer Mode — every navigation option (sidebar)
 
-Developer Mode renders the full sidebar with grouped sections:
+Developer Mode focuses on the core sections:
 
-- **Workspace**
-  - **Overview** → `/dashboard`
-  - **AI Setup Assistant** → `/dashboard/ai-setup`
-  - **Business Setup** → `/dashboard/business-setup`
-  - **Agents** → `/dashboard/agents`
-  - **Automations** → `/dashboard/automations` *(plan-gated: `automations`)*
-  - **AI Actions** → `/dashboard/actions` *(plan-gated: `ai_actions`)*
-  - **Knowledge** → `/dashboard/knowledge`
-- **CRM** (submenu)
-  - **Leads** → `/dashboard/leads`
-  - **Contacts** → `/dashboard/contacts`
-  - **Companies** → `/dashboard/companies`
-  - **Deals** → `/dashboard/deals`
-  - **Tickets** → `/dashboard/tickets`
-  - **Quote Requests** → `/dashboard/quote-requests`
-- **Activity**
-  - **Inbox** → `/dashboard/inbox` *(plan-gated: `inbox`)*
-  - **Conversations** → `/dashboard/conversations`
-  - **Bookings** → `/dashboard/bookings` *(plan-gated: `bookings`)*
-  - **Documents** → `/dashboard/documents`
-  - **Analytics** → `/dashboard/analytics`
-- **Developers**
-  - **Deployments** → `/dashboard/deployments`
-  - **AI Pages** → `/dashboard/ai-pages`
-  - **Webhooks** → `/dashboard/webhooks` *(plan-gated: `webhooks`)*
-  - **Integrations** → `/dashboard/integrations` *(plan-gated: `integrations`)*
-- **Account**
-  - **Billing** → `/dashboard/billing`
-  - **Settings** → `/dashboard/settings`
+- **Overview** → `/dashboard`
+- **AI Setup** → `/dashboard/ai-setup`
+- **Agents** → `/dashboard/agents`
+- **Knowledge** → `/dashboard/knowledge`
+- **Install** → `/dashboard/install`
+- **Conversations** → `/dashboard/conversations`
+- **Leads** → `/dashboard/leads`
+- **Quote Requests** → `/dashboard/quote-requests`
+- **Automations** → `/dashboard/automations` *(plan-gated)*
+- **Team** → `/dashboard/team` *(plan-gated by team limits)*
+- **Billing** → `/dashboard/billing`
+- **Settings** → `/dashboard/settings`
 
 **Account dropdown (top of sidebar, when logged in):**
 
 - **Account** → `/dashboard/account`
 - **Settings** → `/dashboard/settings`
 - **Team Members** → `/dashboard/team` *(plan-gated by team limits; lock may show)*
-- **Manage businesses** (workspace switcher / management dialog)
 - **Sign out**
-
-**Dashboard preview (widget preview):** The route `/[locale]/dashboard-preview` redirects to `/[locale]/dashboard-preview/overview`. A dedicated preview layout provides sections (overview, assistants, widget, knowledge, inbox, analytics, automations, team, billing); some sections may be locked. This is linked from Simple Mode (e.g. “Preview widget” from the overview and from the Launch page).
 
 ### 4.1 Workspace (main product)
 
 | Section | Route | Purpose |
 |--------|--------|--------|
-| **Overview** | `/dashboard` | Summary cards: leads count, conversations, quote requests, agents; trial/subscription status; quick links to Install, Leads, Conversations, Quote requests, Billing. |
-| **Agents** | `/dashboard/agents` | List of AI agents; create/edit agents (name, role type, goal, tone, knowledge, automations, CRM access, etc.). |
-| **Agents (single)** | `/dashboard/agents/[id]` | Edit agent; agent runs history. |
-| **New agent** | `/dashboard/agents/new` | Create new agent. |
-| **AI Pages** | `/dashboard/ai-pages` | List full-page AI experiences (quote, support, intake, etc.); create/edit; deployment mode (hosted, embedded, widget handoff); link to agents and pricing profiles. |
-| **AI Page (single)** | `/dashboard/ai-pages/[id]` | Edit AI page config, intake schema, outcome config, branding; publish. |
-| **New AI page** | `/dashboard/ai-pages/new` | Create new AI page. |
-| **Pricing (profiles)** | `/dashboard/pricing` | Quote pricing profiles; services, variables, rules; default profile per org. |
-| **Pricing (single)** | `/dashboard/pricing/[id]` | Pricing profile detail: variables, rules, test estimate form. |
-| **Business setup** | `/dashboard/business-setup` | AI-generated business setup drafts; review extracted sections (profile, services, knowledge, pricing, agents, automations, widget, AI pages, branding); approve and publish by section. |
+| **Overview** | `/dashboard` | Summary cards: leads captured, conversations, quote requests; trial/subscription status; quick links to AI Setup, Install, Leads, Conversations, Billing. |
+| **AI Assistants** | `/dashboard/agents` | Create and edit your website assistant (goal, tone, what to capture, knowledge, and follow-up). |
+| **AI Assistants (single)** | `/dashboard/agents/[id]` | Edit an assistant and view run history. |
+| **New assistant** | `/dashboard/agents/new` | Create a new assistant. |
 | **Automations** | `/dashboard/automations` | List automations; create/edit; trigger types (e.g. lead_form_submitted, webhook_received), steps, enable/disable. |
-| **Knowledge** | `/dashboard/knowledge` | Knowledge bases and sources; upload files, ingest URLs; used by agents. |
-
-### 4.2 CRM
-
-| Section | Route | Purpose |
-|--------|--------|--------|
-| **Leads** | `/dashboard/leads` | Leads from widget (and elsewhere); status, stage, owner, tags. |
-| **Contacts** | `/dashboard/contacts` | Contact records; link to leads/companies. |
-| **Companies** | `/dashboard/companies` | Companies (e.g. B2B). |
-| **Deals** | `/dashboard/deals` | Deals with stage (qualification, proposal, negotiation, won, lost), value, contact/company. |
-| **Tickets** | `/dashboard/tickets` | Support tickets (open, awaiting_user, in_progress, resolved, closed). |
-| **Quote requests** | `/dashboard/quote-requests` | Quote requests submitted via widget. |
-
-### 4.3 Activity and content
-
-| Section | Route | Purpose |
-|--------|--------|--------|
+| **Knowledge** | `/dashboard/knowledge` | Add website URLs and files so the assistant answers from your content. |
+| **Install** | `/dashboard/install` | Copy script tag for widget embed and preview. |
 | **Conversations** | `/dashboard/conversations` | Chat conversations per widget; view messages, delete. |
-| **Documents** | `/dashboard/documents` | Document templates and generated documents (linked to leads, contacts, deals, runs). |
-| **Analytics** | `/dashboard/analytics` | Aggregated counts (leads, conversations, quote requests, automation runs, tickets); links to conversations, leads, quote requests, automations, tickets. |
-
-### 4.4 Developers and deployment
-
-| Section | Route | Purpose |
-|--------|--------|--------|
-| **Deployments** | `/dashboard/deployments` | Deployment configs per agent (website_widget, embedded_chat, standalone_page, dashboard_panel, api). |
-| **Webhooks** | `/dashboard/webhooks` | List webhook endpoints; create/configure endpoints, secrets, field mappings. |
-| **Webhook (single)** | `/dashboard/webhooks/[id]` | Configure one endpoint (mappings, etc.). |
-| **Integrations** | `/dashboard/integrations` | Integrations hub (e.g. external services). |
+| **Leads** | `/dashboard/leads` | Leads from widget; view details and follow up. |
+| **Quote requests** | `/dashboard/quote-requests` | Quote requests submitted via widget. |
+| **Team** | `/dashboard/team` | Invite and manage team members. |
+| **Billing** | `/dashboard/billing` | Current plan and Stripe portal. |
+| **Settings** | `/dashboard/settings` | Business and widget settings. |
 
 ### 4.5 Setup and account
 
 | Section | Route | Purpose |
 |--------|--------|--------|
-| **Install** | `/dashboard/install` | Copy script tag for widget embed; widget ID; link to Knowledge and Agents. |
+| **Install** | `/dashboard/install` | Copy the script tag for your website; preview the widget; choose which assistant powers it. |
 | **Settings** | `/dashboard/settings` | Business settings: name, industry, description, services, pricing notes, FAQ, tone, contact email, phone, lead notification email, brand color, welcome message, “learn from website,” logo, widget position. |
 | **Assistant** | `/dashboard/assistant` | Assistant/chat config summary; link to Settings. |
 | **Billing** | `/dashboard/billing` | Current plan, subscription status, Stripe Customer Portal link, usage (when available). |
@@ -226,7 +180,6 @@ Developer Mode renders the full sidebar with grouped sections:
 
 ## 5. Widget and embed flow
 
-- **AI Pages:** Full-page AI experiences can be hosted on Spaxio URLs or embedded via iframe; each page has a slug, optional agent, intake schema, and outcome config; sessions are tracked in `ai_page_runs` and can create or link leads, quote requests, and support tickets. Quote requests from AI pages can include `customer_email` and `customer_phone`.
 - **Install (widget):** In Dashboard → Install, the user copies a script tag, e.g.  
   `<script src="https://<APP_URL>/widget.js" data-widget-id="<WIDGET_UUID>"></script>`  
   and adds it before `</body>` on their site.
@@ -309,6 +262,8 @@ APIs are under `src/app/api/`. Key groups:
 - `GET/PATCH/DELETE /api/dashboard/pricing-profiles/[id]` — Get/update/delete profile.
 - `GET /api/dashboard/pricing-profiles/[id]/preview` — Preview/test estimate for a profile.
 
+These APIs exist, but AI Pages / advanced pricing are currently **not part of the core dashboard navigation** and may be hidden for most users.
+
 ### 6.8 Settings and app
 
 - `GET/PATCH /api/settings/route` — Business settings.
@@ -320,7 +275,7 @@ APIs are under `src/app/api/`. Key groups:
 - `POST /api/contact` — Public contact form submit.
 - `GET /api/profile`, `POST /api/profile/avatar` — Profile and avatar.
 - `GET/POST /api/organization/api-keys` — API keys for org (if plan allows).
-- `GET /api/help-chat` — In-dashboard help chat (plan/entitlements context).
+- `GET /api/help-chat` — In-dashboard help chat (includes plan/feature access context).
 
 ---
 
@@ -342,10 +297,10 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 ---
 
-## 8. Billing and entitlements
+## 8. Billing and plan limits
 
 - **Plans:** Free, Starter, Pro, Business, Enterprise (and legacy “Legacy Assistant Pro” for existing Stripe price).
-- **Entitlements** (examples): `max_agents`, `max_automations`, `monthly_messages`, `monthly_ai_actions`, `max_knowledge_sources`, `max_document_uploads`, `max_team_members`, `widget_branding_removal`, `custom_branding`, `automations_enabled`, `tool_calling_enabled`, `webhook_access`, `api_access`, `analytics_level`, `priority_support`, `white_label`, `integrations_enabled`, `ai_pages_enabled`.
+- **Plan limits / feature access** (examples): `max_agents`, `max_automations`, `monthly_messages`, `monthly_ai_actions`, `max_knowledge_sources`, `max_document_uploads`, `max_team_members`, `widget_branding_removal`, `custom_branding`, `automations_enabled`, `tool_calling_enabled`, `webhook_access`, `api_access`, `analytics_level`, `priority_support`, `white_label`, `integrations_enabled`, `ai_pages_enabled`.
 - **Usage:** `org_usage` stores per-org, per-period `message_count` and `ai_action_count`; incremented by widget chat and tool runs. Enforced in chat API and tool/agent APIs (return `message_limit_reached` or 403 with `plan_limit` when over limit).
 - **Checkout:** Billing checkout accepts `planId` or Stripe price ID; creates Stripe session; webhook sets `subscriptions.plan_id` and status.
 - **Admin bypass:** Optional `ADMIN_USER_IDS` env allows listed users to bypass plan limits and see billing debug.
@@ -377,4 +332,4 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 ## 11. One-line summary
 
-**Spaxio Assistant** is an AI infrastructure SaaS that lets businesses deploy a customizable website AI widget and full-page AI experiences (AI Pages), capture leads and quote requests (with an optional quote pricing engine), run multiple AI agents with knowledge bases and tool-calling, automate workflows (events and webhooks), manage CRM data (leads, contacts, companies, deals, tickets), use AI-generated business setup drafts (review and publish by section), and subscribe via multi-tier Stripe plans with usage-based and entitlement-based limits—all on a single multi-tenant Next.js + Supabase platform. The dashboard offers **Simple Mode** (streamlined, AI-guided setup and plain-language navigation) and **Developer Mode** (full workspace, CRM, and developer features), with the choice persisted in the browser.
+**Spaxio Assistant** is an AI website assistant that learns your business, answers customer questions, captures leads, collects quote requests, and automates follow-up—so you miss fewer inquiries and respond faster.

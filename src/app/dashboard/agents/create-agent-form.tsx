@@ -11,16 +11,16 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from '@/components/intl-link';
 
 const ROLE_TYPES = [
-  { value: 'website_chatbot', label: 'Website chatbot' },
-  { value: 'support_agent', label: 'Support agent' },
+  { value: 'website_chatbot', label: 'Website assistant' },
+  { value: 'support_agent', label: 'Support assistant' },
   { value: 'lead_qualification', label: 'Lead qualification' },
-  { value: 'sales_agent', label: 'Sales agent' },
-  { value: 'booking_agent', label: 'Booking agent' },
+  { value: 'sales_agent', label: 'Sales assistant' },
+  { value: 'booking_agent', label: 'Booking assistant' },
   { value: 'quote_assistant', label: 'Quote assistant' },
-  { value: 'faq_agent', label: 'FAQ agent' },
-  { value: 'follow_up_agent', label: 'Follow-up agent' },
+  { value: 'faq_agent', label: 'FAQ assistant' },
+  { value: 'follow_up_agent', label: 'Follow-up assistant' },
   { value: 'internal_knowledge', label: 'Internal knowledge' },
-  { value: 'workflow_agent', label: 'Workflow agent' },
+  { value: 'workflow_agent', label: 'Workflow (advanced)' },
   { value: 'custom', label: 'Custom' },
 ] as const;
 
@@ -55,7 +55,7 @@ export function CreateAgentForm() {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) {
-      toast({ title: 'Name required', description: 'Give your agent a name.', variant: 'destructive' });
+      toast({ title: 'Name required', description: 'Give your assistant a name.', variant: 'destructive' });
       return;
     }
     setSaving(true);

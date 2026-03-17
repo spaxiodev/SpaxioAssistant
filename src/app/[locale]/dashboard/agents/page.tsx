@@ -8,7 +8,7 @@ import { Link } from '@/components/intl-link';
 import { Bot, Plus } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
-  website_chatbot: 'Website Chat',
+  website_chatbot: 'Website assistant',
   support_agent: 'Support',
   lead_qualification: 'Lead qualification',
   internal_knowledge: 'Internal knowledge',
@@ -42,12 +42,12 @@ export default async function AgentsPage() {
         <CardHeader>
           <CardTitle>{t('agents')}</CardTitle>
           <CardDescription>
-            Create AI workers for your business: website chat, support, lead qualification, and more. Each agent can have its own prompt, model, and tools.
+            Create and manage your website assistants. Each assistant can have its own instructions, tone, and (advanced) model/tools settings.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {(agents?.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">No agents yet. Your existing website chatbot was migrated to an agent; you can create more below.</p>
+            <p className="text-sm text-muted-foreground">No assistants yet. Your existing website assistant was migrated here; you can create more below.</p>
           ) : (
             <ul className="divide-y divide-border">
               {agents?.map((agent) => (
@@ -82,7 +82,7 @@ export default async function AgentsPage() {
           <Button asChild>
             <Link href="/dashboard/agents/new">
               <Plus className="mr-2 h-4 w-4" />
-              Create agent
+              Create assistant
             </Link>
           </Button>
         </CardContent>

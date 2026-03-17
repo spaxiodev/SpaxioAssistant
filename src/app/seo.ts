@@ -18,21 +18,19 @@ export const SITE_URL = typeof window !== 'undefined' ? FALLBACK_SITE_URL : getS
 export const SITE_NAME = 'Spaxio Assistant';
 
 export const DEFAULT_SEO = {
-  title: 'Spaxio Assistant — AI Chatbots, Automation & Business Infrastructure',
+  title: 'Spaxio Assistant — AI Website Assistant for Businesses',
   description:
-    'AI chatbot for website, AI chatbot widget, and AI automation platform in one. Build an AI CRM for small business, AI lead capture tool, and AI quote generator. Spaxio Assistant is your AI website assistant.',
+    'An AI website assistant that learns your business, answers customer questions, captures leads, collects quote requests, and automates simple follow-up.',
   keywords: [
-    'AI chatbot for website',
-    'AI chatbot widget',
-    'AI automation platform',
-    'AI CRM for small business',
-    'AI lead capture tool',
-    'AI quote generator',
     'AI website assistant',
-    'AI assistant platform',
+    'website AI assistant',
+    'AI chat widget',
+    'lead capture',
+    'quote requests',
+    'customer support automation',
+    'AI website assistant',
     'AI for business',
-    'AI website chatbot',
-    'full-page AI experience',
+    'AI assistant for small business',
   ],
 } as const;
 

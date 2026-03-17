@@ -37,7 +37,7 @@ export default async function KnowledgePage() {
         <CardHeader>
           <CardTitle>{t('knowledge')}</CardTitle>
           <CardDescription>
-            Add knowledge sources and content. Agents with search_knowledge_base enabled can use this for answers.
+            Add website URLs and files so your assistant can answer using your real content.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -93,7 +93,7 @@ export default async function KnowledgePage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">My Content</h1>
             <p className="text-muted-foreground">
-              Add your materials and let Spaxio organize them into courses and lessons for you.
+              Add your website pages and files so the assistant can answer accurately.
             </p>
           </div>
           <SimpleKnowledgeContent hasSources={hasSources} />

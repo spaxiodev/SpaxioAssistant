@@ -124,7 +124,7 @@ ${businessContext}`;
 
 /**
  * Build system prompt for an agent. When agent has custom system_prompt, use it and append business context.
- * Otherwise use the default website-chatbot prompt (buildSystemPrompt) for backward compatibility.
+ * Otherwise use the default website-assistant prompt (buildSystemPrompt) for backward compatibility.
  */
 export function buildSystemPromptForAgent(
   agent: { system_prompt?: string | null; role_type?: string },
@@ -168,7 +168,7 @@ export function buildLanguageInstruction(options: LanguageInstructionOptions): s
   return `Language rules (follow strictly):
 - The website visitor is viewing the site in "${lang}". You MUST respond in this language.
 - If the user clearly switches to another language mid-conversation (e.g. they write a full message in a different language), you may adapt and respond in that language.
-- Supported languages for this chatbot are: ${list}. Prefer the active language (${lang}) but you may respond in another supported language if the user explicitly uses it.
+- Supported languages for this assistant are: ${list}. Prefer the active language (${lang}) but you may respond in another supported language if the user explicitly uses it.
 - NEVER answer in a language outside the supported list unless the user explicitly asks you to (e.g. "reply in Spanish" when Spanish is supported).
 - If active language is French, respond in French. If active language is English, respond in English. Same for any other supported language.`.trim();
 }

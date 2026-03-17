@@ -83,7 +83,7 @@ export default async function InstallPage({ params }: Props) {
         <CardHeader>
           <CardTitle>{t('installCodeTitle')}</CardTitle>
           <CardDescription>
-            {t('installCodeDescription', { bodyTag: '</body>' })}. Each agent has its own embed code.
+            {t('installCodeDescription', { bodyTag: '</body>' })}. If you have multiple assistants, each can have its own install code.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -122,7 +122,11 @@ export default async function InstallPage({ params }: Props) {
                 copiedButtonLabel={t('copied')}
               />
               <p className="text-sm text-muted-foreground">
-                Create an agent in <Link href="/dashboard/agents" className="text-primary underline">Agents</Link> to get a dedicated widget script.
+                Create an assistant in{' '}
+                <Link href="/dashboard/agents" className="text-primary underline">
+                  AI Assistants
+                </Link>{' '}
+                to get a dedicated widget script.
               </p>
             </>
           )}

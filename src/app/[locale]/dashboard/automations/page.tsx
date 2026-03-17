@@ -24,7 +24,7 @@ export default async function AutomationsPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Automations</h1>
-          <p className="text-muted-foreground">Automate operations with AI-native workflows.</p>
+          <p className="text-muted-foreground">Simple follow-up rules that save you time (notifications, reminders, and routing).</p>
         </div>
         <UpgradeRequiredCard
           featureKey="automations"

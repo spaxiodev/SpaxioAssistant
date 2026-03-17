@@ -6,14 +6,14 @@ type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'AI Chatbot Widget for Websites',
+    title: 'AI Website Assistant Widget',
     description:
-      'Add an AI chatbot widget to your website in minutes. Spaxio Assistant provides a custom AI chat widget that answers questions, captures leads, and automates support with one line of code.',
-    keywords: ['AI chatbot widget', 'AI widget for website', 'chatbot widget', 'AI chat widget'],
+      'Add an AI website assistant widget in minutes. It answers questions, captures leads, and collects quote requests with one line of code.',
+    keywords: ['AI chat widget', 'AI website assistant widget', 'website widget', 'lead capture', 'quote requests'],
     openGraph: {
-      title: 'AI Chatbot Widget for Websites | Spaxio Assistant',
+      title: 'AI Website Assistant Widget | Spaxio Assistant',
       description:
-        'Add an AI chatbot widget to your website in minutes. Custom AI chat widget that answers questions, captures leads, and automates support.',
+        'Add an AI website assistant widget in minutes. Answers questions, captures leads, and helps you follow up faster.',
     },
   };
 }
@@ -21,15 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
 const FEATURES = [
   {
     title: 'One-line embed',
-    body: 'Add a single script tag to your site and your AI chatbot widget goes live. No complex integration or coding required.',
+    body: 'Add a single script tag to your site and your assistant widget goes live. No complex integration or coding required.',
   },
   {
     title: 'Trained on your content',
     body: 'Your widget learns from your website and docs so it gives accurate, on-brand answers to visitors.',
   },
   {
-    title: 'Lead capture and automation',
-    body: 'Capture leads from conversations, trigger workflows, and connect to your CRM so every chat can turn into a qualified lead.',
+    title: 'Leads, quotes, and follow-up',
+    body: 'Capture leads and quote requests from conversations and set up simple follow-up so you don’t miss inquiries.',
   },
 ];
 
@@ -38,8 +38,8 @@ export default async function AiChatbotWidgetPage({ params }: Props) {
   setRequestLocale(locale);
   return (
     <SeoLandingPage
-      title="AI Chatbot Widget for Your Website"
-      description="An AI chatbot widget lets visitors talk to an intelligent assistant on your site 24/7. Spaxio Assistant gives you a custom AI chat widget you can embed with one line of code. It answers questions, captures leads, and automates customer support so your team can focus on high-value conversations."
+      title="AI Website Assistant Widget"
+      description="Put an AI assistant on your website in minutes. It answers questions, captures leads, collects quote requests, and helps customers get what they need—without extra admin work."
       features={FEATURES}
     />
   );
