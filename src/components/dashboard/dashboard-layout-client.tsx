@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
 import { ViewModeProvider } from '@/contexts/view-mode-context';
 import { ModeAwareContent } from '@/components/dashboard/mode-aware-content';
+import { CommandPaletteProvider } from '@/components/command-palette';
 import type { UserDisplay } from '@/types/dashboard';
 import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
 
@@ -26,6 +27,7 @@ export function DashboardLayoutClient({
   return (
     <DashboardSidebarProvider>
       <ViewModeProvider>
+        <CommandPaletteProvider>
         <div className="relative flex bg-transparent">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.12),transparent_24%)]" />
           <Sidebar organizationId={organizationId} userDisplay={userDisplay} planAccess={planAccess} />
@@ -36,6 +38,7 @@ export function DashboardLayoutClient({
           </main>
           </div>
         </div>
+        </CommandPaletteProvider>
       </ViewModeProvider>
     </DashboardSidebarProvider>
   );

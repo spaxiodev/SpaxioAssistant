@@ -166,3 +166,32 @@ export async function POST(request: Request) {
     return handleApiError(err, 'settings/learn-website');
   }
 }
+
+/** DELETE /api/settings/learn-website – clear website knowledge */
+export async function DELETE() {
+  try {
+    const organizationId = await getOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'No organization' }, { status: 403 });
+    }
+
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('business_settings')
+      .update({
+        website_learned_content: null,
+        website_learned_at: null,
+        website_url: null,
+        last_learn_attempt_at: null,
+      })
+      .eq('organization_id', organizationId);
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to delete website knowledge' }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return handleApiError(err, 'settings/learn-website/DELETE');
+  }
+}

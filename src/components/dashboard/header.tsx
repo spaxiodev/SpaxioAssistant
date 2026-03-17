@@ -18,6 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SearchTrigger } from '@/components/command-palette';
+import { Search } from 'lucide-react';
 
 type HeaderProps = {
   organizationId?: string;
@@ -80,6 +82,7 @@ export function Header({ showUpgradeButton }: HeaderProps) {
       </div>
       <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <div className="hidden md:flex md:items-center md:gap-2">
+          <SearchTrigger />
           <LocaleSwitcher />
           <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>

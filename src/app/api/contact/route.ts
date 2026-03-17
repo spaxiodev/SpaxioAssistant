@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { renderContactFormNotificationEmail } from '@/lib/email';
 import { getClientIp } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -72,12 +73,14 @@ export async function POST(request: Request) {
       ? `[Spaxio Contact] ${subject}`
       : `[Spaxio Contact] Message from ${name}`;
 
+    const { html, text } = renderContactFormNotificationEmail({ name, email, subject: subject || null, message });
     const { data, error } = await resend.emails.send({
       from,
       to: [CONTACT_EMAIL],
       replyTo: email,
       subject: subjectLine,
-      text: `Name: ${name}\nEmail: ${email}\n\nSubject: ${subject || '(none)'}\n\nMessage:\n${message}`,
+      html,
+      text,
     });
 
     if (error) {

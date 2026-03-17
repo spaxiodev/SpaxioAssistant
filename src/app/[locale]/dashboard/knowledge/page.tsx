@@ -9,6 +9,7 @@ import { UploadTextForm } from '@/app/dashboard/knowledge/upload-text-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ViewModeClientGate } from '@/components/dashboard/view-mode-client-gate';
 import { SimpleKnowledgeContent } from '@/components/dashboard/simple-knowledge-content';
+import { WebsiteKnowledgeCard } from '@/components/dashboard/website-knowledge-card';
 
 export default async function KnowledgePage() {
   const orgId = await getOrganizationId();
@@ -17,14 +18,25 @@ export default async function KnowledgePage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
 
-  const { data: sources } = await supabase
-    .from('knowledge_sources')
-    .select('id, name, source_type, last_synced_at, created_at')
-    .eq('organization_id', orgId)
-    .order('created_at', { ascending: false });
+  const [
+    { data: sources },
+    { data: businessSettings },
+  ] = await Promise.all([
+    supabase
+      .from('knowledge_sources')
+      .select('id, name, source_type, last_synced_at, created_at')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('business_settings')
+      .select('website_url, website_learned_at')
+      .eq('organization_id', orgId)
+      .single(),
+  ]);
 
   const sourceList = (sources ?? []).map((s) => ({ id: s.id, name: s.name }));
   const hasSources = (sources?.length ?? 0) > 0;
+  const hasWebsiteKnowledge = !!(businessSettings?.website_learned_at as string | null);
 
   const developerContent = (
     <div className="space-y-8">
@@ -32,6 +44,13 @@ export default async function KnowledgePage() {
         <h1 className="text-2xl font-bold tracking-tight">{t('knowledge')}</h1>
         <p className="text-muted-foreground">{t('knowledgeDescription')}</p>
       </div>
+
+      {hasWebsiteKnowledge && (
+        <WebsiteKnowledgeCard
+          websiteUrl={businessSettings?.website_url as string | null}
+          learnedAt={businessSettings?.website_learned_at as string}
+        />
+      )}
 
       <Card>
         <CardHeader>

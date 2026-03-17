@@ -9,6 +9,7 @@ import type { AutomationRunInput, AutomationRunOutput } from './types';
 import type { AutomationEventEnvelope } from './types';
 import type { Automation } from '@/lib/supabase/database.types';
 import { runAgentForWorkflow } from './agent-workflow';
+import { getAutomationNotificationEmail } from '@/lib/email';
 
 export interface RunAutomationParams {
   automation: Pick<
@@ -48,15 +49,6 @@ async function resolveNotificationEmail(
   return typeof email === 'string' && email.trim() ? email.trim() : null;
 }
 
-function buildDefaultEmailBody(input: AutomationRunInput): string {
-  const lines: string[] = ['Automation notification', '', `Trigger: ${input.trigger_type}`];
-  if (input.lead?.name) lines.push(`Name: ${input.lead.name}`);
-  if (input.lead?.email) lines.push(`Email: ${input.lead.email}`);
-  if (input.lead?.phone) lines.push(`Phone: ${input.lead.phone}`);
-  if (input.lead?.message) lines.push(`Message: ${input.lead.message}`);
-  lines.push('', 'Payload:', JSON.stringify(input, null, 2));
-  return lines.join('\n');
-}
 
 /** Replace {{key}} in template with input[key] or input.lead[key]. */
 function interpolateBody(template: string, input: AutomationRunInput): string {
@@ -389,14 +381,33 @@ async function executeAction(
         typeof config.body === 'string' && config.body.trim()
           ? config.body.trim()
           : null;
-      const text = bodyTemplate
-        ? interpolateBody(bodyTemplate, input)
-        : buildDefaultEmailBody(input);
+
+      let html: string | undefined;
+      let text: string;
+
+      if (bodyTemplate) {
+        text = interpolateBody(bodyTemplate, input);
+      } else {
+        const { data: settings } = await supabase
+          .from('business_settings')
+          .select('business_name')
+          .eq('organization_id', automation.organization_id)
+          .single();
+        const { html: emailHtml, text: emailText } = getAutomationNotificationEmail({
+          input,
+          automationName: automation.name ?? undefined,
+          businessName: settings?.business_name ?? undefined,
+        });
+        html = emailHtml;
+        text = emailText;
+      }
+
       const from = getFromEmail();
       const { data, error } = await resend.emails.send({
         from,
         to: [toEmail],
         subject,
+        html: html ?? text,
         text,
       });
       if (error) {

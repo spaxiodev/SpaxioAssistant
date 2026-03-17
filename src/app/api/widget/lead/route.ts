@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { renderLeadNotificationEmail } from '@/lib/email';
 import { getClientIp, isUuid, normalizeUuid } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
@@ -198,6 +199,11 @@ export async function POST(request: Request) {
             message: message || undefined,
           },
           lead_id: lead.id,
+          requested_service: requestedService || undefined,
+          requested_timeline: requestedTimeline || undefined,
+          project_details: projectDetails || undefined,
+          location: location || undefined,
+          transcript_snippet: transcriptSnippet || undefined,
         },
         trace_id: traceId,
         source: 'widget_lead',
@@ -223,11 +229,25 @@ export async function POST(request: Request) {
       const isFreeEmail = fromDomain ? freeEmailDomains.some((d) => fromDomain === d || fromDomain.endsWith('.' + d)) : false;
       const from = rawFrom && !isFreeEmail ? rawFrom : 'Spaxio Assistant <onboarding@resend.dev>';
 
+      const { html, text } = renderLeadNotificationEmail({
+        name,
+        email,
+        phone: phone || null,
+        message: message || null,
+        source: 'Website widget',
+        requested_service: requestedService || null,
+        requested_timeline: requestedTimeline || null,
+        project_details: projectDetails || null,
+        location: location || null,
+        transcript_snippet: transcriptSnippet || null,
+        business_name: settings?.business_name ?? null,
+      });
       const { error: sendError } = await resend.emails.send({
         from,
         to: [to],
         subject: `New lead from ${settings?.business_name || 'your website'}: ${name}`,
-        text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || '—'}\nService: ${requestedService || '—'}\nTimeline: ${requestedTimeline || '—'}\nProject details: ${projectDetails || '—'}\nLocation: ${location || '—'}\n\nMessage:\n${message || '—'}\n\nTranscript snippet:\n${transcriptSnippet || '—'}`,
+        html,
+        text,
       });
       if (sendError) {
         console.error('[widget/lead] Resend error:', sendError);

@@ -25,6 +25,7 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   have.push('Team (invite and manage team members)');
   have.push('Billing (see plan and manage payment)');
   have.push('Settings (business info, widget look, assistant tone, notifications)');
+  have.push('Global search / command palette (press Cmd+K or Ctrl+K to search pages, actions, leads, quote requests, and more)');
 
   if (entitlements.inbox_enabled) {
     have.push('Inbox (human replies and internal notes for conversations)');
@@ -127,6 +128,7 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
  - **Team:** How to invite teammates and what roles mean.
  - **Automations:** Basic automations (if enabled on their plan).
  - **Inbox / Bookings / Voice / Tools / Advanced analytics:** Only if enabled on their plan.
+- **Global search:** Users can press Cmd+K (Mac) or Ctrl+K (Windows) from anywhere in the dashboard to open the command palette. They can search for pages, actions, leads, quote requests, conversations, knowledge sources, automations, and agents—and jump directly to any result.
 `;
 
 export async function POST(request: Request) {

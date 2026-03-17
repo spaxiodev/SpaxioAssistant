@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Mail, Palette, Code } from 'lucide-react';
+import { MessageSquare, Mail, Palette, Code, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/components/intl-link';
 import { useTranslations } from 'next-intl';
@@ -41,12 +41,12 @@ export function BusinessSettingsForm({
   const { toast } = useToast();
   const t = useTranslations('dashboard');
   const [loading, setLoading] = useState(false);
+  const [aiGenLoading, setAiGenLoading] = useState<'description' | 'services' | null>(null);
 
   const [businessName, setBusinessName] = useState(initial?.business_name ?? '');
   const [industry, setIndustry] = useState(initial?.industry ?? '');
   const [companyDescription, setCompanyDescription] = useState(initial?.company_description ?? '');
   const [servicesOffered, setServicesOffered] = useState(normalizeServices(initial?.services_offered ?? []).join('\n'));
-  const [pricingNotes, setPricingNotes] = useState(initial?.pricing_notes ?? '');
   const [toneOfVoice, setToneOfVoice] = useState(initial?.tone_of_voice ?? 'professional');
   const [contactEmail, setContactEmail] = useState(initial?.contact_email ?? '');
   const [phone, setPhone] = useState(initial?.phone ?? '');
@@ -58,17 +58,6 @@ export function BusinessSettingsForm({
   );
   const [widgetLogoUrl, setWidgetLogoUrl] = useState(initial?.widget_logo_url ?? '');
   const [widgetEnabled, setWidgetEnabled] = useState(initial?.widget_enabled !== false);
-  const [serviceBasePrices, setServiceBasePrices] = useState<Record<string, string>>(() => {
-    const raw = initial?.service_base_prices;
-    if (!raw || typeof raw !== 'object') return {};
-    const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(raw)) {
-      if (typeof k === 'string' && typeof v === 'number' && Number.isFinite(v)) {
-        out[k] = String(v);
-      }
-    }
-    return out;
-  });
   const [logoCropDialogOpen, setLogoCropDialogOpen] = useState(false);
   const [logoCropImageSrc, setLogoCropImageSrc] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
@@ -93,14 +82,6 @@ export function BusinessSettingsForm({
     e.preventDefault();
     setLoading(true);
     const services = normalizeServices(servicesOffered);
-    const basePricesPayload: Record<string, number> = {};
-    for (const svc of services) {
-      const v = serviceBasePrices[svc];
-      if (v !== undefined && v !== '') {
-        const n = Number(v);
-        if (Number.isFinite(n) && n >= 0) basePricesPayload[svc] = n;
-      }
-    }
     const res = await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -109,7 +90,6 @@ export function BusinessSettingsForm({
         industry: industry || null,
         companyDescription: companyDescription || null,
         servicesOffered: services,
-        pricingNotes: pricingNotes || null,
         toneOfVoice: toneOfVoice || null,
         contactEmail: contactEmail || null,
         phone: phone || null,
@@ -119,7 +99,6 @@ export function BusinessSettingsForm({
         chatbotWelcomeMessage: chatbotWelcomeMessage || null,
         widgetLogoUrl: widgetLogoUrl || null,
         widgetEnabled,
-        serviceBasePrices: basePricesPayload,
         widgetActionMappings: widgetActionMappings,
       }),
     });
@@ -147,6 +126,40 @@ export function BusinessSettingsForm({
       setLogoCropImageSrc(null);
     }
   }, [logoCropImageSrc]);
+
+  async function handleGenerateWithAI(field: 'description' | 'services') {
+    const ctx = [businessName, industry].filter(Boolean).join(' ');
+    if (!ctx.trim()) {
+      toast({ title: 'Add context', description: 'Enter a business name or industry first.', variant: 'destructive' });
+      return;
+    }
+    setAiGenLoading(field);
+    try {
+      const res = await fetch('/api/settings/generate-business-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: field === 'description' ? 'company_description' : 'services',
+          businessName,
+          industry,
+          ...(field === 'services' && companyDescription ? { companyDescription } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: 'Generation failed', description: data?.error ?? 'Could not generate', variant: 'destructive' });
+        return;
+      }
+      const content = data?.content ?? '';
+      if (field === 'description') setCompanyDescription(content);
+      else setServicesOffered(content);
+      toast({ title: 'Generated', description: 'Review and edit as needed.' });
+    } catch {
+      toast({ title: 'Error', description: 'Could not generate. Try again.', variant: 'destructive' });
+    } finally {
+      setAiGenLoading(null);
+    }
+  }
 
   const handleLogoCropComplete = useCallback(
     async (blob: Blob) => {
@@ -200,7 +213,24 @@ export function BusinessSettingsForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="companyDescription">Company description</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="companyDescription">Company description</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => handleGenerateWithAI('description')}
+                disabled={aiGenLoading !== null || (!businessName.trim() && !industry.trim())}
+              >
+                {aiGenLoading === 'description' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Generate with AI
+              </Button>
+            </div>
             <Textarea
               id="companyDescription"
               value={companyDescription}
@@ -211,7 +241,24 @@ export function BusinessSettingsForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="servicesOffered">Services offered (one per line)</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="servicesOffered">Services offered (one per line)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => handleGenerateWithAI('services')}
+                disabled={aiGenLoading !== null || (!businessName.trim() && !industry.trim())}
+              >
+                {aiGenLoading === 'services' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Generate with AI
+              </Button>
+            </div>
             <Textarea
               id="servicesOffered"
               value={servicesOffered}
@@ -220,52 +267,6 @@ export function BusinessSettingsForm({
               rows={4}
               className="rounded-lg font-mono text-sm"
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pricingNotes">Pricing notes</Label>
-            <Textarea
-              id="pricingNotes"
-              value={pricingNotes}
-              onChange={(e) => setPricingNotes(e.target.value)}
-              placeholder="Pricing varies by project size. Free estimates."
-              rows={2}
-              className="rounded-lg"
-            />
-          </div>
-          <div className="rounded-lg border border-border-soft bg-muted/20 p-4">
-            <h4 className="mb-1 text-sm font-medium">Quote request base prices</h4>
-            <p className="mb-4 text-xs text-muted-foreground">
-              Set a minimum price per service. When a visitor mentions their budget in chat, quote requests with a
-              budget below this are marked &quot;Not worth it&quot; on the Quote Requests page so you can skip them.
-            </p>
-            {servicesList.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Add services above, then set a minimum price for each.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {servicesList.map((svc) => (
-                  <div key={svc} className="flex items-center gap-2">
-                    <Label htmlFor={`base-${svc}`} className="min-w-0 shrink text-sm font-normal text-muted-foreground">
-                      {svc}
-                    </Label>
-                    <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground">$</span>
-                      <Input
-                        id={`base-${svc}`}
-                        type="number"
-                        min={0}
-                        step={1}
-                        placeholder="Min"
-                        value={serviceBasePrices[svc] ?? ''}
-                        onChange={(e) =>
-                          setServiceBasePrices((prev) => ({ ...prev, [svc]: e.target.value }))
-                        }
-                        className="h-9 w-24 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
