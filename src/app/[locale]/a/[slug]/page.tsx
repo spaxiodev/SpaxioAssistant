@@ -10,7 +10,7 @@ export default async function AiPageRoute({ params, searchParams }: Props) {
   const { handoff } = await searchParams;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <main className="min-h-screen bg-background">
       <AiPageClient slug={slug} handoffToken={handoff ?? undefined} />
     </main>
   );
