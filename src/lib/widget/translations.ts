@@ -32,7 +32,8 @@ export type WidgetTranslationKey =
   | 'quoteFormSuccess'
   | 'quoteFormInvalidEmail'
   | 'quoteFormNameRequired'
-  | 'quoteFormEmailRequired';
+  | 'quoteFormEmailRequired'
+  | 'quoteFormPhoneRequired';
 
 export const DEFAULT_WELCOME = 'Hi! How can I help you today?';
 
@@ -63,6 +64,7 @@ const en: Record<WidgetTranslationKey, string> = {
   quoteFormInvalidEmail: 'Please enter a valid email address.',
   quoteFormNameRequired: 'Name is required.',
   quoteFormEmailRequired: 'Email is required.',
+  quoteFormPhoneRequired: 'Phone is required.',
 };
 
 const fr: Record<WidgetTranslationKey, string> = {

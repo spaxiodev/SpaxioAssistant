@@ -19,6 +19,16 @@ type QuoteVariable = {
   options?: unknown;
 };
 
+type QuoteFormConfig = {
+  intro_text?: string;
+  submit_button_label?: string;
+  name_required?: boolean;
+  email_required?: boolean;
+  phone_required?: boolean;
+  show_estimate_instantly?: boolean;
+  show_exact_estimate?: boolean;
+};
+
 type WidgetConfig = {
   welcomeMessage?: string;
   chatbotName?: string;
@@ -35,6 +45,7 @@ type WidgetConfig = {
   quoteProfileId?: string;
   quoteVariables?: QuoteVariable[];
   quoteCurrency?: string;
+  quoteFormConfig?: QuoteFormConfig | null;
 };
 
 function WidgetContent() {
@@ -246,10 +257,15 @@ function WidgetContent() {
 
   async function submitQuoteRequest() {
     if (!widgetId || quoteSubmitLoading) return;
-    const errs: { name?: string; email?: string } = {};
-    if (!leadName.trim()) errs.name = t('quoteFormNameRequired');
-    if (!leadEmail.trim()) errs.email = t('quoteFormEmailRequired');
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) errs.email = t('quoteFormInvalidEmail');
+    const qfc = config?.quoteFormConfig;
+    const nameRequired = qfc?.name_required !== false;
+    const emailRequired = qfc?.email_required !== false;
+    const phoneRequired = qfc?.phone_required === true;
+    const errs: { name?: string; email?: string; phone?: string } = {};
+    if (nameRequired && !leadName.trim()) errs.name = t('quoteFormNameRequired');
+    if (emailRequired && !leadEmail.trim()) errs.email = t('quoteFormEmailRequired');
+    else if (emailRequired && leadEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) errs.email = t('quoteFormInvalidEmail');
+    if (phoneRequired && !leadPhone.trim()) errs.phone = t('quoteFormPhoneRequired') ?? 'Phone is required';
     if (Object.keys(errs).length > 0) {
       setLeadErrors(errs);
       return;
@@ -377,7 +393,9 @@ function WidgetContent() {
       {showQuoteForm && quoteVars.length > 0 ? (
         <div className="flex w-full max-w-[360px] flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-foreground">{t('quoteFormTitle')}</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              {(config?.quoteFormConfig?.intro_text as string)?.trim() || t('quoteFormTitle')}
+            </h2>
             <Button
               variant="ghost"
               size="sm"

@@ -45,6 +45,14 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
+    /** When client ran quick-setup-from-website first, we get pre-merged draft and context */
+    const quickSetup = body.quick_setup_result as {
+      draft?: AssistantPlannerConfig;
+      applied?: string[];
+      analysis?: { business_name?: string | null; services_count?: number; faq_count?: number };
+    } | undefined;
+    const hasQuickSetup = quickSetup?.draft && Array.isArray(quickSetup?.applied);
+
     const logoUrl =
       typeof body.logo_url === 'string' && body.logo_url.trim().length > 0
         ? body.logo_url.trim().slice(0, 2000)
@@ -73,7 +81,9 @@ export async function POST(request: Request, { params }: Params) {
       };
     }
 
-    const systemPrompt = buildAISetupSystemPrompt(currentConfig);
+    const systemPrompt = buildAISetupSystemPrompt(currentConfig, {
+      quickSetupApplied: hasQuickSetup,
+    });
 
     const { data: history } = await supabase
       .from('ai_setup_messages')

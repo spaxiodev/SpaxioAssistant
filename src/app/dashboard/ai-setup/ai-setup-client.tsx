@@ -126,6 +126,7 @@ export function AISetupClient() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [applyingSafe, setApplyingSafe] = useState(false);
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [publishResult, setPublishResult] = useState<{
@@ -193,23 +194,68 @@ export function AISetupClient() {
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     const hasLogo = !!pendingLogoUrl;
-    if ((!text && !hasLogo) || !sessionId || loading) return;
+    if ((!text && !hasLogo) || loading) return;
     const contentToSend = text || (hasLogo ? t('aiSetupUseThisLogo') : '');
     if (!contentToSend && !hasLogo) return;
+
+    // Ensure we have a session
+    let effectiveSessionId = sessionId;
+    if (!effectiveSessionId) {
+      const createRes = await fetch('/api/ai-setup/sessions', { method: 'POST' });
+      if (!createRes.ok) return;
+      const createData = await createRes.json();
+      effectiveSessionId = createData.id;
+      setSessionId(effectiveSessionId);
+      setMessages([]);
+      setPlannerConfig({});
+      setPublishResult(null);
+    }
+
+    const logoToSend = pendingLogoUrl;
     setInput('');
+    setPendingLogoUrl(null);
     adjustHeight(true);
     setMessages((prev) => [...prev, { role: 'user', content: contentToSend || (hasLogo ? t('aiSetupLogoAttached') : '') }]);
-    const logoToSend = pendingLogoUrl;
-    setPendingLogoUrl(null);
     setLoading(true);
     setProgressStep(0);
+
     try {
-      const res = await fetch(`/api/ai-setup/sessions/${sessionId}/chat`, {
+      // Detect website URL — run quick-setup first for infer→draft→apply flow
+      const urlMatch = contentToSend.match(/\b(https?:\/\/[^\s]+)/i);
+      const websiteUrl = urlMatch ? urlMatch[1].replace(/[.,;:!?)]+$/, '') : null;
+
+      let quickSetupResult: { applied?: string[]; analysis?: { business_name?: string | null; services_count?: number; faq_count?: number }; draft?: AssistantPlannerConfig } | null = null;
+      if (websiteUrl && websiteUrl.startsWith('http')) {
+        try {
+          const quickRes = await fetch('/api/ai-setup/quick-setup-from-website', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: websiteUrl,
+              session_id: effectiveSessionId,
+            }),
+          });
+          const quickData = await quickRes.json();
+          if (quickData.ok && quickData.draft) {
+            quickSetupResult = {
+              applied: quickData.applied ?? [],
+              analysis: quickData.analysis ?? {},
+              draft: quickData.draft,
+            };
+            setPlannerConfig(quickData.draft);
+          }
+        } catch {
+          // Continue to chat even if quick-setup fails
+        }
+      }
+
+      const res = await fetch(`/api/ai-setup/sessions/${effectiveSessionId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: contentToSend,
           ...(logoToSend ? { logo_url: logoToSend } : {}),
+          ...(quickSetupResult ? { quick_setup_result: quickSetupResult } : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -290,6 +336,25 @@ export function AISetupClient() {
       setPublishing(false);
     }
   }, [sessionId, publishing, toast]);
+
+  const handleApplySafeChanges = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch('/api/ai-setup/apply-safe-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.applied?.length) {
+        toast({ title: 'Safe changes applied', description: `${data.applied.length} field(s) updated in Settings.` });
+      } else if (!res.ok) {
+        toast({ title: data.error || 'Could not apply', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Could not apply changes', variant: 'destructive' });
+    }
+  }, [sessionId, toast]);
 
   const copyToClipboard = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -568,6 +633,9 @@ export function AISetupClient() {
 
           {sessionId && plannerConfig.publish_status !== 'published' && (
             <>
+              <Button variant="outline" size="sm" className="w-full" onClick={handleApplySafeChanges}>
+                Apply safe changes to live settings
+              </Button>
               {progressStep !== null && (
                 <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs">
                   <p className="font-medium text-muted-foreground">Progress</p>

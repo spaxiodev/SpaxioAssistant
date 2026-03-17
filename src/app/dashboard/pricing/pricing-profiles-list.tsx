@@ -33,7 +33,13 @@ type Profile = {
   pricing_mode: string;
 };
 
-export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
+export function PricingProfilesList({
+  profiles,
+  basePath = '/dashboard/pricing',
+}: {
+  profiles: Profile[];
+  basePath?: string;
+}) {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -56,7 +62,7 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
       });
       const data = await res.json();
       if (data.profile?.id) {
-        router.push(`/dashboard/pricing/${data.profile.id}`);
+        router.push(`${basePath}/${data.profile.id}`);
         return;
       }
       throw new Error(data.error ?? 'Failed to create');
@@ -82,7 +88,7 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
       });
       const data = await res.json();
       if (data.profile?.id) {
-        router.push(`/dashboard/pricing/${data.profile.id}`);
+        router.push(`${basePath}/${data.profile.id}`);
         return;
       }
       throw new Error(data.error ?? 'Failed to create');
@@ -175,7 +181,7 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/pricing/${p.id}`}>Edit & preview</Link>
+                      <Link href={`${basePath}/${p.id}`}>Edit & preview</Link>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -185,7 +191,7 @@ export function PricingProfilesList({ profiles }: { profiles: Profile[] }) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/pricing/${p.id}`}>{t('preview')}</Link>
+                          <Link href={`${basePath}/${p.id}`}>{t('preview')}</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:bg-destructive/10 focus:text-destructive"

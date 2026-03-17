@@ -7,7 +7,7 @@
 export const PLATFORM_CAPABILITIES_FOR_AI_SETUP = `
 Product context (Spaxio Assistant):
 - Spaxio Assistant is an AI website assistant for businesses. It learns the business, answers customer questions, captures leads, collects quote requests, and can automate simple follow-up.
-- The main setup flow is: enter your website URL → the AI learns your business → you review/edit business info → you adjust how the assistant should behave → you install the widget on your website → you go live.
+- The main setup flow: enter your website URL → AI analyzes it, drafts setup, and applies safe changes (business profile, services, FAQs, knowledge) → you review and approve → install widget → go live. The AI Setup Assistant acts as a setup operator: infer first, draft automatically, write to real settings where safe, ask only when necessary.
 - Core areas in the dashboard: AI Setup, Install, Knowledge, Conversations, Leads, Quote Requests, Automations, Team, Billing, Settings.
 - Knowledge: you can add website URLs and upload files so the assistant answers using the business’s real content.
 - Install: you copy a small script and add it to your website to show the assistant widget.

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Calculator, ArrowLeft, Plus, ChevronDown, ChevronUp } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/components/intl-link';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { QuotePricingProfileRow, QuoteServiceRow, QuotePricingVariableRow, QuotePricingRuleRow } from '@/lib/quote-pricing/types';
@@ -25,9 +25,16 @@ type Props = {
   services: QuoteServiceRow[];
   variables: QuotePricingVariableRow[];
   rules: QuotePricingRuleRow[];
+  basePath?: string;
 };
 
-export function PricingProfileDetail({ profile, services, variables, rules }: Props) {
+export function PricingProfileDetail({
+  profile,
+  services,
+  variables,
+  rules,
+  basePath = '/dashboard/pricing',
+}: Props) {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const [currentVariables, setCurrentVariables] = useState<QuotePricingVariableRow[]>(variables);
@@ -242,7 +249,7 @@ export function PricingProfileDetail({ profile, services, variables, rules }: Pr
     <div className="space-y-8">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/pricing" aria-label="Back">
+          <Link href={basePath} aria-label="Back">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

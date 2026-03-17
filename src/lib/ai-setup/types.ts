@@ -25,6 +25,16 @@ export type WidgetConfig = {
   widgetLogoUrl?: string;
 };
 
+export type QuoteFormConfig = {
+  intro_text?: string;
+  submit_button_label?: string;
+  name_required?: boolean;
+  email_required?: boolean;
+  phone_required?: boolean;
+  show_estimate_instantly?: boolean;
+  show_exact_estimate?: boolean;
+};
+
 export type AutomationTemplateKey =
   | 'lead_capture'
   | 'quote_request_capture'
@@ -49,6 +59,7 @@ export interface AssistantPlannerConfig {
   webhook_secret?: string;
   widget_enabled?: boolean;
   widget_config?: WidgetConfig;
+  quote_form_config?: QuoteFormConfig;
   follow_up_enabled?: boolean;
   integrations?: Record<string, unknown>;
   publish_status?: 'draft' | 'published';

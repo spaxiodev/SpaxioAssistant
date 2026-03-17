@@ -61,6 +61,19 @@ export function mergePlannerConfig(
   if (typeof update.follow_up_enabled === 'boolean') {
     merged.follow_up_enabled = update.follow_up_enabled;
   }
+  if (update.quote_form_config !== undefined && update.quote_form_config !== null && typeof update.quote_form_config === 'object') {
+    const qfc = update.quote_form_config as Record<string, unknown>;
+    merged.quote_form_config = {
+      ...merged.quote_form_config,
+      intro_text: typeof qfc.intro_text === 'string' ? qfc.intro_text : merged.quote_form_config?.intro_text,
+      submit_button_label: typeof qfc.submit_button_label === 'string' ? qfc.submit_button_label : merged.quote_form_config?.submit_button_label,
+      name_required: typeof qfc.name_required === 'boolean' ? qfc.name_required : merged.quote_form_config?.name_required,
+      email_required: typeof qfc.email_required === 'boolean' ? qfc.email_required : merged.quote_form_config?.email_required,
+      phone_required: typeof qfc.phone_required === 'boolean' ? qfc.phone_required : merged.quote_form_config?.phone_required,
+      show_estimate_instantly: typeof qfc.show_estimate_instantly === 'boolean' ? qfc.show_estimate_instantly : merged.quote_form_config?.show_estimate_instantly,
+      show_exact_estimate: typeof qfc.show_exact_estimate === 'boolean' ? qfc.show_exact_estimate : merged.quote_form_config?.show_exact_estimate,
+    };
+  }
 
   const result = validatePlannerConfig(merged);
   if (!result.valid) return null;

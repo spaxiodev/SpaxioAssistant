@@ -20,6 +20,8 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   have.push('Conversations (read chat history with visitors)');
   have.push('Leads (see people who shared contact info)');
   have.push('Quote requests (see quote requests from the widget)');
+  have.push('Quote Form Setup (configure how the quote form appears in the widget: intro text, submit button, required fields, estimate display)');
+  have.push('Pricing Rules (configure how estimates are calculated from quote form inputs)');
   have.push('Team (invite and manage team members)');
   have.push('Billing (see plan and manage payment)');
   have.push('Settings (business info, widget look, assistant tone, notifications)');
@@ -111,13 +113,15 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 
 **Topics you can explain (only if the user has access - see below):**
 - **Overview:** What the numbers mean (leads, conversations, quote requests), trial banner, upgrade button.
-- **AI Setup:** How to set up the website assistant in natural language, learn from a website URL, and publish/go live.
+- **AI Setup:** Give your website URL and preferences; the AI analyzes the site, drafts setup, and applies safe changes. You can edit in chat (e.g. "make tone more professional", "change welcome message"). Review the draft summary and click Publish when ready.
 - **AI Assistants:** How to create and edit assistants (how the assistant behaves and what it should do).
 - **Knowledge:** How to add a source (add a website URL or upload a file) and what limits mean.
 - **Install:** How to install the assistant on their website: 1) Click Install in the sidebar. 2) Copy the script. 3) Paste just before </body>. 4) Save and publish.
 - **Conversations:** Where to see the list of chats and how to open them.
 - **Leads:** Where leads appear and how to follow up.
 - **Quote requests:** Where quote requests appear and what the fields mean.
+- **Quote Form Setup:** In Quote Requests → Form Setup, control how the quote form appears in the widget: intro text, submit button label, whether name/email/phone are required, and how the estimate is shown.
+- **Pricing Rules:** In Quote Requests → Pricing Rules, configure variables and rules that calculate the estimate. Use templates (e.g. Landscaping) or build custom rules.
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
 - **Widget:** What the widget does (answers questions, captures leads, collects quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
  - **Team:** How to invite teammates and what roles mean.
