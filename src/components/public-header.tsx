@@ -26,6 +26,12 @@ export function PublicHeader() {
             {t('pricing')}
           </Link>
           <Link
+            href="/help"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {t('help')}
+          </Link>
+          <Link
             href="/contact"
             className="text-muted-foreground hover:text-foreground"
           >

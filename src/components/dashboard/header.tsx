@@ -92,6 +92,9 @@ export function Header({ showUpgradeButton }: HeaderProps) {
             <Link href="/dashboard/settings">{t('settings')}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
+            <Link href="/help">{t('help')}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
             <Link href="/">{t('home')}</Link>
           </Button>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -121,6 +124,11 @@ export function Header({ showUpgradeButton }: HeaderProps) {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/settings" className="cursor-pointer">
                 {t('settings')}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/help" className="cursor-pointer">
+                {t('help')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>

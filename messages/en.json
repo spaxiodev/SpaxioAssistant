@@ -14,6 +14,7 @@
     "backToHome": "Back to home",
     "backToDashboard": "Back to dashboard",
     "contact": "Contact",
+    "help": "Help",
     "tryAgain": "Try again",
     "email": "Email",
     "password": "Password",
@@ -507,7 +508,9 @@
     "pricingTitle": "Pricing",
     "pricingDescription": "Explore pricing for Spaxio Assistant. Deploy AI assistants as a widget or full-page experiences, capture leads, and automate support at any scale.",
     "contactTitle": "Contact Spaxio Assistant",
-    "contactDescription": "Contact the Spaxio team to learn how our AI assistant platform can power your customer conversations, lead generation, and support."
+    "contactDescription": "Contact the Spaxio team to learn how our AI assistant platform can power your customer conversations, lead generation, and support.",
+    "helpTitle": "Help & documentation",
+    "helpDescription": "Search our help articles to learn how the dashboard, widget, leads, automations, and billing work."
   },
   "pricing": {
     "title": "Pricing",
@@ -604,6 +607,90 @@
     "pricing": "Pricing",
     "privacy": "Privacy policy",
     "terms": "Terms & conditions"
+  },
+  "help": {
+    "pageTitle": "Help & documentation",
+    "description": "Search for how things work. Find answers about the dashboard, widget, leads, automations, and more.",
+    "searchPlaceholder": "Search for help… (e.g. widget, leads, install, billing)",
+    "noResults": "No articles match your search. Try different keywords.",
+    "backToHome": "Back to home",
+    "contactSupport": "Contact support",
+    "categories": {
+      "gettingStarted": "Getting started",
+      "dashboard": "Dashboard",
+      "widget": "Widget & install",
+      "leads": "Leads & CRM",
+      "automations": "Automations",
+      "knowledge": "Knowledge",
+      "billing": "Billing & plans",
+      "account": "Account & team"
+    },
+    "articles": {
+      "gettingStarted": {
+        "title": "Getting started with Spaxio Assistant",
+        "body": "After signing up, you'll land in the dashboard. Start by setting your business name in onboarding or in Settings. Use the Install page to copy a small script tag and add it to your website—that’s how the chat widget appears on your site. Link an AI agent to the widget in Install or in Agents, and optionally use the AI Setup Assistant (Setup with AI) to have the platform configure your chatbot, lead capture, and notifications for you. Your dashboard has two modes: Simple (streamlined, plain-language) and Developer (full workspace, CRM, and technical features); switch between them with the toggle in the top bar."
+      },
+      "dashboardOverview": {
+        "title": "Dashboard overview",
+        "body": "The dashboard is your control center. The Overview (home) shows quick counts for leads, conversations, quote requests, and agents, plus links to Install, Leads, Conversations, and Billing. The sidebar groups sections: Workspace (Agents, Automations, Knowledge), CRM (Leads, Contacts, Companies, Deals, Tickets, Quote requests), Activity (Conversations, Documents, Analytics), Developers (Deployments, Webhooks, Integrations), and Account (Install, Settings, Billing, Account). In Simple Mode the sidebar shows fewer, friendlier labels like Home, Setup with AI, Chat Widget, Leads, Team, Launch, and Help."
+      },
+      "simpleVsDeveloper": {
+        "title": "Simple mode vs Developer mode",
+        "body": "Simple Mode is a streamlined experience with plain-language labels and an emphasis on \"Do It For Me\" AI setup. Use it if you want to get the widget live and capture leads without touching technical options. Developer Mode shows the full dashboard: all workspace, CRM, activity, and developer sections (webhooks, deployments, API, etc.). Switch between the two with the toggle in the dashboard header (Simple / Developer). Your choice is saved in your browser so it persists across visits."
+      },
+      "agents": {
+        "title": "AI agents",
+        "body": "Agents are the AI brains behind your chatbot. Create agents from the Agents section: give each one a name, goal, and tone. You can attach knowledge sources (documents, URLs) so the agent answers using your content. On paid plans, agents can use tools (e.g. create leads, send emails, book appointments). Link an agent to your website widget in the Install page by selecting it in the \"Chat is powered by\" dropdown. You can have multiple agents and assign different ones to different deployments (e.g. one for the main site, one for support)."
+      },
+      "installWidget": {
+        "title": "Installing the chat widget on your website",
+        "body": "Go to Install (in the sidebar under Install & settings or in Simple Mode under Chat Widget). Copy the install code—a single script tag that looks like: <script src=\"...\" data-widget-id=\"...\"></script>. Paste it once on your site, just before the closing </body> tag. The widget will load on every page where the script is present. Choose which agent powers the chat using the \"Chat is powered by\" dropdown on the same page. Optional: you can add data-base-url=\"https://your-backend.com\" to the script tag if you use a custom backend URL. Use Preview on the Install page to see how the widget looks on desktop and mobile."
+      },
+      "leads": {
+        "title": "Leads and lead capture",
+        "body": "Leads are captured when visitors submit the lead form in the widget (name, email, phone, message, etc.). View and manage them in the Leads section of the dashboard. You can set status, stage, owner, and tags. Lead capture can trigger automations (e.g. send an email via Resend) and optionally send a lead notification email to an address you set in Settings. All leads are stored per organization and protected by your account permissions."
+      },
+      "quoteRequests": {
+        "title": "Quote requests",
+        "body": "Quote requests are structured submissions from the widget when a visitor asks for a quote or project details. They appear in the Quote Requests section of the dashboard. You can see customer, service, budget, and a \"Worth it\" indicator. Set base prices per service in Settings so the system can mark requests below your minimum as \"Not worth it.\" Quote requests are linked to the conversation they came from."
+      },
+      "conversations": {
+        "title": "Conversations",
+        "body": "Conversations are chat sessions between visitors and your widget. They’re saved when a visitor closes the widget or when the session ends. View them in the Conversations section: see messages, download a chat as a file, or delete it. Each conversation is tied to a widget and optionally to a lead or quote request. Use this to review what visitors asked and how your AI responded."
+      },
+      "automations": {
+        "title": "Automations",
+        "body": "Automations are event-driven workflows. Create one from the Automations section and choose a trigger: e.g. when a lead form is submitted, when a webhook is received, or on a schedule. Add steps (send email, update CRM, call an API, etc.). Automations are available on Pro and higher plans. You can enable or pause an automation and view recent runs (with input, output, and trace) from the same page. Inbound webhooks can trigger automations by posting to the webhook URL shown in the automation’s config."
+      },
+      "knowledge": {
+        "title": "Knowledge bases",
+        "body": "Knowledge bases train your agents on your content. In the Knowledge section you can add sources: upload documents (PDF, text, etc.) or ingest URLs (the system scrapes and indexes the content). Agents that are linked to these sources use this content to ground their answers. Add and update sources as your products, FAQs, or policies change so your chatbot stays accurate."
+      },
+      "billing": {
+        "title": "Billing and subscription",
+        "body": "Billing is in the dashboard under Billing. You’ll see your current plan (Free, Starter, Pro, Business, or Enterprise), trial end date if applicable, and usage (messages, AI actions) for the current period. Use \"Manage subscription\" to open the Stripe Customer Portal where you can update payment method, change plan, or cancel. Plans differ by number of agents, messages, knowledge sources, and features (automations, tool calling, API access, branding). Upgrade from the Pricing page or from in-dashboard CTAs when you hit a limit."
+      },
+      "settings": {
+        "title": "Settings",
+        "body": "Settings hold your business configuration: business name, industry, description, services, pricing notes, FAQ, tone, and contact email/phone. You can set a lead notification email, brand color, welcome message for the widget, and widget position. The \"Learn from website\" option lets you enter a URL so the system can scrape it and suggest company description and FAQs. Upload a logo to use in the widget. These settings are used by your agents and widget to personalize replies and appearance."
+      },
+      "team": {
+        "title": "Team members",
+        "body": "Invite team members from the Account section (Team Members). Only the account owner can invite; paid plans are required for team invites. Enter an email and optional role name (e.g. Admin, Manager, Support). Invitees receive an email with an acceptance link. You can manage current members and pending invitations, resend or revoke invites, and edit permissions. Each member has access to the same organization (workspace) and its data according to their role."
+      },
+      "deployments": {
+        "title": "Deployments",
+        "body": "Deployments are the ways your agents are exposed: website widget, embedded chat, standalone page, dashboard panel, or API. Go to Deployments to see all deployment configs. Add a new deployment from each agent’s Deployment tab (e.g. create a website widget linked to that agent). The Install page is where you get the script tag for the website widget deployment."
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "body": "Webhooks let you connect external systems. Outbound: your automations can call external URLs. Inbound: create webhook endpoints in the Webhooks section; each endpoint has a URL, optional secret, and field mappings. When data is posted to the endpoint URL, it can trigger automations or write to your CRM. Use the endpoint ID or token in the URL. Webhook access is available on higher plans."
+      },
+      "inbox": {
+        "title": "Inbox",
+        "body": "The Inbox is for human-in-the-loop conversations. View conversations that need attention, assign them to team members, add internal notes, reply as a human, or generate an AI draft. You can mark conversations as open, closed, snoozed, or escalated and link them to leads or contacts for CRM context. Use it to hand off from AI to human when needed."
+      }
+    }
   },
   "legal": {
     "pageTitlePrivacy": "Privacy policy",

@@ -14,6 +14,7 @@
     "backToHome": "Retour à l'accueil",
     "backToDashboard": "Retour au tableau de bord",
     "contact": "Contact",
+    "help": "Aide",
     "tryAgain": "Réessayer",
     "email": "E-mail",
     "password": "Mot de passe",
@@ -507,7 +508,9 @@
     "pricingTitle": "Tarifs",
     "pricingDescription": "Découvrez les tarifs Spaxio Assistant. Déployez des assistants IA en widget ou en pages dédiées, capturez des leads et automatisez le support à toute échelle.",
     "contactTitle": "Contact Spaxio Assistant",
-    "contactDescription": "Contactez l'équipe Spaxio pour découvrir comment notre plateforme d'assistant IA peut renforcer vos conversations clients, la génération de leads et le support."
+    "contactDescription": "Contactez l'équipe Spaxio pour découvrir comment notre plateforme d'assistant IA peut renforcer vos conversations clients, la génération de leads et le support.",
+    "helpTitle": "Aide et documentation",
+    "helpDescription": "Recherchez dans nos articles d'aide pour apprendre comment fonctionnent le tableau de bord, le widget, les leads, les automatisations et la facturation."
   },
   "pricing": {
     "title": "Tarifs",
@@ -604,6 +607,42 @@
     "pricing": "Tarifs",
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation"
+  },
+  "help": {
+    "pageTitle": "Aide et documentation",
+    "description": "Recherchez le fonctionnement des fonctionnalités. Réponses sur le tableau de bord, le widget, les leads, les automatisations et plus.",
+    "searchPlaceholder": "Rechercher dans l'aide… (ex. widget, leads, installation, facturation)",
+    "noResults": "Aucun article ne correspond à votre recherche. Essayez d'autres mots-clés.",
+    "backToHome": "Retour à l'accueil",
+    "contactSupport": "Contacter le support",
+    "categories": {
+      "gettingStarted": "Démarrage",
+      "dashboard": "Tableau de bord",
+      "widget": "Widget et installation",
+      "leads": "Leads et CRM",
+      "automations": "Automatisations",
+      "knowledge": "Base de connaissances",
+      "billing": "Facturation et forfaits",
+      "account": "Compte et équipe"
+    },
+    "articles": {
+      "gettingStarted": { "title": "Démarrage avec Spaxio Assistant", "body": "Après inscription, vous arrivez sur le tableau de bord. Commencez par définir le nom de votre entreprise dans l'intégration ou dans Paramètres. Utilisez la page Installation pour copier un script et l'ajouter à votre site — c'est ainsi que le widget de chat apparaît. Associez un agent IA au widget dans Installation ou dans Agents, et optionnellement utilisez l'assistant de configuration IA pour que la plateforme configure le chatbot, la capture de leads et les notifications. Le tableau de bord propose deux modes : Simple (épuré) et Développeur (fonctions complètes) ; basculez avec le sélecteur en haut." },
+      "dashboardOverview": { "title": "Aperçu du tableau de bord", "body": "Le tableau de bord est votre centre de contrôle. L'accueil affiche les compteurs (leads, conversations, demandes de devis, agents) et les liens vers Installation, Leads, Conversations et Facturation. La barre latérale regroupe : Espace (Agents, Automatisations, Connaissances), CRM (Leads, Contacts, Entreprises, Deals, Tickets, Devis), Activité (Conversations, Documents, Analytiques), Développeurs (Déploiements, Webhooks), Compte (Installation, Paramètres, Facturation)." },
+      "simpleVsDeveloper": { "title": "Mode Simple vs Mode Développeur", "body": "Le mode Simple offre des libellés en langage clair et met l'accent sur la configuration par l'IA. Le mode Développeur affiche tout le tableau de bord (CRM, webhooks, déploiements, etc.). Basculez avec le sélecteur dans l'en-tête. Votre choix est enregistré dans le navigateur." },
+      "agents": { "title": "Agents IA", "body": "Les agents sont les cerveaux IA de votre chatbot. Créez-les dans la section Agents : nom, objectif, ton. Vous pouvez attacher des sources de connaissances. Sur les forfaits payants, les agents peuvent utiliser des outils (créer des leads, envoyer des e-mails). Associez un agent au widget dans la page Installation via le menu « Le chat est alimenté par »." },
+      "installWidget": { "title": "Installer le widget de chat sur votre site", "body": "Allez dans Installation, copiez le code d'installation (une balise script) et collez-la avant la fermeture de </body> sur votre site. Choisissez l'agent qui alimente le chat dans le menu déroulant. Utilisez Aperçu pour voir le rendu sur ordinateur et mobile." },
+      "leads": { "title": "Leads et capture", "body": "Les leads sont capturés lorsque les visiteurs envoient le formulaire du widget. Consultez-les dans la section Leads. Vous pouvez définir statut, étape, propriétaire et étiquettes. La capture peut déclencher des automatisations et un e-mail de notification (paramétrable dans Paramètres)." },
+      "quoteRequests": { "title": "Demandes de devis", "body": "Les demandes de devis sont des envois structurés depuis le widget. Elles apparaissent dans la section Demandes de devis. Définissez des prix de base dans Paramètres pour marquer les demandes « Pas rentable » si elles sont sous votre minimum." },
+      "conversations": { "title": "Conversations", "body": "Les conversations sont les sessions de chat avec les visiteurs. Elles sont enregistrées à la fermeture du widget. Consultez-les dans la section Conversations : messages, téléchargement ou suppression." },
+      "automations": { "title": "Automatisations", "body": "Les automatisations sont des flux déclenchés par des événements (soumission de formulaire, webhook, planification). Créez-en dans la section Automatisations et ajoutez des étapes. Disponibles sur les forfaits Pro et supérieurs. Les webhooks entrants peuvent déclencher une automatisation." },
+      "knowledge": { "title": "Bases de connaissances", "body": "Les bases de connaissances forment vos agents avec votre contenu. Dans la section Connaissances, ajoutez des sources : documents ou URLs à ingérer. Les agents liés utilisent ce contenu pour répondre." },
+      "billing": { "title": "Facturation et abonnement", "body": "La facturation est dans le tableau de bord. Vous y voyez le forfait actuel, la fin d'essai éventuelle et l'utilisation (messages, actions IA). « Gérer l'abonnement » ouvre le portail Stripe pour modifier le moyen de paiement ou annuler." },
+      "settings": { "title": "Paramètres", "body": "Les paramètres regroupent la configuration de l'entreprise : nom, secteur, description, services, FAQ, ton, e-mail et téléphone, couleur de marque, message de bienvenue du widget, position du widget. L'option « Apprendre depuis le site » permet de saisir une URL pour suggérer description et FAQ." },
+      "team": { "title": "Membres de l'équipe", "body": "Invitez des membres depuis la section Compte (Membres de l'équipe). Seul le propriétaire peut inviter ; forfaits payants requis. Les invités reçoivent un e-mail avec un lien d'acceptation. Vous pouvez gérer les membres et les invitations en attente." },
+      "deployments": { "title": "Déploiements", "body": "Les déploiements sont les façons d'exposer vos agents : widget site, chat intégré, page autonome, API. Ajoutez un déploiement depuis l'onglet Déploiement de chaque agent. La page Installation fournit le script pour le widget site." },
+      "webhooks": { "title": "Webhooks", "body": "Les webhooks relient des systèmes externes. Entrants : créez des points de terminaison dans la section Webhooks ; chaque URL peut déclencher des automatisations. Sortants : vos automatisations peuvent appeler des URLs externes. Disponibles sur les forfaits supérieurs." },
+      "inbox": { "title": "Boîte de réception", "body": "La boîte de réception sert à traiter les conversations avec intervention humaine : assignation, notes, réponse en tant qu'humain ou brouillon IA. Vous pouvez lier les conversations à des leads ou contacts." }
+    }
   },
   "legal": {
     "pageTitlePrivacy": "Politique de confidentialité",
