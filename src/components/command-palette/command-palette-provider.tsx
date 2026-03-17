@@ -41,7 +41,7 @@ export function CommandPaletteProvider({ children }: CommandPaletteProviderProps
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showClose={false}
-          className="border-0 bg-transparent p-0 shadow-none max-w-xl"
+          className="border-0 bg-transparent p-0 shadow-none max-w-4xl w-full"
           onEscapeKeyDown={close}
           onPointerDownOutside={close}
         >
