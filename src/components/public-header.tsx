@@ -10,7 +10,7 @@ export function PublicHeader() {
   const t = useTranslations('common');
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <nav className="flex items-center gap-6 text-sm">
           <Link

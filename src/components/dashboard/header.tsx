@@ -38,7 +38,7 @@ export function Header({ showUpgradeButton }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-2 border-b border-white/30 bg-background/65 px-4 backdrop-blur dark:border-white/10 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-white/30 bg-background px-4 dark:border-white/10 md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <Button
           variant="ghost"
