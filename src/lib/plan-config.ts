@@ -72,6 +72,7 @@ export const FEATURE_KEYS = [
   'voice',
   'integrations',
   'team_members',
+  'ai_pages',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -89,6 +90,7 @@ export const FEATURE_MIN_PLAN: Record<FeatureKey, PlanSlug> = {
   voice: 'pro',
   integrations: 'pro',
   team_members: 'starter',
+  ai_pages: 'pro',
 };
 
 /** Whether the given plan has access to the feature. */
@@ -127,6 +129,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   voice: 'Voice agents',
   integrations: 'Integrations',
   team_members: 'Team members',
+  ai_pages: 'AI Pages',
 };
 
 // -----------------------------------------------------------------------------

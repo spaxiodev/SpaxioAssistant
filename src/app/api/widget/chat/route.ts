@@ -8,7 +8,7 @@ import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validati
 import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
-import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions, canUseAutomation } from '@/lib/entitlements';
+import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions, canUseAutomation, canUseToolCalling } from '@/lib/entitlements';
 import { searchKnowledge } from '@/lib/knowledge/search';
 import type { Agent } from '@/lib/supabase/database.types';
 import { parseAndSanitizeAction } from '@/lib/widget-actions/types';
@@ -344,16 +344,33 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
     let reply: string;
 
     const enabledTools = agent?.enabled_tools ?? [];
-    const useTools = Array.isArray(enabledTools) && enabledTools.length > 0;
+    const toolCallingAllowed = await canUseToolCalling(supabase, widget.organization_id, adminAllowed);
+    const useTools =
+      Array.isArray(enabledTools) &&
+      enabledTools.length > 0 &&
+      toolCallingAllowed &&
+      provider === 'openai';
 
-    if (useTools && provider === 'openai') {
+    if (useTools) {
       const aiActionLimitExceeded = await hasExceededMonthlyAiActions(supabase, widget.organization_id, adminAllowed);
       if (aiActionLimitExceeded) {
-        const result = await getChatCompletion(provider, modelId, messagesForApi, {
-          max_tokens: 500,
-          temperature,
-        });
-        reply = result.content || 'Sorry, I could not generate a response.';
+        const { getPlanForOrg } = await import('@/lib/entitlements');
+        const { getNextPlanSlug, normalizePlanSlug } = await import('@/lib/plan-config');
+        const plan = await getPlanForOrg(supabase, widget.organization_id);
+        const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+        return NextResponse.json(
+          {
+            reply: "This month's AI action limit has been reached. Please upgrade your plan or try again next month.",
+            error: 'ai_action_limit_reached',
+            code: 'usage_limit',
+            feature: 'ai_actions',
+            reason: 'limit_reached',
+            current_plan: currentSlug,
+            recommended_plan: getNextPlanSlug(currentSlug),
+            message: "You've used your AI actions for this month. Upgrade to get more.",
+          },
+          { status: 403, headers: corsHeaders }
+        );
       } else {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
         const toolsSchema = buildOpenAIToolsSchema(enabledTools);

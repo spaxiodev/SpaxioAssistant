@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateFollowUpOutput } from './generate-follow-up';
 import { recordAiActionUsage } from '@/lib/billing/usage';
+import { hasExceededMonthlyAiActions } from '@/lib/entitlements';
 import type { FollowUpGenerationInput, FollowUpSourceType } from './types';
 
 export interface TriggerFollowUpOptions {
@@ -23,6 +24,12 @@ export async function triggerFollowUpRun(
   options: TriggerFollowUpOptions
 ): Promise<string | null> {
   const { organizationId, sourceType, sourceId, leadId, contactId, dealId, context } = options;
+
+  const exceeded = await hasExceededMonthlyAiActions(supabase, organizationId, false);
+  if (exceeded) {
+    console.warn('[follow-up] Skipping run: monthly AI action limit exceeded', { organizationId });
+    return null;
+  }
 
   const { data: run, error: insertErr } = await supabase
     .from('ai_follow_up_runs')

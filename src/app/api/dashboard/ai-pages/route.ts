@@ -6,6 +6,10 @@ import { NextResponse } from 'next/server';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { listAiPagesForOrg, getDefaultIntakeSchema } from '@/lib/ai-pages/config-service';
+import { canCreateAiPage, getPlanForOrg } from '@/lib/entitlements';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
 
 export async function GET() {
   const orgId = await getOrganizationId();
@@ -24,6 +28,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const supabase = createAdminClient();
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const allowed = await canCreateAiPage(supabase, orgId, adminAllowed);
+  if (!allowed) {
+    const plan = await getPlanForOrg(supabase, orgId);
+    const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+    return planUpgradeRequiredResponse({
+      message: 'AI Pages are not available on your plan, or you have reached your AI page limit. Upgrade to Pro or above.',
+      currentPlan: currentSlug,
+      requiredPlan: getNextPlanSlug(currentSlug),
+      feature: 'ai_pages',
+    });
+  }
+
   const body = await request.json().catch(() => ({}));
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : 'Untitled';
   const slug = typeof body.slug === 'string'
@@ -40,8 +58,6 @@ export async function POST(request: Request) {
   const welcomeMessage = typeof body.welcome_message === 'string' ? body.welcome_message.trim().slice(0, 1000) : null;
   const introCopy = typeof body.intro_copy === 'string' ? body.intro_copy.trim().slice(0, 1000) : null;
   const trustCopy = typeof body.trust_copy === 'string' ? body.trust_copy.trim().slice(0, 500) : null;
-
-  const supabase = createAdminClient();
 
   const intakeSchema = Array.isArray(body.intake_schema) ? body.intake_schema : getDefaultIntakeSchema(pageType);
   const outcomeConfig = typeof body.outcome_config === 'object' && body.outcome_config !== null

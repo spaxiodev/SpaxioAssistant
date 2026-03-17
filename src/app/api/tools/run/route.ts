@@ -6,8 +6,10 @@ import type { ToolContext } from '@/lib/tools/types';
 import { handleApiError } from '@/lib/api-error';
 import { isUuid, normalizeUuid } from '@/lib/validation';
 import { recordAiActionUsage } from '@/lib/billing/usage';
-import { canUseToolCalling } from '@/lib/entitlements';
+import { canUseToolCalling, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
 
 /**
  * POST /api/tools/run
@@ -41,10 +43,14 @@ export async function POST(request: Request) {
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
     const toolCallingAllowed = await canUseToolCalling(supabase, organizationId, adminAllowed);
     if (!toolCallingAllowed) {
-      return NextResponse.json(
-        { error: 'Tool calling is not available on your plan', code: 'plan_limit', message: 'Upgrade your plan to use tools.' },
-        { status: 403 }
-      );
+      const plan = await getPlanForOrg(supabase, organizationId);
+      const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+      return planUpgradeRequiredResponse({
+        message: 'Tool calling is not available on your plan. Upgrade to Pro to use tools.',
+        currentPlan: currentSlug,
+        requiredPlan: getNextPlanSlug(currentSlug),
+        feature: 'tool_calling',
+      });
     }
 
     if (agentId && isUuid(agentId)) {

@@ -42,6 +42,8 @@ export type Entitlements = {
   phone_integration: boolean;
   max_active_voice_agents: number;
   max_businesses: number;
+  ai_pages_enabled: boolean;
+  max_ai_pages: number;
 };
 
 const DEFAULT_ENTITLEMENTS: Entitlements = {
@@ -73,6 +75,8 @@ const DEFAULT_ENTITLEMENTS: Entitlements = {
   phone_integration: false,
   max_active_voice_agents: 0,
   max_businesses: 1,
+  ai_pages_enabled: false,
+  max_ai_pages: 0,
 };
 
 function parseEntitlementValue(value: unknown): number | boolean | string {
@@ -160,11 +164,12 @@ export async function getCurrentUsage(
   knowledge_sources_count: number;
   team_members_count: number;
   document_uploads_count: number;
+  ai_pages_count: number;
 }> {
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 
-  const [usageRes, agentsRes, sourcesRes, membersRes, sourcesList] = await Promise.all([
+  const [usageRes, agentsRes, sourcesRes, membersRes, sourcesList, aiPagesRes] = await Promise.all([
     supabase
       .from('org_usage')
       .select('message_count, ai_action_count')
@@ -175,6 +180,7 @@ export async function getCurrentUsage(
     supabase.from('knowledge_sources').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
     supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
     supabase.from('knowledge_sources').select('id').eq('organization_id', organizationId),
+    supabase.from('ai_pages').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
   ]);
 
   const sourceIds = (sourcesList.data ?? []).map((s) => s.id);
@@ -195,7 +201,22 @@ export async function getCurrentUsage(
     knowledge_sources_count: sourcesRes.count ?? 0,
     team_members_count: membersRes.count ?? 0,
     document_uploads_count,
+    ai_pages_count: aiPagesRes.count ?? 0,
   };
+}
+
+/** Whether the org can create another AI page (ai_pages_enabled and under max_ai_pages). */
+export async function canCreateAiPage(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  if (!entitlements.ai_pages_enabled) return false;
+  const usage = await getCurrentUsage(supabase, organizationId);
+  const max = Number(entitlements.max_ai_pages);
+  return usage.ai_pages_count < (Number.isFinite(max) ? max : 0);
 }
 
 /** Whether the org can create another agent (under max_agents). */

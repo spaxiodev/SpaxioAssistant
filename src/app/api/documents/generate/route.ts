@@ -9,8 +9,10 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateDocumentContent } from '@/lib/document-generation/generate-document';
 import { recordAiActionUsage } from '@/lib/billing/usage';
-import { hasExceededMonthlyAiActions, canUseAiActions } from '@/lib/entitlements';
+import { hasExceededMonthlyAiActions, canUseAiActions, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
+import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
 import type { DocumentContext, GenerationType, DocumentSourceType } from '@/lib/document-generation/types';
 
 const VALID_GENERATION_TYPES: GenerationType[] = [
@@ -62,10 +64,15 @@ export async function POST(request: Request) {
   }
   const exceeded = await hasExceededMonthlyAiActions(supabase, orgId, adminAllowed);
   if (exceeded) {
-    return NextResponse.json(
-      { error: 'Monthly AI action limit reached. Upgrade or try again next month.', code: 'PLAN_UPGRADE_REQUIRED' },
-      { status: 403 }
-    );
+    const plan = await getPlanForOrg(supabase, orgId);
+    const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+    return planUpgradeRequiredResponse({
+      message: "You've used your AI actions for this month. Upgrade or try again next month.",
+      currentPlan: currentSlug,
+      requiredPlan: getNextPlanSlug(currentSlug),
+      feature: 'ai_actions',
+      reason: 'limit_reached',
+    });
   }
 
   const context: DocumentContext = {};

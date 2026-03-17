@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getOrganizationId } from '@/lib/auth-server';
 import { randomBytes } from 'crypto';
 import { isUuid, normalizeUuid } from '@/lib/validation';
+import { hasWebhookAccess } from '@/lib/entitlements';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getPlanForOrg } from '@/lib/entitlements';
+import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
+import { getUpgradePlanForFeature, normalizePlanSlug } from '@/lib/plan-config';
 
 /** GET: list webhook endpoints for the org; optional ?agentId= to filter by agent */
 export async function GET(request: Request) {
@@ -49,6 +55,20 @@ export async function POST(request: Request) {
   const orgId = await getOrganizationId();
   if (!orgId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const adminAllowed = await isOrgAllowedByAdmin(supabaseAdmin, orgId);
+  const webhookAllowed = await hasWebhookAccess(supabaseAdmin, orgId, adminAllowed);
+  if (!webhookAllowed) {
+    const plan = await getPlanForOrg(supabaseAdmin, orgId);
+    const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+    return planUpgradeRequiredResponse({
+      message: 'Webhooks are not available on your plan. Upgrade to Pro or above.',
+      currentPlan: currentSlug,
+      requiredPlan: getUpgradePlanForFeature('webhooks'),
+      feature: 'webhooks',
+    });
   }
 
   const body = await request.json().catch(() => ({}));

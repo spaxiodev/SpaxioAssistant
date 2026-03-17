@@ -88,13 +88,13 @@ export default async function RootLayout({
                     applicationCategory: 'BusinessApplication',
                     operatingSystem: 'Web',
                     url: SITE_URL,
-                    description: 'AI chatbot widget platform for websites. Deploy custom AI chat widgets that answer questions, capture leads, and automate customer support.',
+                    description: 'AI assistant platform for business. Deploy chat widgets or full-page AI experiences for quotes, support, and intake; capture leads and automate follow-up.',
                     featureList: [
-                      'AI chatbot widget for website',
-                      'AI website assistant',
+                      'Chat widget and full-page AI experiences',
+                      'Quote and support assistant pages',
                       'Lead capture and automation',
-                      'AI support chatbot',
-                      'Custom AI chatbot trained on your content',
+                      'AI trained on your content',
+                      'CRM and workflow integration',
                     ],
                     offers: {
                       '@type': 'Offer',
@@ -108,7 +108,7 @@ export default async function RootLayout({
                     '@type': 'WebSite',
                     name: SITE_NAME,
                     url: SITE_URL,
-                    description: 'AI chatbot widget and AI website assistant for modern businesses.',
+                    description: 'AI assistant platform for modern businesses: widget, full-page experiences, and automation.',
                     publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
                   },
                   {
@@ -117,26 +117,26 @@ export default async function RootLayout({
                     mainEntity: [
                       {
                         '@type': 'Question',
-                        name: 'What is an AI chatbot widget?',
+                        name: 'What is Spaxio Assistant?',
                         acceptedAnswer: {
                           '@type': 'Answer',
-                          text: 'An AI chatbot widget is a small chat interface you add to your website so visitors can talk to an AI that answers questions, captures leads, and automates support. Spaxio Assistant lets you create a custom AI chatbot for your website and embed it with one line of code.',
+                          text: 'Spaxio Assistant is an AI assistant platform for business. You can deploy a chat widget on your website, launch full-page AI experiences for quotes or support, capture leads, and automate follow-up. One platform, multiple ways to connect with customers.',
                         },
                       },
                       {
                         '@type': 'Question',
-                        name: 'What is the best AI widget for a website?',
+                        name: 'What can I deploy with Spaxio Assistant?',
                         acceptedAnswer: {
                           '@type': 'Answer',
-                          text: 'The best AI widget for your website learns from your content, answers visitor questions instantly, captures leads, and fits your brand. Spaxio Assistant is an AI chatbot widget you can embed with one line of code; it trains on your site and integrates with your CRM and workflows.',
+                          text: 'You can deploy a chat widget on your site, dedicated full-page AI experiences (e.g. Quote Assistant, Support Assistant, Intake), or both. The AI learns from your content and integrates with your CRM and workflows.',
                         },
                       },
                       {
                         '@type': 'Question',
-                        name: 'How do I add an AI chatbot to my website?',
+                        name: 'How do I get started with Spaxio Assistant?',
                         acceptedAnswer: {
                           '@type': 'Answer',
-                          text: 'Add an AI chatbot to your website by signing up for Spaxio Assistant, training it on your content, and pasting one script tag into your site. The AI chatbot widget appears on your pages and can answer questions, capture leads, and automate customer support.',
+                          text: 'Sign up for Spaxio Assistant, add your business details and content, then choose how to deploy: embed a chat widget with one script tag, publish a full-page AI experience (quote, support, intake), or both. The AI answers questions, captures leads, and automates support.',
                         },
                       },
                       {

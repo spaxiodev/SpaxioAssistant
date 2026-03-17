@@ -45,6 +45,16 @@ export async function POST(request: Request) {
     const applyUpdate = async (orgId: string, sub: Stripe.Subscription) => {
       const priceId = sub.items.data[0]?.price.id ?? null;
       const planId = await getPlanIdFromStripePriceId(supabase, priceId);
+      if (!planId && priceId) {
+        console.warn('[billing/webhook] Unknown Stripe price ID, subscription may have wrong plan', {
+          priceId,
+          orgId,
+          subscriptionId: sub.id,
+        });
+      }
+      if (!priceId) {
+        console.warn('[billing/webhook] No price on subscription', { orgId, subscriptionId: sub.id });
+      }
       await supabase
         .from('subscriptions')
         .update({

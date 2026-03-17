@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { emitAutomationEvent } from '@/lib/automations/engine';
 import { isValidTriggerType, AUTOMATION_EVENT_PAYLOAD_MAX_BYTES, TRIGGER_TYPES } from '@/lib/automations/types';
-import { canUseAutomation } from '@/lib/entitlements';
+import { canUseAutomation, hasWebhookAccess } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { handleApiError } from '@/lib/api-error';
 import { rateLimit } from '@/lib/rate-limit';
@@ -84,6 +84,13 @@ export async function POST(request: Request) {
 
     const organizationId = settings.organization_id;
     const adminAllowed = await isOrgAllowedByAdmin(supabase, organizationId);
+    const webhookAllowed = await hasWebhookAccess(supabase, organizationId, adminAllowed);
+    if (!webhookAllowed) {
+      return NextResponse.json(
+        { error: 'Webhook access is not available on your plan', code: 'plan_limit', feature: 'webhook_access' },
+        { status: 403 }
+      );
+    }
     const allowed = await canUseAutomation(supabase, organizationId, adminAllowed);
     if (!allowed) {
       return NextResponse.json(

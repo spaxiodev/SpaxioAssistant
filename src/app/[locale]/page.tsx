@@ -7,11 +7,12 @@ import type { Metadata } from 'next';
 type Props = { params: Promise<{ locale: string }> };
 
 const HOME_KEYWORDS = [
-  'AI chatbot widget',
-  'AI chatbot for website',
+  'AI assistant platform',
+  'AI for business',
   'AI website assistant',
-  'AI customer support AI',
-  'AI chat integration',
+  'AI quote assistant',
+  'AI support assistant',
+  'AI lead capture',
 ];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -101,16 +102,13 @@ export default async function HomePage({ params }: Props) {
               Contact
             </Link>
             <Link href="/ai-chatbot-widget" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-              AI Chatbot Widget
-            </Link>
-            <Link href="/ai-chatbot-for-website" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-              AI Chatbot for Website
+              Chat widget
             </Link>
             <Link href="/ai-website-assistant" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-              AI Website Assistant
+              AI assistant
             </Link>
             <Link href="/ai-customer-support-ai" className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-              AI Customer Support
+              Support & lead capture
             </Link>
           </div>
         </nav>
