@@ -14,5 +14,9 @@ export default function WidgetLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen w-full bg-[#0f172a]">
+      {children}
+    </div>
+  );
 }

@@ -336,7 +336,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                       : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
-                  <MessageCircle className="h-5 w-5 shrink-0" />
+                  <Code className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">Install</span>
                 </Link>
                 <Link

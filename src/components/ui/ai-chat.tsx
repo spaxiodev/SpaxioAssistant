@@ -219,9 +219,9 @@ export default function AIChatCard({
               type="button"
               aria-label={ariaLabelClose}
               onClick={onClose}
-              className="shrink-0 rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors focus:outline-none focus:ring-1 focus:ring-white/30"
+              className="shrink-0 rounded-full p-2 text-white bg-white/20 hover:bg-white/30 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" strokeWidth={2.5} />
             </button>
           )}
         </div>
