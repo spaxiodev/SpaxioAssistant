@@ -210,10 +210,20 @@ export default function AIChatCard({
         ))}
 
         {/* Header */}
-        <div className="px-4 py-3 border-b border-white/10 relative z-10 flex items-center gap-2 shrink-0">
+        <div className="px-4 py-3 border-b border-white/10 relative z-10 flex items-center justify-between gap-2 shrink-0">
           <h2 className="text-lg font-semibold text-white truncate min-w-0">
             {chatbotName}
           </h2>
+          {onClose && (
+            <button
+              type="button"
+              aria-label={ariaLabelClose}
+              onClick={onClose}
+              className="shrink-0 rounded-full p-1.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black/50"
+            >
+              <X className="w-4 h-4" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
 
         {/* Messages */}
@@ -307,22 +317,9 @@ export default function AIChatCard({
           </button>
         </div>
 
-        {(showPoweredBy || onClose) && (
-          <div className="px-3 py-1 border-t border-white/5 flex shrink-0 items-center justify-between gap-2 relative z-10 min-h-0">
-            {showPoweredBy && (
-              <span className="text-[10px] text-white/40">{poweredByText}</span>
-            )}
-            {!showPoweredBy && onClose && <span />}
-            {onClose && (
-              <button
-                type="button"
-                aria-label={ariaLabelClose}
-                onClick={onClose}
-                className="shrink-0 rounded-full p-1.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black/50"
-              >
-                <X className="w-4 h-4" strokeWidth={2.5} />
-              </button>
-            )}
+        {showPoweredBy && (
+          <div className="px-3 py-1 border-t border-white/5 flex shrink-0 items-center justify-between gap-2 relative z-10">
+            <span className="text-[10px] text-white/40">{poweredByText}</span>
           </div>
         )}
       </div>
