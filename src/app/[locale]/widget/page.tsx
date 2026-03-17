@@ -59,6 +59,14 @@ function WidgetContent() {
   } | null>(null);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteFormInputs, setQuoteFormInputs] = useState<Record<string, string>>({});
+  const [leadName, setLeadName] = useState('');
+  const [leadEmail, setLeadEmail] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadErrors, setLeadErrors] = useState<{ name?: string; email?: string }>({});
+  const [quoteSubmitted, setQuoteSubmitted] = useState(false);
+  const [quoteSubmitLoading, setQuoteSubmitLoading] = useState(false);
+  const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
+  const [quoteSubmitResult, setQuoteSubmitResult] = useState<{ estimate?: string; message: string } | null>(null);
   const [quoteEstimateResult, setQuoteEstimateResult] = useState<{
     valid: boolean;
     total: number;
@@ -132,7 +140,7 @@ function WidgetContent() {
       clearTimeout(tId);
       ro.disconnect();
     };
-  }, [config, resolvedLocale, showQuoteForm, quoteEstimateResult]);
+  }, [config, resolvedLocale, showQuoteForm, quoteEstimateResult, quoteSubmitted]);
 
   const color = config?.primaryBrandColor || '#0f172a';
   const baseUrl =
@@ -191,6 +199,13 @@ function WidgetContent() {
         if (data.action.type === 'open_quote_form' && config?.quoteVariables?.length) {
           setShowQuoteForm(true);
           setQuoteEstimateResult(null);
+          setQuoteSubmitted(false);
+          setQuoteSubmitError(null);
+          setQuoteSubmitResult(null);
+          setLeadName('');
+          setLeadEmail('');
+          setLeadPhone('');
+          setLeadErrors({});
           const defaults: Record<string, string> = {};
           config.quoteVariables.forEach((v) => {
             if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
@@ -228,6 +243,59 @@ function WidgetContent() {
     setActiveLocale(next);
     window.parent?.postMessage?.({ type: 'spaxio-lang-change', language: next }, '*');
   }, []);
+
+  async function submitQuoteRequest() {
+    if (!widgetId || quoteSubmitLoading) return;
+    const errs: { name?: string; email?: string } = {};
+    if (!leadName.trim()) errs.name = t('quoteFormNameRequired');
+    if (!leadEmail.trim()) errs.email = t('quoteFormEmailRequired');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) errs.email = t('quoteFormInvalidEmail');
+    if (Object.keys(errs).length > 0) {
+      setLeadErrors(errs);
+      return;
+    }
+    setLeadErrors({});
+    setQuoteSubmitError(null);
+    setQuoteSubmitLoading(true);
+    try {
+      const answers: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(quoteFormInputs)) {
+        if (v === 'true') answers[k] = true;
+        else if (v === 'false') answers[k] = false;
+        else if (v === '') continue;
+        else if (/^\d+$/.test(v)) answers[k] = Number(v);
+        else if (/^\d+\.\d+$/.test(v)) answers[k] = parseFloat(v);
+        else answers[k] = v;
+      }
+      const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
+      const res = await fetch(`${base}/api/widget/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          widgetId,
+          conversationId,
+          name: leadName.trim(),
+          email: leadEmail.trim(),
+          phone: leadPhone.trim() || undefined,
+          answers,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setQuoteSubmitError(data.error);
+        return;
+      }
+      setQuoteSubmitted(true);
+      setQuoteSubmitResult({
+        estimate: data.estimate,
+        message: data.message ?? 'Quote request submitted',
+      });
+    } catch {
+      setQuoteSubmitError(t('errorMessage'));
+    } finally {
+      setQuoteSubmitLoading(false);
+    }
+  }
 
   async function runQuoteEstimate() {
     if (!widgetId || !config?.quoteVariables?.length || quoteEstimateLoading) return;
@@ -310,9 +378,75 @@ function WidgetContent() {
         <div className="flex w-full max-w-[360px] flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-foreground">{t('quoteFormTitle')}</h2>
-            <Button variant="ghost" size="sm" onClick={() => { setShowQuoteForm(false); setQuoteEstimateResult(null); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowQuoteForm(false);
+                setQuoteEstimateResult(null);
+                setQuoteSubmitted(false);
+                setQuoteSubmitResult(null);
+                setQuoteSubmitError(null);
+                setLeadErrors({});
+              }}
+            >
               {t('quoteFormBackToChat')}
             </Button>
+          </div>
+          {quoteSubmitted ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-green-600 dark:text-green-500">{t('quoteFormSuccess')}</p>
+              {quoteSubmitResult?.estimate && (
+                <p className="rounded-lg border bg-muted/30 p-3 text-sm">
+                  <span className="text-muted-foreground">{t('quoteFormYourEstimate')}: </span>
+                  <span className="font-semibold">{quoteSubmitResult.estimate}</span>
+                </p>
+              )}
+            </div>
+          ) : (
+          <>
+          <div className="grid gap-3">
+            <div>
+              <Label htmlFor="quote-lead-name" className="text-sm text-foreground">
+                {t('leadFormName')} *
+              </Label>
+              <Input
+                id="quote-lead-name"
+                type="text"
+                value={leadName}
+                onChange={(e) => { setLeadName(e.target.value); setLeadErrors((prev) => ({ ...prev, name: undefined })); }}
+                className={`mt-1 ${leadErrors.name ? 'border-red-500' : ''}`}
+                placeholder={t('leadFormName')}
+              />
+              {leadErrors.name && <p className="mt-1 text-xs text-red-600">{leadErrors.name}</p>}
+            </div>
+            <div>
+              <Label htmlFor="quote-lead-email" className="text-sm text-foreground">
+                {t('leadFormEmail')} *
+              </Label>
+              <Input
+                id="quote-lead-email"
+                type="email"
+                value={leadEmail}
+                onChange={(e) => { setLeadEmail(e.target.value); setLeadErrors((prev) => ({ ...prev, email: undefined })); }}
+                className={`mt-1 ${leadErrors.email ? 'border-red-500' : ''}`}
+                placeholder={t('leadFormEmail')}
+              />
+              {leadErrors.email && <p className="mt-1 text-xs text-red-600">{leadErrors.email}</p>}
+            </div>
+            <div>
+              <Label htmlFor="quote-lead-phone" className="text-sm text-foreground">
+                {t('leadFormPhone')} <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="quote-lead-phone"
+                type="tel"
+                value={leadPhone}
+                onChange={(e) => setLeadPhone(e.target.value)}
+                className="mt-1"
+                placeholder={t('leadFormPhone')}
+              />
+            </div>
           </div>
           <div className="grid gap-3">
             {quoteVars.map((v) => (
@@ -355,16 +489,31 @@ function WidgetContent() {
               </div>
             ))}
           </div>
-          <Button onClick={runQuoteEstimate} disabled={quoteEstimateLoading} className="w-full">
-            {quoteEstimateLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                {t('loading')}
-              </span>
-            ) : (
-              t('quoteFormCalculate')
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={runQuoteEstimate} disabled={quoteEstimateLoading} variant="outline" className="flex-1">
+              {quoteEstimateLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  {t('loading')}
+                </span>
+              ) : (
+                t('quoteFormCalculate')
+              )}
+            </Button>
+            <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} className="flex-1">
+              {quoteSubmitLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  {t('loading')}
+                </span>
+              ) : (
+                t('quoteFormSubmitRequest')
+              )}
+            </Button>
+          </div>
+          {quoteSubmitError && (
+            <p className="text-xs text-red-600">{quoteSubmitError}</p>
+          )}
           {quoteEstimateResult && (
             <div className="rounded-lg border bg-muted/30 p-3 text-sm">
               <p className="mb-2 font-medium text-foreground">{t('quoteFormYourEstimate')}</p>
@@ -395,6 +544,19 @@ function WidgetContent() {
                 </span>
               </div>
             </div>
+          )}
+          <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
+            {quoteSubmitLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {t('loading')}
+              </span>
+            ) : (
+              t('quoteFormSubmitRequest')
+            )}
+          </Button>
+          {quoteSubmitError && <p className="text-sm text-red-600">{quoteSubmitError}</p>}
+          </>
           )}
         </div>
       ) : (

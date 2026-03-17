@@ -22,6 +22,11 @@ type QuoteRequestRow = {
   budget_text?: string | null;
   budget_amount?: number | null;
   conversation_id?: string | null;
+  lead_id?: string | null;
+  form_answers?: Record<string, unknown> | null;
+  estimate_total?: number | null;
+  estimate_low?: number | null;
+  estimate_high?: number | null;
   created_at: string;
 };
 
@@ -53,6 +58,13 @@ export function QuoteRequestDetailSheet({
     { label: 'Date', value: formatDate(request.created_at) },
   ];
 
+  const formAnswers = request.form_answers && Object.keys(request.form_answers).length > 0
+    ? request.form_answers
+    : null;
+  const hasEstimate =
+    request.estimate_total != null ||
+    (request.estimate_low != null && request.estimate_high != null);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
@@ -71,6 +83,35 @@ export function QuoteRequestDetailSheet({
               );
             })}
           </dl>
+
+          {request.form_answers && Object.keys(request.form_answers).length > 0 && (
+            <div className="space-y-2">
+              <dt className="font-medium text-muted-foreground">Form details</dt>
+              <dd className="space-y-1.5">
+                {Object.entries(request.form_answers).map(([key, val]) => {
+                  if (val == null || val === '') return null;
+                  const label = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                  return (
+                    <div key={key} className="flex justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="break-all text-right">{String(val)}</span>
+                    </div>
+                  );
+                })}
+              </dd>
+            </div>
+          )}
+
+          {(request.estimate_total != null || (request.estimate_low != null && request.estimate_high != null)) && (
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+              <dt className="font-medium text-muted-foreground">Estimate</dt>
+              <dd className="mt-1 font-semibold">
+                {request.estimate_low != null && request.estimate_high != null
+                  ? `$${Number(request.estimate_low).toLocaleString()} – $${Number(request.estimate_high).toLocaleString()}`
+                  : `$${Number(request.estimate_total).toLocaleString()}`}
+              </dd>
+            </div>
+          )}
 
           <FollowUpCard quoteRequestId={request.id} />
         </div>

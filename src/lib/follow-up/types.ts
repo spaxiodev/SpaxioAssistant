@@ -59,12 +59,18 @@ export interface FollowUpGenerationInput {
     quoteRequest?: {
       id: string;
       customer_name: string;
+      customer_email?: string | null;
+      customer_phone?: string | null;
       service_type?: string | null;
       project_details?: string | null;
       budget_text?: string | null;
       budget_amount?: number | null;
       location?: string | null;
       notes?: string | null;
+      estimate_total?: number | null;
+      estimate_low?: number | null;
+      estimate_high?: number | null;
+      form_answers?: Record<string, unknown> | null;
     } | null;
     conversationSnippet?: string | null;
     businessName?: string | null;
