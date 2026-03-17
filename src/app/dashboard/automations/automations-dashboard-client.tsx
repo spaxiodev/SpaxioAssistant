@@ -15,6 +15,7 @@ import { AutomationsAnalyticsCard } from './automations-analytics-card';
 import type { Automation } from '@/lib/supabase/database.types';
 import type { RunWithName } from './recent-runs';
 import type { GeneratedAutomationDraft } from '@/lib/automations/ai-workflow-generator';
+import { useViewMode } from '@/contexts/view-mode-context';
 
 type AgentOption = { id: string; name: string };
 
@@ -27,6 +28,7 @@ type Props = {
 export function AutomationsDashboardClient({ automations, agents, runs }: Props) {
   const t = useTranslations('dashboard');
   const router = useRouter();
+  const { mode } = useViewMode();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createFromTemplateKey, setCreateFromTemplateKey] = useState<string | null>(null);
   const [editAutomation, setEditAutomation] = useState<Automation | null>(null);
@@ -158,7 +160,9 @@ export function AutomationsDashboardClient({ automations, agents, runs }: Props)
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {AUTOMATION_TEMPLATES.map((template) => {
+            {AUTOMATION_TEMPLATES.filter((template) =>
+              mode === 'simple' ? template.visible_in_simple_mode : template.visible_in_developer_mode
+            ).map((template) => {
               const Icon = template.icon;
               return (
                 <button

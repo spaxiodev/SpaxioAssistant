@@ -23,7 +23,7 @@ export const AI_SETUP_TEMPLATES: AISetupTemplate[] = [
   {
     key: 'lead_capture',
     title: 'Lead capture',
-    description: 'Capture leads from your website with name, email, phone, and optional message.',
+    description: 'Capture leads from your website with name, email, phone, and an optional message.',
     defaultCaptureFields: [
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'email', label: 'Email', type: 'email', required: true },
@@ -66,13 +66,13 @@ export const AI_SETUP_TEMPLATES: AISetupTemplate[] = [
   {
     key: 'faq_chatbot',
     title: 'FAQ chatbot',
-    description: 'Answer common questions using your knowledge base and fallback to human when needed.',
-    suggestedGoal: 'Answer FAQs and escalate complex questions.',
+    description: 'Answer common questions using your knowledge base and point people to contact options when needed.',
+    suggestedGoal: 'Answer FAQs and highlight when a person should follow up.',
   },
   {
     key: 'support_intake',
     title: 'Support intake',
-    description: 'Collect support tickets with issue description and contact details.',
+    description: 'Collect support requests with issue description and contact details so your team can reply.',
     defaultCaptureFields: [
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'email', label: 'Email', type: 'email', required: true },
@@ -91,22 +91,22 @@ export const AI_SETUP_TEMPLATES: AISetupTemplate[] = [
   },
   {
     key: 'webhook_workflow',
-    title: 'Webhook workflow',
-    description: 'Send lead or event data to an external URL (CRM, Zapier, custom app).',
+    title: 'Send data to another tool',
+    description: 'Send lead or event data to an external URL (such as Zapier or your own app).',
     suggestsWebhook: true,
     suggestedGoal: 'Forward leads to an external system via webhook.',
   },
   {
     key: 'google_sheets_logging',
     title: 'Google Sheets logging',
-    description: 'Log leads or events to a Google Sheet (via webhook or integration).',
+    description: 'Log leads or events to a Google Sheet (usually via a webhook or integration).',
     suggestsWebhook: true,
     suggestedGoal: 'Log leads to a spreadsheet for tracking.',
   },
   {
     key: 'crm_push',
-    title: 'CRM push',
-    description: 'Push leads or contacts to your CRM (via webhook or native integration).',
+    title: 'Send leads to your CRM',
+    description: 'Send leads or contacts to your CRM through a webhook or native integration.',
     suggestsWebhook: true,
     suggestedGoal: 'Add new leads to the CRM automatically.',
   },

@@ -22,6 +22,7 @@ import { TRIGGER_TYPES, ACTION_TYPES } from '@/lib/automations/types';
 import { getTriggerLabel, getActionLabel } from '@/lib/automations/labels';
 import type { Automation } from '@/lib/supabase/database.types';
 import { AutomationWorkflowEditor } from './automation-workflow-editor';
+import { useViewMode } from '@/contexts/view-mode-context';
 
 const WEBHOOK_SAMPLE_PAYLOAD = `{
   "event": "order.created",
@@ -63,6 +64,7 @@ export function CreateAutomationModal({
   const [showCreatedSuccess, setShowCreatedSuccess] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'workflow'>('details');
+  const { mode } = useViewMode();
 
   const isEdit = !!editAutomation?.id;
   const automationWithWebhook = editAutomation as (Automation & { webhook_url?: string }) | null;
@@ -173,6 +175,10 @@ export function CreateAutomationModal({
       setLoading(false);
     }
   };
+
+  const visibleTemplates = AUTOMATION_TEMPLATES.filter((tmpl) =>
+    mode === 'simple' ? tmpl.visible_in_simple_mode : tmpl.visible_in_developer_mode
+  );
 
   const handleTemplateChange = (key: string) => {
     setTemplateKey(key);
@@ -332,7 +338,7 @@ export function CreateAutomationModal({
                 className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">From scratch</option>
-                {AUTOMATION_TEMPLATES.map((tmpl) => (
+                {visibleTemplates.map((tmpl) => (
                   <option key={tmpl.key} value={tmpl.key}>
                     {tmpl.title}
                   </option>
@@ -506,7 +512,7 @@ export function CreateAutomationModal({
                 className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">From scratch</option>
-                {AUTOMATION_TEMPLATES.map((tmpl) => (
+                {visibleTemplates.map((tmpl) => (
                   <option key={tmpl.key} value={tmpl.key}>
                     {tmpl.title}
                   </option>
