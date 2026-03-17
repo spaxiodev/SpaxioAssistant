@@ -27,8 +27,9 @@ export function GuestBanner() {
     pathname?.includes('/login') || pathname?.includes('/signup');
   const isDashboard = pathname?.includes('/dashboard');
   const isWidget = pathname?.includes('/widget') || pathname?.includes('widget-preview');
+  const isAiPage = pathname?.includes('/a/');
 
-  if (isGuest !== true || isAuthPage || isDashboard || isWidget) {
+  if (isGuest !== true || isAuthPage || isDashboard || isWidget || isAiPage) {
     return null;
   }
 

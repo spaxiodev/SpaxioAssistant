@@ -14,6 +14,7 @@ function isTeaserRoute(pathname: string | null): boolean {
   const p = pathname.toLowerCase();
   if (p.includes('/login') || p.includes('/signup')) return false;
   if (p.includes('/dashboard') || p.includes('/widget')) return false;
+  if (p.includes('/a/')) return false;
   if (p.includes('widget-preview')) return false;
   if (p.includes('/privacy-policy') || p.includes('/terms-and-conditions')) return false;
   if (p.includes('/invite') || p.includes('/demo')) return false;

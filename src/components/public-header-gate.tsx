@@ -8,5 +8,6 @@ export function PublicHeaderGate() {
   if (pathname?.includes('/dashboard')) return null;
   if (pathname?.includes('/widget')) return null;
   if (pathname?.includes('widget-preview')) return null;
+  if (pathname?.includes('/a/')) return null;
   return <PublicHeader />;
 }
