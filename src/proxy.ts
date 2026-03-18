@@ -23,6 +23,12 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Redirect root/home to dashboard so visitors land on dashboard first
+  const isHomeOnly = path === `/${locale}`;
+  if (isHomeOnly) {
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+  }
+
   // 2. Supabase auth for locale-prefixed dashboard/auth routes
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -49,15 +55,9 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Dashboard requires sign-in
-    const isDashboard =
-      path === `/${locale}/dashboard` || path.startsWith(`/${locale}/dashboard/`);
+    // Dashboard: allow unauthenticated access (guests see dashboard with sign-in modal)
     const isAuthPage =
       path === `/${locale}/login` || path === `/${locale}/signup`;
-
-    if (isDashboard && !user) {
-      return NextResponse.redirect(new URL(`/${locale}/login?redirectTo=/${locale}/dashboard`, request.url));
-    }
 
     if (isAuthPage && user) {
       const redirectTo = request.nextUrl.searchParams.get('redirectTo');

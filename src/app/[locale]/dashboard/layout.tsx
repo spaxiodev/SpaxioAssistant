@@ -7,6 +7,8 @@ import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription } from '@/lib/entitlements';
 import { getPlanAccess } from '@/lib/plan-access';
 import { DashboardLayoutClient } from '@/components/dashboard/dashboard-layout-client';
+import { GuestDashboardShell } from '@/components/dashboard/guest-dashboard-shell';
+import { HomeContent } from '@/components/home-content';
 import { HelpChatGate } from '@/components/help-chat-gate';
 import { LazyToaster } from '@/components/lazy-toaster';
 import { OnboardingGate } from '@/components/dashboard/onboarding-gate';
@@ -28,9 +30,11 @@ export default async function DashboardLayout({
   const user = await getUser();
 
   if (!user) {
-    const headersList = await headers();
-    const locale = headersList.get('x-next-intl-locale') ?? routing.defaultLocale;
-    redirect(`/${locale}/login`);
+    return (
+      <GuestDashboardShell>
+        <HomeContent />
+      </GuestDashboardShell>
+    );
   }
 
   const orgId = await getOrganizationId(user);
