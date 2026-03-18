@@ -18,7 +18,7 @@ export function SearchTrigger({ className }: SearchTriggerProps) {
       type="button"
       onClick={toggle}
       className={cn(
-        'flex items-center gap-2 rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+        'flex min-w-0 items-center justify-start gap-2 rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
         className
       )}
       aria-label="Search"

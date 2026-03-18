@@ -41,7 +41,7 @@ export function Header({ showUpgradeButton }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-white/30 bg-background px-4 dark:border-white/10 md:px-6">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -80,9 +80,11 @@ export function Header({ showUpgradeButton }: HeaderProps) {
           </div>
         </div>
       </div>
+      <div className="hidden min-w-0 flex-1 px-2 md:flex md:items-center">
+        <SearchTrigger className="min-w-0 w-full justify-start" />
+      </div>
       <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <div className="hidden md:flex md:items-center md:gap-2">
-          <SearchTrigger />
           <LocaleSwitcher />
           <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
