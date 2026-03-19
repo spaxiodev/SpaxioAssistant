@@ -136,6 +136,8 @@
     iframe.className = 'spaxio-panel';
     iframe.id = 'spaxio-widget-iframe';
     iframe.title = 'Chat';
+    iframe.style.backgroundColor = '#0f172a';
+    iframe.style.border = 'none';
     var localeSegment = (pageLanguage && /^[a-z]{2}$/.test(pageLanguage)) ? pageLanguage : 'en';
     var effectiveWidgetId = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
     var iframeSrc = base + '/' + localeSegment + '/widget?widgetId=' + encodeURIComponent(effectiveWidgetId) + '&lang=' + encodeURIComponent(localeSegment);

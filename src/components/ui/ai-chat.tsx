@@ -136,13 +136,13 @@ export default function AIChatCard({
   return (
     <div
       className={cn(
-        "flex h-[460px] w-[360px] max-w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gray-900",
+        "flex h-[460px] w-[360px] max-w-full flex-col overflow-hidden rounded-2xl border border-white/20 bg-[#111827] opacity-100",
         className
       )}
       style={accentStyle}
     >
       {/* Header: title + close button */}
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-600 bg-gray-900 px-4 py-3">
         <h2 className="min-w-0 truncate text-lg font-semibold text-white">
           {chatbotName}
         </h2>
@@ -151,7 +151,7 @@ export default function AIChatCard({
             type="button"
             aria-label={ariaLabelClose}
             onClick={onClose}
-            className="shrink-0 rounded-full p-1.5 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="shrink-0 rounded-full p-1.5 text-white/70 hover:bg-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <X className="h-4 w-4" strokeWidth={2.5} />
           </button>
@@ -159,7 +159,7 @@ export default function AIChatCard({
       </header>
 
       {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-gray-900 px-4 py-3">
         <div className="flex flex-col gap-3 text-sm">
           {messages.map((msg, i) => (
             <div
@@ -167,7 +167,7 @@ export default function AIChatCard({
               className={cn(
                 "max-w-[80%] rounded-xl px-3 py-2 shadow-md",
                 msg.sender === "ai"
-                  ? "self-start bg-white/10 text-white"
+                  ? "self-start bg-[#374151] text-white"
                   : "self-end font-semibold"
               )}
               style={
@@ -189,7 +189,7 @@ export default function AIChatCard({
             </div>
           ))}
           {isTyping && (
-            <div className="flex max-w-[30%] items-center gap-1 self-start rounded-xl bg-white/10 px-3 py-2">
+            <div className="flex max-w-[30%] items-center gap-1 self-start rounded-xl bg-[#374151] px-3 py-2">
               <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
               <span
                 className="h-2 w-2 animate-pulse rounded-full bg-white"
@@ -206,11 +206,11 @@ export default function AIChatCard({
       </div>
 
       {/* Input row */}
-      <div className="flex shrink-0 items-end gap-2 border-t border-white/10 p-3">
+      <div className="flex shrink-0 items-end gap-2 border-t border-gray-600 bg-gray-900 p-3">
         <textarea
           ref={textareaRef}
           rows={1}
-          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border border-white/20 bg-[#1f2937] px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
           style={
             primaryBrandColor
               ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
@@ -231,7 +231,7 @@ export default function AIChatCard({
           type="button"
           onClick={handleSend}
           aria-label={ariaLabelSend}
-          className="shrink-0 rounded-lg bg-white/10 p-2 hover:bg-white/20"
+          className="shrink-0 rounded-lg bg-[#374151] p-2 hover:bg-[#4b5563]"
           style={
             primaryBrandColor ? { color: primaryBrandColor } : { color: "#fff" }
           }
@@ -242,7 +242,7 @@ export default function AIChatCard({
 
       {/* Footer: compact, no empty space */}
       {showPoweredBy && (
-        <footer className="shrink-0 border-t border-white/5 px-3 py-1.5">
+        <footer className="shrink-0 border-t border-gray-600 bg-gray-900 px-3 py-1.5">
           <span className="text-[10px] text-white/40">{poweredByText}</span>
         </footer>
       )}

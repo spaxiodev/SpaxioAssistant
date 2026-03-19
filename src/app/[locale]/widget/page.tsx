@@ -361,7 +361,7 @@ function WidgetContent() {
   return (
     <div
       ref={contentRef}
-      className="flex w-full flex-col items-center justify-start font-sans"
+      className="flex min-h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a]"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (

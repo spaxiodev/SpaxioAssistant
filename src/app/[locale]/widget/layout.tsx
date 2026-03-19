@@ -15,7 +15,14 @@ export default function WidgetLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-0 w-full bg-[#0f172a]">
+    <div
+      data-spaxio-widget-root
+      className="min-h-screen min-w-full bg-white opacity-100 dark:bg-[#0f172a]"
+      style={{
+        boxSizing: 'border-box',
+        isolation: 'isolate',
+      }}
+    >
       {children}
     </div>
   );

@@ -69,6 +69,18 @@
     min-height: 100vh;
   }
 
+  /* Widget iframe: solid backgrounds to prevent transparency leaks */
+  html:has([data-spaxio-widget-root]),
+  html:has([data-spaxio-widget-root]) body {
+    background: #ffffff !important;
+    margin: 0;
+    padding: 0;
+  }
+  html.dark:has([data-spaxio-widget-root]),
+  html.dark:has([data-spaxio-widget-root]) body {
+    background: #0f172a !important;
+  }
+
   ::selection {
     background: hsl(var(--muted-foreground) / 0.2);
     color: hsl(var(--foreground));
