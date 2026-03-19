@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog';
 
 type Props = {
-  slug: string;
+  /** Page ID for unique URLs (/a/p/[id]). Use this for shareable links and embeds. */
+  pageId: string;
   baseUrl: string;
   isPublished: boolean;
   copyCodeLabel?: string;
@@ -21,7 +22,7 @@ type Props = {
 };
 
 export function AiPageInstallCard({
-  slug,
+  pageId,
   baseUrl,
   isPublished,
   copyCodeLabel = 'Copy code',
@@ -29,8 +30,8 @@ export function AiPageInstallCard({
 }: Props) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const locale = 'en';
-  const hostedUrl = `${baseUrl}/${locale}/a/${slug}`;
-  const embedUrl = `${baseUrl}/${locale}/a/${slug}?embed=1`;
+  const hostedUrl = `${baseUrl}/${locale}/a/p/${pageId}`;
+  const embedUrl = `${baseUrl}/${locale}/a/p/${pageId}?embed=1`;
   const embedCode = `<iframe src="${embedUrl}" title="Assistant" width="100%" height="600" frameborder="0" allow="clipboard-write"></iframe>`;
 
   return (

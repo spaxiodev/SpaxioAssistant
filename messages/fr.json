@@ -51,7 +51,7 @@
     "contactFormSuccess": "Merci ! Votre message a bien été envoyé. Nous vous répondrons bientôt.",
     "contactFormError": "Une erreur s'est produite. Réessayez ou écrivez-nous directement.",
     "seoSectionTitle": "Capturez plus de leads avec un assistant IA sur votre site",
-    "seoSectionBody": "Ajoutez un script à votre site. Spaxio Assistant apprend votre activité, répond aux questions fréquentes, capture des leads et des demandes de devis, et vous aide à faire le suivi plus vite — sans travail administratif en plus."
+    "seoSectionBody": "Ajoutez un script à votre site. Spaxio Assistant apprend votre activité, répond aux questions, capture et qualifie les leads, collecte des demandes de devis avec devis estimés, et automatise le suivi — sans travail administratif en plus."
   },
   "login": {
     "title": "Connexion",
@@ -452,19 +452,19 @@
     "freeTrialEnds": "L'essai gratuit se termine le {date}.",
     "currentPeriodEnds": "La période en cours se termine le {date}.",
     "manageSubscription": "Gérer l'abonnement",
-    "manageSubscriptionHint": "Ouvre le portail client Stripe",
+    "manageSubscriptionHint": "Ouvre le portail client Stripe — modifier le paiement, changer de forfait ou annuler à tout moment",
     "usageThisPeriod": "Utilisation cette période",
     "usagePeriodDescription": "Période de facturation : {start} – {end}",
     "messages": "Messages",
     "aiActions": "Actions IA",
     "upgradeCtaTitle": "Passer à Assistant Pro",
-    "upgradeCtaDescription": "Profitez de l'assistant complet avec 1 semaine d'essai gratuit, puis 29 $/mois.",
+    "upgradeCtaDescription": "Profitez de l'assistant complet avec 7 semaines d'essai gratuit, puis 29 $/mois. Annulez à tout moment.",
     "assistantProPlanName": "Assistant Pro",
-    "assistantProDescription": "1 semaine gratuite, puis 29 $/mois",
+    "assistantProDescription": "7 semaines gratuites, puis 29 $/mois. Annulez à tout moment.",
     "subscribeNow": "S'abonner",
     "redirecting": "Redirection...",
     "testCheckoutTitle": "Admin : Test de paiement",
-    "testCheckoutDescription": "Ouvrir Stripe Checkout pour tester le flux d'abonnement (1 semaine gratuite, puis 29 $/mois).",
+    "testCheckoutDescription": "Ouvrir Stripe Checkout pour tester le flux d'abonnement (7 semaines gratuites, puis 29 $/mois).",
     "testCheckoutButton": "Tester le paiement",
     "backToDashboard": "Retour au tableau de bord",
     "somethingWentWrong": "Une erreur s'est produite",
@@ -543,6 +543,7 @@
   "pricing": {
     "title": "Tarifs",
     "subtitle": "Commencez gratuitement, évoluez avec votre activité. Choisissez l'offre adaptée à vos assistants IA.",
+    "trialNote": "7 semaines d'essai gratuit sur les forfaits payants. Annulez à tout moment.",
     "currentPlan": "Offre actuelle",
     "backToHome": "Retour à l'accueil",
     "tiers": {

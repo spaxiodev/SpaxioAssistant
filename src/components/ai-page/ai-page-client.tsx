@@ -22,7 +22,10 @@ type QuoteVariable = {
 };
 
 type Props = {
-  slug: string;
+  /** Use for unique page-by-ID URLs (/a/p/[id]). Prefer over slug. */
+  pageId?: string;
+  /** Use for slug-based URLs (/a/[slug]). May collide across orgs. */
+  slug?: string;
   locale: string;
   handoffToken?: string;
 };
@@ -84,7 +87,7 @@ function shouldOpenQuoteForm(text: string, locale: string): boolean {
   return patterns.some((re) => re.test(s));
 }
 
-export function AiPageClient({ slug, locale, handoffToken }: Props) {
+export function AiPageClient({ pageId, slug, locale, handoffToken }: Props) {
   const t = useTranslations('aiPage');
   const resolvedLocale = normalizeLocale(locale);
   const [config, setConfig] = useState<{
@@ -117,9 +120,12 @@ export function AiPageClient({ slug, locale, handoffToken }: Props) {
   const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    const url = handoffToken
-      ? `${baseUrl}/api/ai-page/config?slug=${encodeURIComponent(slug)}&handoff=${encodeURIComponent(handoffToken)}`
-      : `${baseUrl}/api/ai-page/config?slug=${encodeURIComponent(slug)}`;
+    const params = new URLSearchParams();
+    if (pageId) params.set('pageId', pageId);
+    else if (slug) params.set('slug', slug);
+    else return setError('Page not found or not published');
+    if (handoffToken) params.set('handoff', handoffToken);
+    const url = `${baseUrl}/api/ai-page/config?${params.toString()}`;
     fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error('Page not found');
@@ -127,11 +133,13 @@ export function AiPageClient({ slug, locale, handoffToken }: Props) {
       })
       .then((d) => setConfig(d))
       .catch(() => setError('Page not found or not published'));
-  }, [slug, handoffToken]);
+  }, [pageId, slug, handoffToken]);
 
   useEffect(() => {
     if (!config || runId) return;
-    const body: { slug: string; handoff_token?: string } = { slug };
+    const body: { slug?: string; page_id?: string; handoff_token?: string } = pageId
+      ? { page_id: pageId }
+      : { slug: slug! };
     if (handoffToken) body.handoff_token = handoffToken;
     fetch(`${baseUrl}/api/ai-page/session`, {
       method: 'POST',
@@ -145,7 +153,7 @@ export function AiPageClient({ slug, locale, handoffToken }: Props) {
         setConversationId(d.conversation_id);
       })
       .catch((err) => setError(err.message || 'Failed to start session'));
-  }, [config, slug, handoffToken, runId]);
+  }, [config, pageId, slug, handoffToken, runId]);
 
   const sendMessage = useCallback(
     async (text: string) => {

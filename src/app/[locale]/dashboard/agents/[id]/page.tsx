@@ -27,10 +27,10 @@ const ROLE_LABELS: Record<string, string> = {
   custom: 'Custom',
 };
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ locale: string; id: string }> };
 
 export default async function AgentDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { locale, id } = await params;
   const orgId = await getOrganizationId();
   if (!orgId) return null;
 
@@ -50,7 +50,7 @@ export default async function AgentDetailPage({ params }: Props) {
   const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
   const toolCallingEnabled = planAccess.featureAccess.tool_calling;
 
-  const [runsRes, widgetRes] = await Promise.all([
+  const [runsRes, widgetRes, aiPagesRes] = await Promise.all([
     supabase
       .from('agent_runs')
       .select('id, status, started_at, trigger_type, duration_ms')
@@ -64,9 +64,16 @@ export default async function AgentDetailPage({ params }: Props) {
       .eq('agent_id', id)
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from('ai_pages')
+      .select('id, slug, title, is_published')
+      .eq('organization_id', orgId)
+      .eq('agent_id', id)
+      .order('slug'),
   ]);
   const runs = runsRes.data ?? [];
   const widgetId = widgetRes.data?.id ?? null;
+  const aiPages = aiPagesRes.data ?? [];
 
   return (
     <div className="space-y-8">
@@ -100,7 +107,7 @@ export default async function AgentDetailPage({ params }: Props) {
                   <CardTitle>{agent.name}</CardTitle>
                   <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Badge variant="secondary">{ROLE_LABELS[agent.role_type] ?? agent.role_type}</Badge>
-                    <span>{agent.model_provider} / {agent.model_id}</span>
+                    <span>OpenAI</span>
                     {agent.created_by_ai_setup === true && (
                       <>
                         <span className="text-muted-foreground/70">·</span>
@@ -145,6 +152,8 @@ export default async function AgentDetailPage({ params }: Props) {
         }
         runs={runs}
         widgetId={widgetId}
+        aiPages={aiPages}
+        locale={locale}
       />
     </div>
   );

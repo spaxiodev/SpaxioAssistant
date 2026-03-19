@@ -25,7 +25,7 @@ export default async function AgentsPage() {
 
   const { data: agents } = await supabase
     .from('agents')
-    .select('id, name, description, role_type, model_id, widget_enabled, created_at, created_by_ai_setup')
+    .select('id, name, description, role_type, widget_enabled, created_at, created_by_ai_setup')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false });
 
@@ -62,7 +62,7 @@ export default async function AgentsPage() {
                         <Badge variant="secondary" className="font-normal">
                           {ROLE_LABELS[agent.role_type] ?? agent.role_type}
                         </Badge>
-                        <span>{agent.model_id}</span>
+                        <span>OpenAI</span>
                         {agent.widget_enabled && (
                           <Badge variant="outline" className="font-normal">Widget on</Badge>
                         )}

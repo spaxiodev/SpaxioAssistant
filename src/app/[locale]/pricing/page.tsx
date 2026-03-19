@@ -53,6 +53,9 @@ export default async function PricingPage({ params }: Props) {
           <p className="text-center text-base text-muted-foreground md:text-lg">
             {t("subtitle")}
           </p>
+          <p className="text-center text-sm text-muted-foreground">
+            {t("trialNote")}
+          </p>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
           <PricingCard

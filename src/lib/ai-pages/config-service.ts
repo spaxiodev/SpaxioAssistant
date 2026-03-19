@@ -10,6 +10,27 @@ import {
   INTAKE_BOOKING_FIELDS,
 } from './types';
 
+/** Public: fetch published page by ID (globally unique). Use for shareable links and embeds. */
+export async function getPublishedPageById(
+  supabase: SupabaseClient,
+  pageId: string
+): Promise<PublicAiPageConfig | null> {
+  const id = pageId.trim();
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
+
+  const { data, error } = await supabase
+    .from('ai_pages')
+    .select('id, organization_id, title, slug, description, page_type, welcome_message, intro_copy, trust_copy, branding_config, intake_schema, pricing_profile_id')
+    .eq('id', id)
+    .eq('is_published', true)
+    .eq('is_enabled', true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as unknown as PublicAiPageConfig;
+}
+
+/** Get published page by slug (may collide across orgs). Prefer getPublishedPageById for unique URLs. */
 export async function getPublishedPageBySlug(
   supabase: SupabaseClient,
   slug: string

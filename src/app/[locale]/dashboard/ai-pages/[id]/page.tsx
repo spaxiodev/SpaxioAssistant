@@ -39,7 +39,7 @@ export default async function EditAiPagePage({ params }: Props) {
           </Link>
           <h1 className="mt-2 text-2xl font-bold tracking-tight">Edit AI Page</h1>
           <p className="text-muted-foreground">
-            {page.title} · /a/{page.slug}
+            {page.title} · /a/p/{page.id}
           </p>
         </div>
         <AiPageEditActions
@@ -66,7 +66,7 @@ export default async function EditAiPagePage({ params }: Props) {
         }}
       />
       <AiPageInstallCard
-        slug={page.slug}
+        pageId={page.id}
         baseUrl={baseUrl}
         isPublished={!!page.is_published}
       />

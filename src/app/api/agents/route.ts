@@ -3,10 +3,11 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/validation';
 import { handleApiError } from '@/lib/api-error';
-import { canCreateAgent, getPlanForOrg } from '@/lib/entitlements';
+import { canCreateAgent, canCreateAiPage, getPlanForOrg } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { getNextPlanSlug, normalizePlanSlug } from '@/lib/plan-config';
 import { planUpgradeRequiredResponse } from '@/lib/api-plan-error';
+import { getDefaultIntakeSchema } from '@/lib/ai-pages/config-service';
 
 /** GET /api/agents – list agents for the current organization */
 export async function GET() {
@@ -57,13 +58,27 @@ export async function POST(request: Request) {
     const roleTypes = ['website_chatbot', 'support_agent', 'lead_qualification', 'internal_knowledge', 'workflow_agent', 'sales_agent', 'booking_agent', 'quote_assistant', 'faq_agent', 'follow_up_agent', 'custom'];
     const roleType = roleTypes.includes(body.role_type) ? body.role_type : 'website_chatbot';
     const systemPrompt = typeof body.system_prompt === 'string' ? sanitizeText(body.system_prompt, 16000) : null;
-    const modelProvider = ['openai', 'anthropic', 'openrouter', 'custom'].includes(body.model_provider) ? body.model_provider : 'openai';
-    const modelId = sanitizeText(body.model_id, 128) || 'gpt-4o-mini';
-    const tempNum = typeof body.temperature === 'number' ? body.temperature : Number(body.temperature);
-    const temperature = Number.isFinite(tempNum) && tempNum >= 0 && tempNum <= 2 ? tempNum : 0.7;
+    const deploymentType = ['widget', 'full_page', 'both'].includes(body.deployment_type) ? body.deployment_type : 'widget';
+    const modelId = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
     const enabledTools = Array.isArray(body.enabled_tools) ? body.enabled_tools.filter((t: unknown) => typeof t === 'string').slice(0, 32) : [];
-    const widgetEnabled = typeof body.widget_enabled === 'boolean' ? body.widget_enabled : true;
     const webhookEnabled = typeof body.webhook_enabled === 'boolean' ? body.webhook_enabled : false;
+
+    const wantsWidget = deploymentType === 'widget' || deploymentType === 'both';
+    const wantsFullPage = deploymentType === 'full_page' || deploymentType === 'both';
+
+    if (wantsFullPage) {
+      const aiPageAllowed = await canCreateAiPage(supabase, organizationId, adminAllowed);
+      if (!aiPageAllowed) {
+        const plan = await getPlanForOrg(supabase, organizationId);
+        const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
+        return planUpgradeRequiredResponse({
+          message: 'AI Pages are not available on your plan, or you have reached your AI page limit. Choose Widget only, or upgrade to Pro.',
+          currentPlan: currentSlug,
+          requiredPlan: getNextPlanSlug(currentSlug),
+          feature: 'ai_pages',
+        });
+      }
+    }
 
     const insertPayload = {
       organization_id: organizationId,
@@ -71,11 +86,11 @@ export async function POST(request: Request) {
       description: description || null,
       role_type: roleType,
       system_prompt: systemPrompt,
-      model_provider: modelProvider,
+      model_provider: 'openai',
       model_id: modelId,
-      temperature,
+      temperature: 0.7,
       enabled_tools: enabledTools,
-      widget_enabled: widgetEnabled,
+      widget_enabled: wantsWidget,
       webhook_enabled: webhookEnabled,
     };
 
@@ -88,9 +103,6 @@ export async function POST(request: Request) {
         .insert({ ...insertPayload, role_type: fallbackRole })
         .select()
         .single();
-      if (!result.error) {
-        return NextResponse.json(result.data);
-      }
     }
 
     if (result.error) {
@@ -104,16 +116,58 @@ export async function POST(request: Request) {
 
     const agent = result.data;
     if (agent?.id) {
-      const { data: unlinkedWidget } = await supabase
-        .from('widgets')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .is('agent_id', null)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (unlinkedWidget) {
-        await supabase.from('widgets').update({ agent_id: agent.id }).eq('id', unlinkedWidget.id);
+      if (wantsWidget) {
+        let widgetId: string | null = null;
+        const unlinked = await supabase
+          .from('widgets')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .is('agent_id', null)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (unlinked.data?.id) {
+          widgetId = unlinked.data.id;
+        } else {
+          const created = await supabase
+            .from('widgets')
+            .insert({ organization_id: organizationId, name: 'Chat' })
+            .select('id')
+            .single();
+          if (created.data?.id) widgetId = created.data.id;
+        }
+        if (widgetId) {
+          await supabase.from('widgets').update({ agent_id: agent.id }).eq('id', widgetId);
+        }
+      }
+
+      if (wantsFullPage) {
+        const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'assistant';
+        let slug = baseSlug;
+        let suffix = 0;
+        while (true) {
+          const { data: existing } = await supabase
+            .from('ai_pages')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('slug', slug)
+            .maybeSingle();
+          if (!existing) break;
+          suffix += 1;
+          slug = `${baseSlug}-${suffix}`;
+        }
+        await supabase.from('ai_pages').insert({
+          organization_id: organizationId,
+          agent_id: agent.id,
+          title: name,
+          slug,
+          page_type: 'general',
+          deployment_mode: 'hosted_page',
+          intake_schema: getDefaultIntakeSchema('general'),
+          outcome_config: { create_lead: true },
+          is_published: false,
+          is_enabled: true,
+        });
       }
     }
 

@@ -28,6 +28,8 @@ type AgentForTabs = {
   widget_enabled?: boolean;
 };
 
+type AiPageForDeployment = { id: string; slug: string; title: string; is_published: boolean | null };
+
 type AgentDetailTabsProps = {
   agentId: string;
   agent: AgentForTabs;
@@ -37,6 +39,8 @@ type AgentDetailTabsProps = {
   overviewContent: React.ReactNode;
   runs: RunRow[];
   widgetId?: string | null;
+  aiPages?: AiPageForDeployment[];
+  locale?: string;
 };
 
 const TAB_KEYS = [
@@ -61,7 +65,7 @@ const TAB_LABELS: Record<(typeof TAB_KEYS)[number], string> = {
   analytics: 'Analytics',
 };
 
-export function AgentDetailTabs({ agentId, agent, defaultTab, toolCallingEnabled, planName, overviewContent, runs, widgetId }: AgentDetailTabsProps) {
+export function AgentDetailTabs({ agentId, agent, defaultTab, toolCallingEnabled, planName, overviewContent, runs, widgetId, aiPages = [], locale = 'en' }: AgentDetailTabsProps) {
   const enabledIds = Array.isArray(agent.enabled_tools) ? agent.enabled_tools : [];
   const linkedIds = Array.isArray(agent.linked_knowledge_source_ids) ? agent.linked_knowledge_source_ids : [];
 
@@ -121,6 +125,8 @@ export function AgentDetailTabs({ agentId, agent, defaultTab, toolCallingEnabled
           agentName={agent.name}
           widgetEnabled={!!agent.widget_enabled}
           widgetId={widgetId ?? null}
+          aiPages={aiPages}
+          locale={locale}
         />
       </TabsContent>
 

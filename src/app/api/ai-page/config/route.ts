@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPublishedPageBySlug } from '@/lib/ai-pages/config-service';
+import { getPublishedPageBySlug, getPublishedPageById } from '@/lib/ai-pages/config-service';
 import { resolveHandoffForPublicPage } from '@/lib/ai-pages/handoff-service';
 import { rateLimit } from '@/lib/rate-limit';
 import { getClientIp } from '@/lib/validation';
@@ -24,20 +24,24 @@ export async function GET(request: Request) {
   const ip = getClientIp(request);
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug')?.trim();
+  const pageId = searchParams.get('pageId')?.trim();
   const handoffToken = searchParams.get('handoff')?.trim();
 
-  if (!slug) {
-    return NextResponse.json({ error: 'Missing slug' }, { status: 400, headers: corsHeaders });
+  if (!slug && !pageId) {
+    return NextResponse.json({ error: 'Missing slug or pageId' }, { status: 400, headers: corsHeaders });
   }
 
-  const key = `ai-page-config:${slug}:ip:${ip}`;
+  const lookupKey = pageId ?? slug ?? '';
+  const key = `ai-page-config:${lookupKey}:ip:${ip}`;
   const rl = rateLimit({ key, limit: 60, windowMs: 60_000 });
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: corsHeaders });
   }
 
   const supabase = createAdminClient();
-  const page = await getPublishedPageBySlug(supabase, slug);
+  const page = pageId
+    ? await getPublishedPageById(supabase, pageId)
+    : await getPublishedPageBySlug(supabase, slug!);
   if (!page) {
     return NextResponse.json({ error: 'Page not found or not published' }, { status: 404, headers: corsHeaders });
   }

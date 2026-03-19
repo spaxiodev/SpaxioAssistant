@@ -76,7 +76,7 @@ export default async function AiPagesDashboardPage() {
             <ul className="divide-y divide-border">
               {pages.map((page) => {
                 const Icon = pageTypeIcons[page.page_type] ?? FileText;
-                const publicUrl = `${baseUrl}/en/a/${page.slug}`;
+                const publicUrl = `${baseUrl}/en/a/p/${page.id}`;
                 return (
                   <li key={page.id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">

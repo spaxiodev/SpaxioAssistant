@@ -112,8 +112,13 @@ export function SimpleDashboardOverview() {
   }, []);
 
   const totalSteps = 5;
-  const completedSteps = websiteSetupStatus?.status === 'done' ? 2 : 0;
-  const percentComplete = Math.min(100, Math.round((completedSteps / totalSteps) * 100) + (overview?.leadsCount ? 20 : 0));
+  const step1Done = websiteSetupStatus?.status === 'done';
+  const step2Done = websiteSetupStatus?.status === 'done';
+  const step3Done = websiteSetupStatus?.status === 'done' || (overview?.leadsCount ?? 0) > 0;
+  const step4Done = false; // No way to verify widget install yet
+  const step5Done = step1Done && step2Done && step3Done && step4Done;
+  const completedSteps = [step1Done, step2Done, step3Done, step4Done, step5Done].filter(Boolean).length;
+  const percentComplete = Math.round((completedSteps / totalSteps) * 100);
 
   const handleGoToAiSetup = () => {
     try {
@@ -168,11 +173,11 @@ export function SimpleDashboardOverview() {
         <CardContent className="space-y-4">
           <Progress value={percentComplete} />
           <ul className="space-y-2 text-sm">
-            <StepItem label="Add your website URL" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
-            <StepItem label="Review business info" done={websiteSetupStatus?.status === 'done' || completedSteps > 0} />
-            <StepItem label="Set what to capture (leads + quote requests)" done={(overview?.leadsCount ?? 0) > 0} />
-            <StepItem label="Install the widget on your site" done={false} />
-            <StepItem label="Go live" done={percentComplete >= 80} />
+            <StepItem label="Add your website URL" done={step1Done} />
+            <StepItem label="Review business info" done={step2Done} />
+            <StepItem label="Set what to capture (leads + quote requests)" done={step3Done} />
+            <StepItem label="Install the widget on your site" done={step4Done} />
+            <StepItem label="Go live" done={step5Done} />
           </ul>
         </CardContent>
       </Card>
@@ -216,7 +221,7 @@ export function SimpleDashboardOverview() {
           <CardContent>
             <CardDescription>
               {websiteSetupStatus.status === 'done'
-                ? 'Your site was scanned and your website assistant was set up with starting knowledge and follow-up options.'
+                ? 'Your site was scanned and your website assistant was set up with starting knowledge and follow-up options. Two steps left: install the widget and go live.'
                 : 'Something went wrong. You can run setup again from AI Setup.'}
             </CardDescription>
           </CardContent>

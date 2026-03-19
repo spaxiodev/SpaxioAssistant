@@ -178,7 +178,11 @@ export function AiPageForm({ agents, pricingProfiles = [], initial }: Props) {
               placeholder="quote"
             />
             <p className="text-xs text-muted-foreground">
-              Public URL: /a/{slug || '…'}
+              {initial?.id ? (
+                <>Unique link for share/embed: /a/p/{initial.id}</>
+              ) : (
+                <>Slug for legacy URLs. Use unique link /a/p/[id] after saving.</>
+              )}
             </p>
           </div>
           {pageType === 'quote' && pricingProfiles.length > 0 && (

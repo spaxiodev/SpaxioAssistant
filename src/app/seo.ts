@@ -20,7 +20,7 @@ export const SITE_NAME = 'Spaxio Assistant';
 export const DEFAULT_SEO = {
   title: 'Spaxio Assistant — AI Website Assistant for Businesses',
   description:
-    'An AI website assistant that learns your business, answers customer questions, captures leads, collects quote requests, and automates simple follow-up.',
+    'AI website assistant that learns from your site, answers customer questions, captures and qualifies leads, collects quote requests with estimates, and automates follow-up. Add one script for a chat widget or full-page assistant.',
   keywords: [
     'AI website assistant',
     'website AI assistant',

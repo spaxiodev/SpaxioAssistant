@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPublishedPageBySlug } from '@/lib/ai-pages/config-service';
+import { getPublishedPageBySlug, getPublishedPageById } from '@/lib/ai-pages/config-service';
 import { resolveHandoffToken } from '@/lib/ai-pages/handoff-service';
 import { createPageRun, getPageRunByConversation } from '@/lib/ai-pages/session-service';
 import { rateLimit } from '@/lib/rate-limit';
@@ -25,10 +25,11 @@ export async function POST(request: Request) {
   const ip = getClientIp(request);
   const body = await request.json().catch(() => ({}));
   const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
+  const pageId = typeof body.page_id === 'string' ? body.page_id.trim() : null;
   const handoffToken = typeof body.handoff_token === 'string' ? body.handoff_token.trim() : null;
 
-  if (!slug) {
-    return NextResponse.json({ error: 'Missing slug' }, { status: 400, headers: corsHeaders });
+  if (!slug && !pageId) {
+    return NextResponse.json({ error: 'Missing slug or page_id' }, { status: 400, headers: corsHeaders });
   }
 
   const key = `ai-page-session:ip:${ip}`;
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const page = await getPublishedPageBySlug(supabase, slug);
+  const page = pageId
+    ? await getPublishedPageById(supabase, pageId)
+    : await getPublishedPageBySlug(supabase, slug);
   if (!page) {
     return NextResponse.json({ error: 'Page not found or not published' }, { status: 404, headers: corsHeaders });
   }
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
     {
       run_id: result.runId,
       conversation_id: result.conversationId,
-      page_slug: slug,
+      page_slug: page.slug,
     },
     { headers: corsHeaders }
   );

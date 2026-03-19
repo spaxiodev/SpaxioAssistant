@@ -67,10 +67,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         ? body.linked_knowledge_source_ids.filter((x: unknown) => typeof x === 'string').slice(0, 50)
         : [];
     }
-    if (body.model_provider !== undefined && ['openai', 'anthropic', 'openrouter', 'custom'].includes(body.model_provider)) {
-      updatePayload.model_provider = body.model_provider;
-    }
-    if (body.model_id !== undefined) updatePayload.model_id = sanitizeText(body.model_id, 128) || 'gpt-4o-mini';
+    // Model is fixed to OpenAI; do not allow changes
     if (body.temperature !== undefined) {
       const t = typeof body.temperature === 'number' ? body.temperature : Number(body.temperature);
       if (Number.isFinite(t) && t >= 0 && t <= 2) updatePayload.temperature = t;

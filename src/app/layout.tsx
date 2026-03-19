@@ -79,7 +79,7 @@ export default async function RootLayout({
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: SITE_NAME,
-      description: 'AI chatbot for website, AI automation platform, and AI CRM for small business. Deploy an AI chatbot widget, AI lead capture tool, and AI quote generator in one platform.',
+      description: 'AI website assistant platform: chat widget or full-page assistant that learns from your site, answers questions using your content, captures and qualifies leads with AI, collects quote requests with configurable forms and estimates, and automates follow-up workflows.',
       url: baseUrl,
       category: 'Business Software',
       brand: { '@type': 'Brand', name: SITE_NAME },
@@ -99,13 +99,17 @@ export default async function RootLayout({
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       url: baseUrl,
-      description: 'AI assistant platform for business. Deploy chat widgets or full-page AI experiences for quotes, support, and intake; capture leads and automate follow-up.',
+      description: 'AI website assistant platform: add one script for a chat widget or full-page assistant. Learns from your website, answers questions, captures and qualifies leads with AI, collects quote requests with configurable forms and pricing rules, automates follow-up, optional voice—so you miss fewer inquiries and respond faster.',
       featureList: [
-        'Chat widget and full-page AI experiences',
-        'Quote and support assistant pages',
-        'Lead capture and automation',
-        'AI trained on your content',
-        'CRM and workflow integration',
+        'Chat widget or full-page assistant (one script install)',
+        'Learn from your website—AI extracts business info, FAQs, services',
+        'Knowledge base (URLs and file uploads) for AI answers',
+        'Lead capture with AI qualification (score, priority, summary)',
+        'Quote requests with configurable form and pricing rules for estimates',
+        'Automations (notify on lead, follow up after quote, webhooks)',
+        'Optional voice conversations (plan-gated)',
+        'Team management with roles',
+        'Inbox for human replies (plan-gated)',
       ],
       offers: {
         '@type': 'Offer',
@@ -119,7 +123,7 @@ export default async function RootLayout({
       '@type': 'WebSite',
       name: SITE_NAME,
       url: baseUrl,
-      description: 'AI assistant platform for modern businesses: widget, full-page experiences, and automation.',
+      description: 'AI website assistant platform: chat widget or full-page assistant, learns from your site, captures and qualifies leads, collects quote requests with estimates, automates follow-up.',
       publisher: { '@type': 'Organization', name: SITE_NAME, url: baseUrl },
     },
     {
@@ -131,7 +135,7 @@ export default async function RootLayout({
           name: 'What is Spaxio Assistant?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Spaxio Assistant is an AI assistant platform for business. You can deploy a chat widget on your website, launch full-page AI experiences for quotes or support, capture leads, and automate follow-up. One platform, multiple ways to connect with customers.',
+            text: 'Spaxio Assistant is an AI website assistant platform for businesses. Add one script to deploy a chat widget or full-page assistant. It learns from your website, answers customer questions using your content, captures and qualifies leads with AI, collects quote requests with configurable forms and pricing rules for estimates, and automates follow-up. Optional voice conversations on higher plans.',
           },
         },
         {
@@ -139,7 +143,7 @@ export default async function RootLayout({
           name: 'What can I deploy with Spaxio Assistant?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'You can deploy a chat widget on your site, dedicated full-page AI experiences (e.g. Quote Assistant, Support Assistant, Intake), or both. The AI learns from your content and integrates with your CRM and workflows.',
+            text: 'You can deploy a chat widget embedded on your site, a full-page shareable link, or both. Choose the display mode in Assistant settings. The AI learns from your website and uploaded knowledge, answers questions, captures leads with AI qualification, collects quote requests with estimates, and triggers automations.',
           },
         },
         {
@@ -147,7 +151,7 @@ export default async function RootLayout({
           name: 'How do I get started with Spaxio Assistant?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Sign up for Spaxio Assistant, add your business details and content, then choose how to deploy: embed a chat widget with one script tag, publish a full-page AI experience (quote, support, intake), or both. The AI answers questions, captures leads, and automates support.',
+            text: 'Sign up for Spaxio Assistant, use AI Setup to paste your website URL so the AI extracts your business info, or add content manually. Go to Install, copy the script tag, and paste it before the closing body tag on your site. Choose widget, full-page, or both in Assistant settings. The AI answers questions, captures and qualifies leads, collects quote requests, and automates follow-up.',
           },
         },
         {
@@ -155,7 +159,7 @@ export default async function RootLayout({
           name: 'What is AI customer support?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'AI customer support uses a chatbot or assistant to answer common questions, qualify leads, and automate replies 24/7. Spaxio Assistant provides an AI support chatbot you can embed on your website so visitors get instant answers and your team gets qualified leads.',
+            text: 'AI customer support uses a chatbot or assistant to answer common questions from your website content, qualify leads with scores and priorities, and automate replies 24/7. Spaxio Assistant embeds an AI assistant that learns from your site, captures leads with AI qualification, collects quote requests, and suggests follow-up actions so your team responds faster.',
           },
         },
       ],

@@ -332,4 +332,4 @@ All tenant-scoped tables are protected by **Supabase RLS** so users only see the
 
 ## 11. One-line summary
 
-**Spaxio Assistant** is an AI website assistant that learns your business, answers customer questions, captures leads, collects quote requests, and automates follow-up—so you miss fewer inquiries and respond faster.
+**Spaxio Assistant** is an AI website assistant platform that learns from your site, answers customer questions using your content, captures and qualifies leads with AI, collects quote requests with configurable forms and pricing rules for estimates, and automates follow-up—so you miss fewer inquiries and respond faster.

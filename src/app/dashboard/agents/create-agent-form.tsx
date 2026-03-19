@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, MessageSquare, Monitor, LayoutGrid } from 'lucide-react';
 import { Link } from '@/components/intl-link';
 
 const ROLE_TYPES = [
@@ -24,19 +24,11 @@ const ROLE_TYPES = [
   { value: 'custom', label: 'Custom' },
 ] as const;
 
-const MODEL_PROVIDERS = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'openrouter', label: 'OpenRouter' },
-  { value: 'custom', label: 'Custom' },
+const DEPLOYMENT_TYPES = [
+  { value: 'widget', label: 'Widget', description: 'Chat bubble on your website', icon: MessageSquare },
+  { value: 'full_page', label: 'Full page', description: 'Shareable link or embeddable page', icon: Monitor },
+  { value: 'both', label: 'Both', description: 'Widget and full-page', icon: LayoutGrid },
 ] as const;
-
-const DEFAULT_MODELS: Record<string, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-haiku-20240307',
-  openrouter: 'openai/gpt-4o-mini',
-  custom: 'gpt-4o-mini',
-};
 
 export function CreateAgentForm() {
   const router = useRouter();
@@ -46,10 +38,7 @@ export function CreateAgentForm() {
   const [roleType, setRoleType] = useState<string>('website_chatbot');
   const [description, setDescription] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [modelProvider, setModelProvider] = useState('openai');
-  const [modelId, setModelId] = useState('gpt-4o-mini');
-  const [temperature, setTemperature] = useState(0.7);
-  const [widgetEnabled, setWidgetEnabled] = useState(true);
+  const [deploymentType, setDeploymentType] = useState<'widget' | 'full_page' | 'both'>('widget');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,11 +57,8 @@ export function CreateAgentForm() {
           description: description.trim() || null,
           role_type: roleType,
           system_prompt: systemPrompt.trim() || null,
-          model_provider: modelProvider,
-          model_id: modelId.trim() || DEFAULT_MODELS[modelProvider] || 'gpt-4o-mini',
-          temperature: Number(temperature),
+          deployment_type: deploymentType,
           enabled_tools: [],
-          widget_enabled: widgetEnabled,
           webhook_enabled: false,
         }),
       });
@@ -106,7 +92,7 @@ export function CreateAgentForm() {
       <CardHeader>
         <CardTitle>New agent</CardTitle>
         <CardDescription>
-          Choose a type, name, and model. You can add instructions, tools, and knowledge after creation.
+          Choose a type, name, and how to deploy (widget or full page). You can add instructions and knowledge after creation.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -162,59 +148,35 @@ export function CreateAgentForm() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-6">
-            <div>
-              <Label htmlFor="agent-provider">Model provider</Label>
-              <select
-                id="agent-provider"
-                value={modelProvider}
-                onChange={(e) => {
-                  const p = e.target.value;
-                  setModelProvider(p);
-                  setModelId(DEFAULT_MODELS[p] ?? 'gpt-4o-mini');
-                }}
-                className="mt-1 flex h-10 w-full min-w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {MODEL_PROVIDERS.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
+          <div className="space-y-3">
+            <Label>Deploy as</Label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {DEPLOYMENT_TYPES.map((d) => (
+                <label
+                  key={d.value}
+                  htmlFor={`deploy-${d.value}`}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5`}
+                >
+                  <input
+                    type="radio"
+                    id={`deploy-${d.value}`}
+                    name="deployment"
+                    value={d.value}
+                    checked={deploymentType === d.value}
+                    onChange={() => setDeploymentType(d.value as 'widget' | 'full_page' | 'both')}
+                    className="mt-1.5"
+                  />
+                  <div className="grid gap-1">
+                    {(() => {
+                      const Icon = d.icon;
+                      return <Icon className="h-5 w-5 text-muted-foreground" />;
+                    })()}
+                    <span className="font-medium">{d.label}</span>
+                    <p className="text-sm text-muted-foreground">{d.description}</p>
+                  </div>
+                </label>
+              ))}
             </div>
-            <div>
-              <Label htmlFor="agent-model">Model ID</Label>
-              <Input
-                id="agent-model"
-                value={modelId}
-                onChange={(e) => setModelId(e.target.value)}
-                placeholder="gpt-4o-mini"
-                className="mt-1 w-56 font-mono text-sm"
-                maxLength={128}
-              />
-            </div>
-            <div>
-              <Label htmlFor="agent-temp">Temperature (0–2)</Label>
-              <Input
-                id="agent-temp"
-                type="number"
-                min={0}
-                max={2}
-                step={0.1}
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value) || 0.7)}
-                className="mt-1 w-24"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="agent-widget"
-              checked={widgetEnabled}
-              onChange={(e) => setWidgetEnabled(e.target.checked)}
-              className="rounded border-input"
-            />
-            <Label htmlFor="agent-widget">Available for website widget</Label>
           </div>
 
           <div className="flex items-center gap-4 pt-2">
