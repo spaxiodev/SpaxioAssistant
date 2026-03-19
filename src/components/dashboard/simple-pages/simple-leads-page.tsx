@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Sparkles, MessageSquare, UserPlus, FileText, Flag } from 'lucide-react';
+import { Users, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   SimplePageHeader,
-  SimpleAiAssistPanel,
   SimpleEmptyState,
   SimpleDeveloperModeLink,
+  BlockingGuidancePanel,
+  MilestoneSuccessPanel,
+  SimpleSetupSkeleton,
 } from '@/components/dashboard/simple';
 import { useViewMode } from '@/contexts/view-mode-context';
+import { useNextBestAction } from '@/hooks/use-next-best-action';
 import { formatDate } from '@/lib/utils';
 
 const INTENT_STORAGE_KEY = 'spaxio-ai-setup-intent';
@@ -45,8 +48,13 @@ function priorityLabel(priority: string | null | undefined): string {
 export function SimpleLeadsPage() {
   const router = useRouter();
   const { setMode } = useViewMode();
+  const { data: nextActionData, isLoading: loadingNextAction } = useNextBestAction();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const widgetReady = nextActionData?.progress?.widgetReadyDone ?? true;
+  const showBlocking = !loadingNextAction && !loading && !widgetReady;
+  const isFirstLead = leads.length === 1;
 
   const openInDeveloperMode = (path: string) => {
     setMode('developer');
@@ -85,66 +93,46 @@ export function SimpleLeadsPage() {
     <div className="space-y-8">
       <SimplePageHeader
         title="Leads"
-        description="Review the people who contacted your business through the assistant. See status, add notes, or open the full conversation."
+        description="People who shared their contact info through your assistant. Follow up from here or open the full view for more options."
         icon={<Users className="h-6 w-6" />}
       />
 
-      {/* Manual actions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Mark as hot / follow up / closed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Change lead status in Developer Mode.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/leads')}>
-              Open leads
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Add note</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Add notes and follow-up in Developer Mode.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/leads')}>
-              Open leads
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Assign teammate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Assign leads in the inbox or Developer Mode.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/inbox')}>
-              Open inbox
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Open conversation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">View full chat and create lead from inbox.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/conversations')}>
-              Open conversations
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {showBlocking && (
+        <BlockingGuidancePanel
+          title="Set up your assistant first"
+          description="Leads appear when visitors share their contact info through your chat. Set up your assistant in AI Setup, install the widget, then return here to see leads."
+          primaryAction={{ label: 'Go to AI Setup', href: '/dashboard/ai-setup' }}
+          secondaryAction={{ label: 'Install widget', href: '/dashboard/install' }}
+          icon={Sparkles}
+        />
+      )}
 
-      {/* Lead list */}
-      <Card>
+      {!showBlocking && (
+        <>
+          {leads.length === 1 && (
+            <MilestoneSuccessPanel
+              headline="First lead received!"
+              description="Someone shared their contact info through your assistant. Keep the momentum going—review and follow up."
+              nextStep={{ label: 'View lead details', href: '/dashboard/leads' }}
+            />
+          )}
+          {/* Lead list */}
+          <Card>
         <CardHeader>
           <CardTitle className="text-base">Recent leads</CardTitle>
           <CardDescription>
-            {loading ? 'Loading…' : leads.length === 0 ? 'No leads yet. They’ll appear here when visitors share their contact info.' : `${leads.length} lead(s). Open in Developer Mode for full details and actions.`}
+            {loading
+              ? 'Loading…'
+              : leads.length === 0
+                ? 'Leads appear when visitors share their name and email. Make sure lead capture is set up in AI Setup.'
+                : `${leads.length} lead(s)`}
           </CardDescription>
         </CardHeader>
+        {loading && (
+          <CardContent className="py-8">
+            <SimpleSetupSkeleton lines={5} />
+          </CardContent>
+        )}
         {!loading && leads.length > 0 && (
           <CardContent>
             <ul className="space-y-3">
@@ -177,13 +165,21 @@ export function SimpleLeadsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openInDeveloperMode('/dashboard/leads')}
+                    onClick={() => openInDeveloperMode(`/dashboard/leads?lead=${lead.id}`)}
                   >
-                    View full lead
+                    View details
                   </Button>
                 </li>
               ))}
             </ul>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => openInDeveloperMode('/dashboard/leads')}
+            >
+              Open full leads view
+            </Button>
           </CardContent>
         )}
         {!loading && leads.length === 0 && (
@@ -191,26 +187,30 @@ export function SimpleLeadsPage() {
             <SimpleEmptyState
               icon={<Users className="h-10 w-10" />}
               title="No leads yet"
-              description="Leads appear when visitors share their name and email through your assistant. Make sure lead capture is set up in AI Setup or Settings."
-              action={{ label: 'Set up lead capture', onClick: () => goToAiSetup('Set up lead capture. When visitors want to be contacted, collect name, email, and what they need.') }}
+              description="When visitors share their contact info through your assistant, they'll appear here. Set up lead capture in AI Setup to get started."
+              action={{
+                label: 'Set up lead capture',
+                onClick: () =>
+                  goToAiSetup(
+                    'Set up lead capture. When visitors want to be contacted, collect name, email, and what they need.'
+                  ),
+              }}
+              secondaryAction={{
+                label: 'Go to AI Setup',
+                onClick: () => router.push('/dashboard/ai-setup'),
+              }}
               showDeveloperModeSwitch={true}
             />
           </CardContent>
         )}
       </Card>
+        </>
+      )}
 
-      <SimpleAiAssistPanel
-        title="AI can help"
-        description="Summarize a lead, suggest next steps, or draft follow-up."
-        actions={[
-          { label: 'Summarize this lead', onClick: () => router.push('/dashboard/leads') },
-          { label: 'Suggest next step', onClick: () => goToAiSetup('Suggest the best next step for following up with my leads.') },
-          { label: 'Write follow-up email', onClick: () => goToAiSetup('Write a follow-up email template for my leads.') },
-          { label: 'Score this lead', onClick: () => router.push('/dashboard/leads') },
-        ]}
+      <SimpleDeveloperModeLink
+        developerPath="/dashboard/leads"
+        linkLabel="Open Leads in Developer Mode"
       />
-
-      <SimpleDeveloperModeLink developerPath="/dashboard/leads" linkLabel="Open Leads in Developer Mode" />
     </div>
   );
 }

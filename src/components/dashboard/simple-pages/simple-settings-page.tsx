@@ -12,6 +12,7 @@ import {
   SimplePageHeader,
   SimpleAiAssistPanel,
   SimpleDeveloperModeLink,
+  PreviewAssistantButton,
 } from '@/components/dashboard/simple';
 import { useViewMode } from '@/contexts/view-mode-context';
 
@@ -92,11 +93,18 @@ export function SimpleSettingsPage() {
 
   return (
     <div className="space-y-8">
-      <SimplePageHeader
-        title="Business settings"
-        description="Your business name, how the assistant greets visitors, and how they can contact you."
-        icon={<Settings className="h-6 w-6" />}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SimplePageHeader
+          title="Business settings"
+          description="Your business name, how the assistant greets visitors, and how they can contact you."
+          icon={<Settings className="h-6 w-6" />}
+        />
+        <PreviewAssistantButton />
+      </div>
+
+      <div className="flex justify-end">
+        <PreviewAssistantButton />
+      </div>
 
       {/* Simplified form - only show if we can load settings; API may be PUT-only */}
       {hasGetSettings ? (

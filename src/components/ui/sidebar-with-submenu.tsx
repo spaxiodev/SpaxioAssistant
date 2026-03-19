@@ -322,26 +322,13 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   onClick={onNavClick}
                   className={cn(
                     'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/leads') || pathname.startsWith('/dashboard/contacts')
+                    pathname.startsWith('/dashboard/leads') || pathname.startsWith('/dashboard/contacts') || pathname.startsWith('/dashboard/quote-requests')
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
                       : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
                   <Users className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">Leads</span>
-                </Link>
-                <Link
-                  href="/dashboard/quote-requests"
-                  onClick={onNavClick}
-                  className={cn(
-                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/quote-requests')
-                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
-                  )}
-                >
-                  <FileText className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('quoteRequests')}</span>
                 </Link>
                 <Link
                   href="/dashboard/install"

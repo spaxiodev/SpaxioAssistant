@@ -37,8 +37,10 @@ export interface PricingCardProps {
   bestFor: string;
   CTA: string;
   benefits: Array<{ text: string; checked: boolean }>;
-  /** When true, the CTA button uses the primary variant (e.g. for the featured plan). */
+  /** When true, the CTA button uses the primary variant and shows "Most popular" badge. */
   featured?: boolean;
+  /** Optional label for featured plan (e.g. "Most popular"). */
+  featuredLabel?: string;
   className?: string;
   /** When set, show current plan badge with this label. */
   isCurrentPlan?: boolean;
@@ -59,6 +61,7 @@ export const PricingCard = ({
   CTA,
   benefits,
   featured = false,
+  featuredLabel,
   className,
   isCurrentPlan = false,
   currentPlanLabel = "Current plan",
@@ -117,10 +120,15 @@ export const PricingCard = ({
         )}
       >
         <div className="flex flex-col items-center border-b pb-6 dark:border-zinc-700 border-zinc-200">
-          <div className="mb-6 flex items-center gap-2">
+          <div className="mb-6 flex flex-wrap items-center gap-2">
             <span className="inline-block dark:text-zinc-50 text-zinc-900">
               {tier}
             </span>
+            {featured && featuredLabel && (
+              <Badge className="font-normal bg-primary/90 text-primary-foreground">
+                {featuredLabel}
+              </Badge>
+            )}
             {isCurrentPlan && (
               <Badge variant="secondary" className="font-normal">
                 {currentPlanLabel}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from '@/i18n/navigation';
 import { OnboardingModal } from '@/components/dashboard/onboarding-modal';
 
 const SKIP_KEY = 'onboarding_skipped';
@@ -10,6 +11,7 @@ type OnboardingGateProps = {
 };
 
 export function OnboardingGate({ needsOnboarding }: OnboardingGateProps) {
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -19,13 +21,18 @@ export function OnboardingGate({ needsOnboarding }: OnboardingGateProps) {
     setShowModal(!skipped);
   }, [needsOnboarding]);
 
+  const goToAiSetup = () => {
+    setShowModal(false);
+    router.push('/dashboard/ai-setup');
+  };
+
   const handleSkip = () => {
     sessionStorage.setItem(SKIP_KEY, '1');
-    setShowModal(false);
+    goToAiSetup();
   };
 
   const handleComplete = () => {
-    setShowModal(false);
+    goToAiSetup();
   };
 
   if (!showModal) return null;

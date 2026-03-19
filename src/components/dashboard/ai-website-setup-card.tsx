@@ -118,10 +118,10 @@ export function AiWebsiteSetupCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Globe className="h-5 w-5" />
-          Do it for me: set up from my website
+          Set up from your website
         </CardTitle>
         <CardDescription>
-          Enter your website URL. We&apos;ll scan it, learn your business, and set up your website assistant, starting knowledge, and follow-up options.
+          Enter your website URL. We&apos;ll scan it, learn your business, and configure your assistant—including what it knows and how it follows up with visitors.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -183,17 +183,17 @@ export function AiWebsiteSetupCard() {
               Setup complete
             </div>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              {result.businessSettingsUpdated && <li>• Business settings updated</li>}
+              {result.businessSettingsUpdated && <li>• Business info updated</li>}
               {result.knowledgeSourceId && (
-                <li>• Knowledge base updated ({result.knowledgeChunksCreated ?? 0} chunks)</li>
+                <li>• Website info added ({result.knowledgeChunksCreated ?? 0} items)</li>
               )}
               {result.agentIds && result.agentIds.length > 0 && (
-                <li>• {result.agentIds.length} assistant(s) created</li>
+                <li>• AI assistant created</li>
               )}
               {result.automationIds && result.automationIds.length > 0 && (
-                <li>• {result.automationIds.length} automation(s) created</li>
+                <li>• Auto follow-up configured</li>
               )}
-              {result.widgetConfigured && <li>• Chat widget configured</li>}
+              {result.widgetConfigured && <li>• Chat widget ready</li>}
             </ul>
             <Button
               variant="outline"

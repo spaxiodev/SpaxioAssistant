@@ -43,7 +43,7 @@ export default async function PricingPage({ params }: Props) {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <span aria-hidden>←</span>
-            {tCommon("backToDashboard")}
+            {orgId ? tCommon("backToDashboard") : tCommon("backToHome")}
           </Link>
         </div>
         <div className="mb-12 space-y-3">
@@ -99,6 +99,7 @@ export default async function PricingPage({ params }: Props) {
             bestFor={t("tiers.pro.bestFor")}
             CTA={t("tiers.pro.cta")}
             featured
+            featuredLabel={t("mostPopular")}
             isCurrentPlan={isCurrent("pro") || isCurrent("legacy_assistant_pro")}
             currentPlanLabel={t("currentPlan")}
             ctaPlanId={orgId ? "pro" : undefined}
@@ -154,7 +155,7 @@ export default async function PricingPage({ params }: Props) {
         {orgId && (
           <p className="mt-8 text-center text-sm text-muted-foreground">
             <Link href="/dashboard/billing" className="underline hover:no-underline">
-              Manage subscription
+              {t('manageSubscription')}
             </Link>
           </p>
         )}

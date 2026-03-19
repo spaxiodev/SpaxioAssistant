@@ -13,10 +13,10 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   const dontHave: string[] = [];
 
   have.push('Overview (counts and quick links)');
-  have.push('AI Setup (set up your website assistant with AI)');
-  have.push('AI Assistants (create and adjust how your assistant behaves)');
-  have.push('Knowledge (teach your assistant from your website and files)');
-  have.push('Install (install the assistant on your website and preview it)');
+  have.push('AI Setup (set up your website assistant with AI—add website URL or describe what you want)');
+  have.push('AI Assistant (create and adjust how your assistant behaves—in Developer Mode: Agents)');
+  have.push('Website Info / Business Info (teach your assistant from your website and files—in Developer Mode: Knowledge)');
+  have.push('Install (copy the script, paste before </body>, add the assistant to your website)');
   have.push('Conversations (read chat history with visitors)');
   have.push('Leads (see people who shared contact info)');
   have.push('Quote requests (see quote requests from the widget)');
@@ -64,9 +64,9 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   }
 
   if (entitlements.automations_enabled) {
-    have.push('Automations (set up rules that run when something happens, e.g. when a lead is captured)');
+    have.push('Auto Follow-up (set up rules that run when something happens, e.g. when a lead is captured—in Developer Mode: Automations)');
   } else {
-    dontHave.push('Automations (that\'s on a higher plan)');
+    dontHave.push('Auto Follow-up (that\'s on a higher plan)');
   }
 
   if (entitlements.tool_calling_enabled) {
@@ -115,8 +115,8 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 **Topics you can explain (only if the user has access - see below):**
 - **Overview:** What the numbers mean (leads, conversations, quote requests), trial banner, upgrade button.
 - **AI Setup:** Give your website URL and preferences; the AI analyzes the site, drafts setup, and applies safe changes. You can edit in chat (e.g. "make tone more professional", "change welcome message"). Review the draft summary and click Publish when ready.
-- **AI Assistants:** How to create and edit assistants (how the assistant behaves and what it should do).
-- **Knowledge:** How to add a source (add a website URL or upload a file) and what limits mean.
+- **AI Assistant:** How to create and edit the assistant (how it behaves and what it should do). In Developer Mode this is called "Agents".
+- **Website Info / Business Info:** How to add a source (add a website URL or upload a file) so the assistant answers from real content. In Developer Mode this is called "Knowledge".
 - **Install:** How to install the assistant on their website: 1) Click Install in the sidebar. 2) Copy the script. 3) Paste just before </body>. 4) Save and publish.
 - **Conversations:** Where to see the list of chats and how to open them.
 - **Leads:** Where leads appear and how to follow up.
@@ -126,7 +126,7 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
 - **Widget:** What the widget does (answers questions, captures leads, collects quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
  - **Team:** How to invite teammates and what roles mean.
- - **Automations:** Basic automations (if enabled on their plan).
+ - **Auto Follow-up:** Basic follow-up rules (if enabled on their plan; in Developer Mode: Automations).
  - **Inbox / Bookings / Voice / Tools / Advanced analytics:** Only if enabled on their plan.
 - **Global search:** Users can press Cmd+K (Mac) or Ctrl+K (Windows) from anywhere in the dashboard to open the command palette. They can search for pages, actions, leads, quote requests, conversations, knowledge sources, automations, and agents—and jump directly to any result.
 `;

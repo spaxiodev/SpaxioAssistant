@@ -5,14 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   Wand2,
-  Upload,
   Users,
   Globe,
   Loader2,
   CheckCircle2,
   MessageSquare,
-  Zap,
-  FileText,
+  ArrowRight,
+  Copy,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,9 @@ import {
   SimpleStatusCard,
   SimpleRecommendations,
   SimpleActionCard,
+  NextBestActionCard,
+  PreviewAssistantButton,
+  MilestoneSuccessPanel,
 } from '@/components/dashboard/simple';
 
 const INTENT_STORAGE_KEY = 'spaxio-ai-setup-intent';
@@ -37,6 +39,13 @@ type SetupRunStatus =
   | 'configuring_widget'
   | 'done'
   | 'failed';
+
+type SetupProgress = {
+  businessInfoDone: boolean;
+  aiTrainedDone: boolean;
+  widgetReadyDone: boolean;
+  hasWebsiteUrl: boolean;
+};
 
 type OverviewData = {
   leadsCount?: number;
@@ -52,8 +61,10 @@ export function SimpleDashboardOverview() {
     current_step?: string;
     run_id?: string;
   } | null>(null);
+  const [setupProgress, setSetupProgress] = useState<SetupProgress | null>(null);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +86,26 @@ export function SimpleDashboardOverview() {
       }
     }
     fetchLatestRun();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchProgress() {
+      try {
+        const res = await fetch('/api/setup-progress');
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) setSetupProgress(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoadingProgress(false);
+      }
+    }
+    fetchProgress();
     return () => {
       cancelled = true;
     };
@@ -111,14 +142,63 @@ export function SimpleDashboardOverview() {
     };
   }, []);
 
-  const totalSteps = 5;
-  const step1Done = websiteSetupStatus?.status === 'done';
-  const step2Done = websiteSetupStatus?.status === 'done';
-  const step3Done = websiteSetupStatus?.status === 'done' || (overview?.leadsCount ?? 0) > 0;
+  const progress = setupProgress ?? {
+    businessInfoDone: false,
+    aiTrainedDone: false,
+    widgetReadyDone: false,
+    hasWebsiteUrl: false,
+  };
+
+  const isSetupRunning = websiteSetupStatus?.status &&
+    ['pending', 'scanning', 'building_knowledge', 'creating_agents', 'creating_automations', 'configuring_widget'].includes(websiteSetupStatus.status);
+
+  const step1Done = progress.businessInfoDone || websiteSetupStatus?.status === 'done';
+  const step2Done = progress.aiTrainedDone || websiteSetupStatus?.status === 'done';
+  const step3Done = progress.widgetReadyDone;
   const step4Done = false; // No way to verify widget install yet
-  const step5Done = step1Done && step2Done && step3Done && step4Done;
-  const completedSteps = [step1Done, step2Done, step3Done, step4Done, step5Done].filter(Boolean).length;
+  const completedSteps = [step1Done, step2Done, step3Done, step4Done].filter(Boolean).length;
+  const totalSteps = 4;
   const percentComplete = Math.round((completedSteps / totalSteps) * 100);
+
+  // Primary CTA based on progress
+  const getPrimaryCta = () => {
+    if (isSetupRunning) return null;
+    if (!step1Done || !step2Done) {
+      return {
+        label: step1Done ? 'Continue setup' : 'Set up my assistant',
+        href: '/dashboard/ai-setup',
+        icon: Sparkles,
+      };
+    }
+    if (!step3Done) {
+      return {
+        label: 'Finish setup',
+        href: '/dashboard/ai-setup',
+        icon: Sparkles,
+      };
+    }
+    if (!step4Done) {
+      return {
+        label: 'Install on my website',
+        href: '/dashboard/install',
+        icon: Copy,
+      };
+    }
+    if ((overview?.leadsCount ?? 0) > 0 || (overview?.quoteRequestsCount ?? 0) > 0) {
+      return {
+        label: 'View leads & conversations',
+        href: '/dashboard/leads',
+        icon: Users,
+      };
+    }
+    return {
+      label: 'Test your widget',
+      href: '/dashboard/install',
+      icon: Globe,
+    };
+  };
+
+  const primaryCta = getPrimaryCta();
 
   const handleGoToAiSetup = () => {
     try {
@@ -144,96 +224,109 @@ export function SimpleDashboardOverview() {
   };
 
   const recommendations = [
-    percentComplete < 100 && 'Finish setup so your assistant can go live on your website.',
-    (overview?.leadsCount ?? 0) === 0 && 'Add your website URL so the assistant learns your business and can answer accurately.',
+    !step1Done && 'Add your business info so the assistant can introduce itself properly.',
+    !step2Done && !isSetupRunning && 'Connect your website URL so the assistant learns your business.',
+    step2Done && !step3Done && 'Review and publish your assistant settings.',
+    step3Done && !step4Done && 'Copy the install code and add it to your website.',
+    step4Done && (overview?.leadsCount ?? 0) === 0 && (overview?.quoteRequestsCount ?? 0) === 0 && 'Test the widget on your site to make sure it works.',
     (overview?.leadsCount ?? 0) > 0 && 'Review new leads and follow up from the Leads page.',
-    'Install the widget on your site and preview it.',
+    (overview?.quoteRequestsCount ?? 0) > 0 && 'Check quote requests and send estimates.',
   ].filter(Boolean) as string[];
 
   if (recommendations.length === 0) {
-    recommendations.push('Check Analytics to see how your assistant is performing.');
+    recommendations.push('Your assistant is live. Check Conversations and Leads regularly.');
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary w-fit">
-        Simple Mode
-      </div>
+      {/* Next best action - prominent guidance */}
+      {!isSetupRunning && <NextBestActionCard />}
+
       <SimplePageHeader
-        title="Your website assistant, ready to launch"
-        description="Teach it your business, answer customer questions, capture leads, collect quote requests, and automate follow-up—without extra admin work."
+        title="Your website assistant"
+        description="Answer questions, capture leads, and collect quote requests—all from one chat on your site."
       />
 
       {/* Setup progress */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base">Launch checklist</CardTitle>
-          <span className="text-sm text-muted-foreground">{percentComplete}%</span>
+          <CardTitle className="text-base">Setup progress</CardTitle>
+          {!loadingProgress && (
+            <span className="text-sm text-muted-foreground">{percentComplete}%</span>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
-          <Progress value={percentComplete} />
+          <Progress value={percentComplete} className="h-2" />
           <ul className="space-y-2 text-sm">
-            <StepItem label="Add your website URL" done={step1Done} />
-            <StepItem label="Review business info" done={step2Done} />
-            <StepItem label="Set what to capture (leads + quote requests)" done={step3Done} />
-            <StepItem label="Install the widget on your site" done={step4Done} />
-            <StepItem label="Go live" done={step5Done} />
+            <StepItem label="Business info" done={step1Done} />
+            <StepItem label="AI trained on your business" done={step2Done} />
+            <StepItem label="Widget ready" done={step3Done} />
+            <StepItem label="Installed on your site" done={step4Done} />
           </ul>
         </CardContent>
       </Card>
 
-      {/* Widget / auto-setup status */}
-      {websiteSetupStatus?.status && ['pending', 'scanning', 'building_knowledge', 'creating_agents', 'creating_automations', 'configuring_widget'].includes(websiteSetupStatus.status) && (
+      {/* Setup in progress - visible status so user knows what's happening */}
+      {isSetupRunning && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="flex items-center gap-3 pt-6">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
             <div>
-              <p className="font-medium">Setup in progress</p>
-              <p className="text-sm text-muted-foreground">{websiteSetupStatus.current_step ?? websiteSetupStatus.status}</p>
+              <p className="font-medium">Preparing your assistant</p>
+              <p className="text-sm text-muted-foreground">
+                {(() => {
+                  const step = websiteSetupStatus?.current_step ?? websiteSetupStatus?.status ?? '';
+                  const labels: Record<string, string> = {
+                    pending: 'Starting…',
+                    scanning: 'Analyzing your website…',
+                    building_knowledge: 'Building your knowledge base…',
+                    creating_agents: 'Creating your assistant…',
+                    creating_automations: 'Setting up auto follow-up…',
+                    configuring_widget: 'Configuring your chat widget…',
+                  };
+                  return labels[step] ?? step;
+                })()}
+              </p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {(websiteSetupStatus?.status === 'done' || websiteSetupStatus?.status === 'failed') && (
-        <Card
-          className={
-            websiteSetupStatus.status === 'done'
-              ? 'border-green-500/30 bg-green-500/5'
-              : 'border-amber-500/30 bg-amber-500/5'
-          }
-        >
+      {/* Website setup complete – milestone success */}
+      {websiteSetupStatus?.status === 'done' && (
+        <MilestoneSuccessPanel
+          headline="Setup complete"
+          description="Your assistant is ready. Go to Install to copy the code and add it to your website."
+          nextStep={{ label: 'Install on my website', href: '/dashboard/install' }}
+          icon={CheckCircle2}
+        />
+      )}
+      {/* Setup failed */}
+      {websiteSetupStatus?.status === 'failed' && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-2">
-              {websiteSetupStatus.status === 'done' ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              ) : (
-                <Globe className="h-5 w-5 text-amber-600" />
-              )}
-              <CardTitle className="text-base">
-                {websiteSetupStatus.status === 'done' ? 'Website setup complete' : 'Website setup had an issue'}
-              </CardTitle>
+              <Globe className="h-5 w-5 text-amber-600" />
+              <CardTitle className="text-base">Setup had an issue</CardTitle>
             </div>
             <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/ai-setup')}>
-              Set up again
+              Try again
             </Button>
           </CardHeader>
           <CardContent>
             <CardDescription>
-              {websiteSetupStatus.status === 'done'
-                ? 'Your site was scanned and your website assistant was set up with starting knowledge and follow-up options. Two steps left: install the widget and go live.'
-                : 'Something went wrong. You can run setup again from AI Setup.'}
+              Something went wrong. You can run setup again from AI Setup.
             </CardDescription>
           </CardContent>
         </Card>
       )}
 
-      {/* Business snapshot / recent activity */}
+      {/* Stats */}
       {!loadingOverview && (overview?.leadsCount !== undefined || overview?.quoteRequestsCount !== undefined) && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(overview?.leadsCount ?? 0) >= 0 && (
             <SimpleStatusCard
-              title="Leads captured"
+              title="Leads"
               value={loadingOverview ? '…' : (overview?.leadsCount ?? 0)}
               subtitle="From your assistant"
               icon={<Users className="h-4 w-4" />}
@@ -243,60 +336,45 @@ export function SimpleDashboardOverview() {
             <SimpleStatusCard
               title="Quote requests"
               value={loadingOverview ? '…' : (overview?.quoteRequestsCount ?? 0)}
-              subtitle="Recent requests"
+              subtitle="Recent"
               icon={<MessageSquare className="h-4 w-4" />}
             />
           )}
         </div>
       )}
 
-      {/* Quick actions */}
+      {/* Quick actions - contextual */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Quick actions</h2>
+          <PreviewAssistantButton />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <SimpleQuickActionCard
-            title="Set up from your website URL"
-            description="Scan your site so the assistant learns your business and you can go live faster."
+            title="Set up from website URL"
+            description="Scan your site so the assistant learns your business."
             icon={Globe}
             onClick={() => router.push('/dashboard/ai-setup')}
           />
           <SimpleQuickActionCard
-            title="Review business info"
-            description="Make sure your services, pricing notes, and FAQ are accurate."
-            icon={FileText}
-            onClick={() => router.push('/dashboard/settings')}
-          />
-          <SimpleQuickActionCard
-            title="Install & preview widget"
-            description="Install the assistant on your website and preview it."
-            icon={Globe}
+            title="Install on my site"
+            description="Copy the code and add the chat to your website."
+            icon={Copy}
             onClick={() => router.push('/dashboard/install')}
           />
           <SimpleQuickActionCard
-            title="Review leads"
-            description="View and manage people who contacted you through the assistant."
+            title="View leads"
+            description="See who contacted you through the assistant."
             icon={Users}
             onClick={() => router.push('/dashboard/leads')}
-          />
-          <SimpleQuickActionCard
-            title="Add more knowledge"
-            description="Add pages or files so the assistant answers from your real content."
-            icon={Upload}
-            onClick={() => router.push('/dashboard/knowledge')}
-          />
-          <SimpleQuickActionCard
-            title="Set up follow-up"
-            description="Notify your team or follow up automatically when someone reaches out."
-            icon={Zap}
-            onClick={() => router.push('/dashboard/automations')}
           />
         </div>
       </div>
 
-      {/* Do It For Me – one option among others */}
+      {/* Guided setup */}
       <SimpleActionCard
-        title="Tell us what you want to achieve"
-        description="Describe your business and what you want the assistant to handle. We’ll guide you through setup step by step."
+        title="Describe what you want"
+        description="Tell us your goals and we'll guide you step by step."
         icon={<Wand2 className="h-5 w-5" />}
         variant="primary"
       >
@@ -304,7 +382,7 @@ export function SimpleDashboardOverview() {
           <Textarea
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
-            placeholder="e.g. Answer common questions, capture leads, and collect quote requests. Email me when someone needs a quote."
+            placeholder="e.g. Answer questions, capture leads, collect quote requests. Email me when someone needs a quote."
             className="min-h-[80px] resize-y text-sm"
           />
           <div className="flex flex-wrap gap-2">
@@ -329,7 +407,7 @@ function StepItem({ label, done }: { label: string; done: boolean }) {
   return (
     <li className="flex items-center gap-2">
       <span
-        className={`h-2.5 w-2.5 rounded-full ${done ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+        className={`h-2.5 w-2.5 shrink-0 rounded-full ${done ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
       />
       <span className={done ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
     </li>

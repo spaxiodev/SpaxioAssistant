@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Sparkles, Mail, FileText } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   SimplePageHeader,
-  SimpleAiAssistPanel,
   SimpleEmptyState,
   SimpleDeveloperModeLink,
+  BlockingGuidancePanel,
+  MilestoneSuccessPanel,
+  SimpleSetupSkeleton,
 } from '@/components/dashboard/simple';
 import { useViewMode } from '@/contexts/view-mode-context';
+import { useNextBestAction } from '@/hooks/use-next-best-action';
 import { formatDate } from '@/lib/utils';
 
 type Conversation = {
@@ -28,8 +31,12 @@ type Conversation = {
 export function SimpleConversationsPage() {
   const router = useRouter();
   const { setMode } = useViewMode();
+  const { data: nextActionData, isLoading: loadingNextAction } = useNextBestAction();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const widgetReady = nextActionData?.progress?.widgetReadyDone ?? true;
+  const showBlocking = !loadingNextAction && !loading && !widgetReady;
 
   const openInDeveloperMode = (path: string) => {
     setMode('developer');
@@ -61,66 +68,46 @@ export function SimpleConversationsPage() {
     <div className="space-y-8">
       <SimplePageHeader
         title="Conversations"
-        description="Recent chats with visitors. See what’s open, what needs follow-up, and attach a conversation to a lead."
+        description="Chats with visitors. Open a conversation to read the full thread and reply."
         icon={<MessageSquare className="h-6 w-6" />}
       />
 
-      {/* Manual actions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Open conversation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">View the full chat and reply.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/inbox')}>
-              Open inbox
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Mark reviewed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Mark conversations as reviewed in the inbox.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/inbox')}>
-              Open inbox
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Create lead</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Turn a conversation into a lead from the inbox.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/inbox')}>
-              Open inbox
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Add note</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-2">Add internal notes to conversations in the inbox.</p>
-            <Button variant="outline" size="sm" onClick={() => openInDeveloperMode('/dashboard/inbox')}>
-              Open inbox
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {showBlocking && (
+        <BlockingGuidancePanel
+          title="Install your assistant first"
+          description="Conversations appear when visitors chat with your assistant. Set up your assistant in AI Setup and install the widget on your website."
+          primaryAction={{ label: 'Go to AI Setup', href: '/dashboard/ai-setup' }}
+          secondaryAction={{ label: 'Install widget', href: '/dashboard/install' }}
+          icon={MessageSquare}
+        />
+      )}
 
-      {/* Conversation list */}
+      {!showBlocking && (
+        <>
+          {conversations.length === 1 && (
+            <MilestoneSuccessPanel
+              headline="First conversation!"
+              description="A visitor has chatted with your assistant. Open it to see the full thread and reply."
+              nextStep={{ label: 'View conversation', href: '/dashboard/conversations' }}
+            />
+          )}
+          {/* Conversation list */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Recent conversations</CardTitle>
           <CardDescription>
-            {loading ? 'Loading…' : conversations.length === 0 ? 'No conversations yet. They’ll appear when visitors chat.' : `${conversations.length} conversation(s). ${openCount} open. Open in Developer Mode for full inbox.`}
+            {loading
+              ? 'Loading…'
+              : conversations.length === 0
+                ? 'Conversations appear when visitors use your chat. Make sure your assistant is installed.'
+                : `${conversations.length} conversation(s), ${openCount} open`}
           </CardDescription>
         </CardHeader>
+        {loading && (
+          <CardContent className="py-8">
+            <SimpleSetupSkeleton lines={5} />
+          </CardContent>
+        )}
         {!loading && conversations.length > 0 && (
           <CardContent>
             <ul className="space-y-2">
@@ -135,12 +122,18 @@ export function SimpleConversationsPage() {
                       <Badge variant={c.status === 'open' ? 'default' : 'secondary'} className="text-xs">
                         {c.status}
                       </Badge>
-                      {c.lead_id && <Badge variant="outline" className="text-xs">Has lead</Badge>}
-                      {c.escalated && <Badge variant="destructive" className="text-xs">Needs attention</Badge>}
+                      {c.lead_id && (
+                        <Badge variant="outline" className="text-xs">
+                          Has lead
+                        </Badge>
+                      )}
+                      {c.escalated && (
+                        <Badge variant="destructive" className="text-xs">
+                          Needs attention
+                        </Badge>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Updated {formatDate(c.updated_at)}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Updated {formatDate(c.updated_at)}</p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => openInDeveloperMode(`/dashboard/inbox/${c.id}`)}>
                     Open
@@ -149,8 +142,16 @@ export function SimpleConversationsPage() {
               ))}
             </ul>
             {conversations.length > 15 && (
-              <p className="mt-3 text-sm text-muted-foreground">+{conversations.length - 15} more in inbox</p>
+              <p className="mt-3 text-sm text-muted-foreground">+{conversations.length - 15} more</p>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => openInDeveloperMode('/dashboard/inbox')}
+            >
+              Open full inbox
+            </Button>
           </CardContent>
         )}
         {!loading && conversations.length === 0 && (
@@ -158,25 +159,27 @@ export function SimpleConversationsPage() {
             <SimpleEmptyState
               icon={<MessageSquare className="h-10 w-10" />}
               title="No conversations yet"
-              description="Conversations appear when visitors use your chat widget. Make sure your assistant is installed and live."
-              action={{ label: 'Open inbox', onClick: () => openInDeveloperMode('/dashboard/inbox') }}
+              description="When visitors chat with your assistant, conversations will appear here. Install your widget to start receiving chats."
+              action={{
+                label: 'Install my widget',
+                onClick: () => router.push('/dashboard/install'),
+              }}
+              secondaryAction={{
+                label: 'Go to AI Setup',
+                onClick: () => router.push('/dashboard/ai-setup'),
+              }}
               showDeveloperModeSwitch={true}
             />
           </CardContent>
         )}
       </Card>
+        </>
+      )}
 
-      <SimpleAiAssistPanel
-        title="AI can help"
-        description="Summarize a conversation, detect intent, or suggest a reply."
-        actions={[
-          { label: 'Summarize conversation', onClick: () => openInDeveloperMode('/dashboard/inbox') },
-          { label: 'Detect customer intent', onClick: () => openInDeveloperMode('/dashboard/inbox') },
-          { label: 'Suggest reply', onClick: () => openInDeveloperMode('/dashboard/inbox') },
-        ]}
+      <SimpleDeveloperModeLink
+        developerPath="/dashboard/conversations"
+        linkLabel="Open Inbox in Developer Mode"
       />
-
-      <SimpleDeveloperModeLink developerPath="/dashboard/conversations" linkLabel="Open Inbox in Developer Mode" />
     </div>
   );
 }
