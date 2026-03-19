@@ -23,6 +23,9 @@ import {
   canRemoveBranding,
   canAddTeamMember,
   canCreateAiPage,
+  canUseFollowUpEmails,
+  canUseAiFollowUp,
+  canUseFollowUpDrafts,
   type Entitlements,
 } from '@/lib/entitlements';
 import type { Database } from '@/lib/supabase/database.types';
@@ -84,7 +87,10 @@ export type SubscriptionFeatureKey =
   | 'knowledge_sources'
   | 'messages'
   | 'ai_actions'
-  | 'document_uploads';
+  | 'document_uploads'
+  | 'followup_emails'
+  | 'ai_followup'
+  | 'followup_drafts';
 
 /** Resolve subscription status from subscriptions row. */
 function subscriptionStatus(
@@ -279,6 +285,12 @@ export async function canUseFeature(
       const max = Number(entitlements.max_document_uploads);
       return usage.document_uploads_count < (Number.isFinite(max) ? max : 0);
     }
+    case 'followup_emails':
+      return canUseFollowUpEmails(supabase, organizationId, false);
+    case 'ai_followup':
+      return canUseAiFollowUp(supabase, organizationId, false);
+    case 'followup_drafts':
+      return canUseFollowUpDrafts(supabase, organizationId, false);
     default:
       return false;
   }

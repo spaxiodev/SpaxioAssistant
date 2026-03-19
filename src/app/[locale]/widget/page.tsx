@@ -294,6 +294,11 @@ function WidgetContent() {
           email: leadEmail.trim(),
           phone: leadPhone.trim() || undefined,
           answers,
+          // Language context for language-aware persistence + emails
+          language: resolvedLocale,
+          activeLocale: activeLocale,
+          detectedLocale: activeLocale,
+          manualLanguageOverride: manualLanguageOverride ?? undefined,
         }),
       });
       const data = await res.json();

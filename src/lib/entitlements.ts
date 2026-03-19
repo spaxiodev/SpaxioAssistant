@@ -44,6 +44,11 @@ export type Entitlements = {
   max_businesses: number;
   ai_pages_enabled: boolean;
   max_ai_pages: number;
+  followup_emails_enabled: boolean;
+  ai_followup_enabled: boolean;
+  followup_drafts_enabled: boolean;
+  monthly_followup_email_limit: number;
+  delayed_followups_enabled: boolean;
 };
 
 const DEFAULT_ENTITLEMENTS: Entitlements = {
@@ -77,6 +82,11 @@ const DEFAULT_ENTITLEMENTS: Entitlements = {
   max_businesses: 1,
   ai_pages_enabled: false,
   max_ai_pages: 0,
+  followup_emails_enabled: false,
+  ai_followup_enabled: false,
+  followup_drafts_enabled: false,
+  monthly_followup_email_limit: 0,
+  delayed_followups_enabled: false,
 };
 
 function parseEntitlementValue(value: unknown): number | boolean | string {
@@ -431,6 +441,39 @@ export async function canUseAiActions(
   if (adminAllowed) return true;
   const { entitlements } = await getEntitlements(supabase, organizationId);
   return entitlements.ai_actions_enabled;
+}
+
+/** Whether the org can send follow-up emails (template/internal workflows). */
+export async function canUseFollowUpEmails(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.followup_emails_enabled;
+}
+
+/** Whether the org can use AI-generated follow-up content. */
+export async function canUseAiFollowUp(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.ai_followup_enabled;
+}
+
+/** Whether the org can use draft/approval flow for follow-up messaging. */
+export async function canUseFollowUpDrafts(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.followup_drafts_enabled;
 }
 
 /** Whether the org can use bookings / appointments. */

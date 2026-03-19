@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Zap, Clock, GitBranch, UserCheck, Mail, Webhook } from 'lucide-react';
+import { Zap, Clock, GitBranch, UserCheck, Mail, Webhook, Send } from 'lucide-react';
 import { getStepTypeLabel, getActionLabel } from '@/lib/automations/labels';
 
 const TRIGGER_STYLE =
@@ -51,6 +51,8 @@ function StepNodeInner({
           : stepType === 'action'
             ? actionType === 'send_email_notification'
               ? Mail
+              : actionType === 'send_follow_up_message' || actionType === 'generate_followup_draft' || actionType === 'send_internal_summary' || actionType === 'schedule_followup'
+                ? Send
               : Webhook
             : Zap;
 

@@ -31,7 +31,7 @@ const RECIPE_LABELS: Record<string, { label: string; description: string; icon: 
   new_lead: { label: 'Notify when a new lead arrives', description: 'Get an email or notification for each new lead.', icon: Bell },
   quote_request: { label: 'Save quote requests automatically', description: 'Store quote requests and optionally notify your team.', icon: FileText },
   support_ticket: { label: 'Create a support ticket when needed', description: 'When a visitor asks for help, create a ticket.', icon: Ticket },
-  follow_up: { label: 'Send follow-up reminder', description: 'Remind you to follow up with leads or conversations.', icon: Send },
+  follow_up: { label: 'Automatic follow-up', description: 'Automatically reply to new leads and quote requests with templates or AI drafts.', icon: Send },
 };
 
 export function SimpleAutomationsPage() {

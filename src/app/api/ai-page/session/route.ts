@@ -27,6 +27,7 @@ export async function POST(request: Request) {
   const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
   const pageId = typeof body.page_id === 'string' ? body.page_id.trim() : null;
   const handoffToken = typeof body.handoff_token === 'string' ? body.handoff_token.trim() : null;
+  const language = typeof body.language === 'string' ? body.language.slice(0, 16) : null;
 
   if (!slug && !pageId) {
     return NextResponse.json({ error: 'Missing slug or page_id' }, { status: 400, headers: corsHeaders });
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
     organizationId: page.organization_id,
     aiPageId: page.id,
     handoffConversationId: handoffConversationId || undefined,
+    customerLanguage: language,
   });
 
   if (!result) {

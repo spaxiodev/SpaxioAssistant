@@ -64,9 +64,15 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
   }
 
   if (entitlements.automations_enabled) {
-    have.push('Auto Follow-up (set up rules that run when something happens, e.g. when a lead is captured—in Developer Mode: Automations)');
+    have.push('Auto Follow-up (set up rules for automatic customer emails, AI drafts for approval, internal notifications, and reminders—in Developer Mode: Automations)');
   } else {
     dontHave.push('Auto Follow-up (that\'s on a higher plan)');
+  }
+
+  if (entitlements.followup_drafts_enabled) {
+    have.push('AI follow-up drafts for approval (review/edit before sending)');
+  } else {
+    dontHave.push('AI follow-up draft approvals (that\'s on a higher plan)');
   }
 
   if (entitlements.tool_calling_enabled) {
@@ -126,7 +132,7 @@ const HELP_BASE_PROMPT = `You are the in-app help robot for Spaxio Assistant. Sp
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
 - **Widget:** What the widget does (answers questions, captures leads, collects quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).
  - **Team:** How to invite teammates and what roles mean.
- - **Auto Follow-up:** Basic follow-up rules (if enabled on their plan; in Developer Mode: Automations).
+ - **Auto Follow-up:** Basic and advanced follow-up rules (if enabled on their plan; in Developer Mode: Automations): auto-send template replies, AI-generated drafts for approval, internal-only notifications, and follow-up history.
  - **Inbox / Bookings / Voice / Tools / Advanced analytics:** Only if enabled on their plan.
 - **Global search:** Users can press Cmd+K (Mac) or Ctrl+K (Windows) from anywhere in the dashboard to open the command palette. They can search for pages, actions, leads, quote requests, conversations, knowledge sources, automations, and agents—and jump directly to any result.
 `;

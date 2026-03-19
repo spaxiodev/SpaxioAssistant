@@ -24,8 +24,11 @@ export async function createQuoteRequestFromSession(
     organizationId: string;
     conversationId: string | null;
     collected: Record<string, unknown>;
+    customerLanguage?: string | null;
   }
 ): Promise<string | null> {
+  const customerLanguage =
+    typeof params.customerLanguage === 'string' ? params.customerLanguage.slice(0, 2).toLowerCase() : null;
   const name = str(params.collected.contact_name ?? params.collected.customer_name, 500) ?? str(params.collected.name, 500);
   if (!name) return null;
 
@@ -45,6 +48,7 @@ export async function createQuoteRequestFromSession(
     .insert({
       organization_id: params.organizationId,
       conversation_id: params.conversationId,
+      customer_language: customerLanguage,
       customer_name: name,
       customer_email: email,
       customer_phone: phone,
@@ -68,8 +72,11 @@ export async function createLeadFromSession(
     organizationId: string;
     conversationId: string | null;
     collected: Record<string, unknown>;
+    customerLanguage?: string | null;
   }
 ): Promise<string | null> {
+  const customerLanguage =
+    typeof params.customerLanguage === 'string' ? params.customerLanguage.slice(0, 2).toLowerCase() : null;
   const name = str(params.collected.contact_name ?? params.collected.name, 500);
   const email = str(params.collected.contact_email ?? params.collected.email, 255);
   if (!name || !email) return null;
@@ -90,6 +97,7 @@ export async function createLeadFromSession(
     .insert({
       organization_id: params.organizationId,
       conversation_id: params.conversationId,
+      customer_language: customerLanguage,
       name,
       email,
       phone: str(params.collected.phone, 100),
@@ -143,6 +151,7 @@ export async function createOutcomesForRun(
     sessionState: SessionState;
     pageType: string;
     outcomeConfig: { create_quote_request?: boolean; create_lead?: boolean; create_ticket?: boolean };
+    customerLanguage?: string | null;
   }
 ): Promise<{
   quoteRequestId: string | null;
@@ -163,7 +172,7 @@ export async function createOutcomesForRun(
   };
 
   if (params.outcomeConfig.create_quote_request && (params.pageType === 'quote' || params.pageType === 'general')) {
-    out.quoteRequestId = await createQuoteRequestFromSession(supabase, base);
+    out.quoteRequestId = await createQuoteRequestFromSession(supabase, { ...base, customerLanguage: params.customerLanguage ?? null });
 
     // If quote page has pricing estimate, persist estimation run and link to quote_request
     if (out.quoteRequestId && (params.pageType === 'quote') && Object.keys(collected).length > 0) {
@@ -210,7 +219,7 @@ export async function createOutcomesForRun(
     }
   }
   if (params.outcomeConfig.create_lead) {
-    out.leadId = await createLeadFromSession(supabase, base);
+    out.leadId = await createLeadFromSession(supabase, { ...base, customerLanguage: params.customerLanguage ?? null });
   }
   if (params.outcomeConfig.create_ticket && (params.pageType === 'support' || params.pageType === 'general')) {
     out.supportTicketId = await createSupportTicketFromSession(supabase, base);

@@ -73,6 +73,9 @@ export const FEATURE_KEYS = [
   'integrations',
   'team_members',
   'ai_pages',
+  'followup_emails',
+  'ai_followup',
+  'followup_drafts',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -91,6 +94,9 @@ export const FEATURE_MIN_PLAN: Record<FeatureKey, PlanSlug> = {
   integrations: 'pro',
   team_members: 'starter',
   ai_pages: 'pro',
+  followup_emails: 'starter',
+  ai_followup: 'pro',
+  followup_drafts: 'starter',
 };
 
 /** Whether the given plan has access to the feature. */
@@ -130,6 +136,9 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   integrations: 'Integrations',
   team_members: 'Team members',
   ai_pages: 'AI Pages',
+  followup_emails: 'Follow-up emails',
+  ai_followup: 'AI follow-up generation',
+  followup_drafts: 'Follow-up draft approvals',
 };
 
 // -----------------------------------------------------------------------------

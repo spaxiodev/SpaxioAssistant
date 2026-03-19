@@ -32,6 +32,15 @@ function sanitize(s: unknown): string {
   return String(s).slice(0, 2000);
 }
 
+function normalizeLanguageCode(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  const two = v.includes('-') ? v.slice(0, 2) : v;
+  const code = two.slice(0, 2);
+  return code ? code : null;
+}
+
 const withCors = (body: object, status: number) =>
   NextResponse.json(body, { status, headers: corsHeaders });
 
@@ -39,6 +48,15 @@ export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
     const body = await request.json().catch(() => ({}));
+    const explicitLanguage = normalizeLanguageCode(body.language ?? body.activeLocale);
+    const browserLocale = normalizeLanguageCode(body.browserLocale);
+    const resolvedLanguage = explicitLanguage ?? browserLocale ?? 'en';
+    const t = {
+      missingFields: resolvedLanguage === 'fr' ? "Champs requis manquants" : 'Missing required fields',
+      invalidEmail: resolvedLanguage === 'fr' ? "Veuillez saisir une adresse e-mail valide" : 'Invalid email',
+      tooManyRequests: resolvedLanguage === 'fr' ? 'Trop de demandes. Veuillez réessayer plus tard.' : 'Too many requests',
+    } as const;
+
     const rawWidgetId = body.widgetId;
     const rawConversationId = body.conversationId ?? null;
     const widgetId = rawWidgetId ? normalizeUuid(String(rawWidgetId)) : '';
@@ -59,7 +77,7 @@ export async function POST(request: Request) {
     const location = sanitize(body.location).slice(0, 500);
 
     if (!rawWidgetId || !name || !email) {
-      return withCors({ error: 'Missing required fields' }, 400);
+      return withCors({ error: t.missingFields }, 400);
     }
     if (!isUuid(widgetId)) {
       return withCors({ error: 'Invalid widgetId' }, 400);
@@ -68,12 +86,12 @@ export async function POST(request: Request) {
     const perIpKey = `widget-lead:ip:${ip}`;
     const rl = rateLimit({ key: perIpKey, limit: 30, windowMs: 60_000 });
     if (!rl.allowed) {
-      return withCors({ error: 'Too many requests' }, 429);
+      return withCors({ error: t.tooManyRequests }, 429);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return withCors({ error: 'Invalid email' }, 400);
+      return withCors({ error: t.invalidEmail }, 400);
     }
 
     const supabase = createAdminClient();
@@ -101,6 +119,7 @@ export async function POST(request: Request) {
         requested_timeline: requestedTimeline || null,
         project_details: projectDetails || null,
         location: location || null,
+        customer_language: resolvedLanguage,
       })
       .select('id')
       .single();
@@ -128,6 +147,29 @@ export async function POST(request: Request) {
             maybeCreateDealForHighPriorityLead(supabase, widget.organization_id, { name, email, phone: phone || null }, result).catch((err) =>
               console.warn('[widget/lead] Deal creation failed', err)
             );
+            const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
+            const automationsAllowed = await canUseAutomation(supabase, widget.organization_id, adminAllowed);
+            if (automationsAllowed) {
+              emitAutomationEvent(supabase, {
+                organization_id: widget.organization_id,
+                event_type: 'new_high_intent_lead',
+                payload: {
+                  trigger_type: 'new_high_intent_lead',
+                  lead_id: lead.id,
+                  conversation_id: conversationId ?? undefined,
+                  lead: {
+                    name,
+                    email,
+                    phone: phone || undefined,
+                    message: message || undefined,
+                  },
+                  qualification_priority: 'high',
+                },
+                trace_id: `high-intent-${lead.id}`,
+                source: 'widget_lead',
+                actor: { type: 'lead', id: lead.id, email },
+              }).catch((err) => console.warn('[widget/lead] high-intent emit failed', err));
+            }
           }
           // Optional: follow-up run after qualification (richer context)
           triggerFollowUpRun(supabase, {
@@ -136,6 +178,7 @@ export async function POST(request: Request) {
             sourceId: lead.id,
             leadId: lead.id,
             context: {
+              customerLanguage: resolvedLanguage,
               lead: {
                 id: lead.id,
                 name,
@@ -165,6 +208,7 @@ export async function POST(request: Request) {
         sourceId: lead.id,
         leadId: lead.id,
         context: {
+          customerLanguage: resolvedLanguage,
           lead: {
             id: lead.id,
             name,
@@ -197,7 +241,9 @@ export async function POST(request: Request) {
             email,
             phone: phone || undefined,
             message: message || undefined,
+            language: resolvedLanguage,
           },
+          customer_language: resolvedLanguage,
           lead_id: lead.id,
           requested_service: requestedService || undefined,
           requested_timeline: requestedTimeline || undefined,

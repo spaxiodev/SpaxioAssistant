@@ -158,10 +158,11 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
 
   useEffect(() => {
     if (!config || runId) return;
-    const body: { slug?: string; page_id?: string; handoff_token?: string } = pageId
+    const body: { slug?: string; page_id?: string; handoff_token?: string; language?: string } = pageId
       ? { page_id: pageId }
       : { slug: slug! };
     if (handoffToken) body.handoff_token = handoffToken;
+    body.language = effectiveDisplayLocale;
     fetch(`${baseUrl}/api/ai-page/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -293,6 +294,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
           run_id: runId,
           conversation_id: conversationId,
           collected,
+          language: effectiveDisplayLocale,
         }),
       });
       const data = await res.json();

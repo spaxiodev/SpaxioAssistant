@@ -41,6 +41,10 @@ export interface FollowUpGenerationInput {
   sourceType: FollowUpSourceType;
   sourceId: string;
   context: {
+    /** Resolved visitor language used for customer-facing email output. */
+    customerLanguage?: string | null;
+    /** Business/internal preferred language for summary + internal notes/task descriptions. */
+    businessDefaultLanguage?: string | null;
     lead?: {
       id: string;
       name: string;
@@ -75,6 +79,11 @@ export interface FollowUpGenerationInput {
     conversationSnippet?: string | null;
     businessName?: string | null;
     industry?: string | null;
+    businessDescription?: string | null;
+    toneOfVoice?: string | null;
+    services?: string[] | null;
+    pricingNotes?: string | null;
+    faq?: Record<string, unknown> | null;
   };
 }
 

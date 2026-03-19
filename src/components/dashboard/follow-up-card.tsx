@@ -20,6 +20,13 @@ type FollowUpRun = {
   draft_task_title: string | null;
 };
 
+type FollowUpDraft = {
+  id: string;
+  status: string;
+  subject: string;
+  body_text: string | null;
+};
+
 type Props = {
   leadId?: string;
   quoteRequestId?: string;
@@ -37,6 +44,7 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [draft, setDraft] = useState<FollowUpDraft | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -58,6 +66,18 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
       .catch(() => setRun(null))
       .finally(() => setLoading(false));
   }, [leadId, quoteRequestId]);
+
+  useEffect(() => {
+    if (!id) return;
+    const q = leadId ? `leadId=${encodeURIComponent(leadId)}` : `quoteRequestId=${encodeURIComponent(quoteRequestId!)}`;
+    fetch(`/api/follow-up/drafts?${q}&status=pending_approval`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const row = Array.isArray(data?.drafts) ? data.drafts[0] : null;
+        setDraft(row && row.id ? row : null);
+      })
+      .catch(() => setDraft(null));
+  }, [id, leadId, quoteRequestId]);
 
   const copyDraft = () => {
     if (!run?.draft_email_body && !run?.draft_email_subject) return;
@@ -90,6 +110,28 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
     }
   };
 
+  const draftAction = async (action: 'approve_send_draft' | 'reject_draft') => {
+    if (!draft?.id) return;
+    setApplying(action);
+    try {
+      const res = await fetch('/api/follow-up/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId: draft.id, action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: 'Error', description: data.error || 'Failed', variant: 'destructive' });
+        return;
+      }
+      toast({ title: action === 'approve_send_draft' ? 'Draft sent' : 'Draft rejected' });
+      router.refresh();
+      setDraft(null);
+    } finally {
+      setApplying(null);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="border-dashed">
@@ -100,14 +142,25 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
     );
   }
 
-  if (!run || run.status !== 'completed') return null;
+  if ((!run || run.status !== 'completed') && !draft) return null;
+  const viewRun = run ?? {
+    id: '',
+    status: '',
+    generated_summary: null,
+    recommended_action: null,
+    recommended_priority: null,
+    draft_email_subject: null,
+    draft_email_body: null,
+    draft_note: null,
+    draft_task_title: null,
+  };
 
   return (
     <Card className="overflow-hidden border-primary/20 bg-primary/5">
       <CardHeader className="py-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-foreground">
-            {simpleLabel(run.recommended_priority, source)}
+            {simpleLabel(viewRun.recommended_priority, source)}
           </span>
         </div>
       </CardHeader>
@@ -115,14 +168,35 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
         <ViewModeClientGate
           simple={
             <>
-              {run.generated_summary && (
-                <p className="text-sm text-muted-foreground">{run.generated_summary}</p>
+              {viewRun.generated_summary && (
+                <p className="text-sm text-muted-foreground">{viewRun.generated_summary}</p>
               )}
-              {run.recommended_action && (
-                <p className="text-xs font-medium text-foreground">Next: {run.recommended_action}</p>
+              {viewRun.recommended_action && (
+                <p className="text-xs font-medium text-foreground">Next: {viewRun.recommended_action}</p>
               )}
               <div className="flex flex-wrap gap-2 pt-2">
-                {(run.draft_email_subject || run.draft_email_body) && (
+                {draft?.status === 'pending_approval' && (
+                  <>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => draftAction('approve_send_draft')}
+                      disabled={!!applying}
+                    >
+                      {applying === 'approve_send_draft' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                      Approve & send draft
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => draftAction('reject_draft')}
+                      disabled={!!applying}
+                    >
+                      Reject draft
+                    </Button>
+                  </>
+                )}
+                {(viewRun.draft_email_subject || viewRun.draft_email_body) && (
                   <Button variant="outline" size="sm" onClick={copyDraft} disabled={copied}>
                     <Copy className="mr-1 h-3 w-3" />
                     {copied ? 'Copied' : 'Copy email draft'}
@@ -159,37 +233,58 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
           }
           developer={
             <>
-              {run.generated_summary && (
-                <p className="text-sm text-muted-foreground">{run.generated_summary}</p>
+              {viewRun.generated_summary && (
+                <p className="text-sm text-muted-foreground">{viewRun.generated_summary}</p>
               )}
               <dl className="grid gap-1 text-xs">
-                {run.recommended_action && (
+                {viewRun.recommended_action && (
                   <>
                     <dt className="font-medium text-muted-foreground">Recommended action</dt>
-                    <dd>{run.recommended_action}</dd>
+                    <dd>{viewRun.recommended_action}</dd>
                   </>
                 )}
-                {run.recommended_priority && (
+                {viewRun.recommended_priority && (
                   <>
                     <dt className="font-medium text-muted-foreground">Priority</dt>
-                    <dd>{run.recommended_priority}</dd>
+                    <dd>{viewRun.recommended_priority}</dd>
                   </>
                 )}
-                {run.draft_email_subject && (
+                {viewRun.draft_email_subject && (
                   <>
                     <dt className="font-medium text-muted-foreground">Draft subject</dt>
-                    <dd className="truncate">{run.draft_email_subject}</dd>
+                    <dd className="truncate">{viewRun.draft_email_subject}</dd>
                   </>
                 )}
-                {run.draft_task_title && (
+                {viewRun.draft_task_title && (
                   <>
                     <dt className="font-medium text-muted-foreground">Draft task</dt>
-                    <dd>{run.draft_task_title}</dd>
+                    <dd>{viewRun.draft_task_title}</dd>
                   </>
                 )}
               </dl>
               <div className="flex flex-wrap gap-2 pt-2">
-                {(run.draft_email_subject || run.draft_email_body) && (
+                {draft?.status === 'pending_approval' && (
+                  <>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => draftAction('approve_send_draft')}
+                      disabled={!!applying}
+                    >
+                      {applying === 'approve_send_draft' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                      Approve & send draft
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => draftAction('reject_draft')}
+                      disabled={!!applying}
+                    >
+                      Reject draft
+                    </Button>
+                  </>
+                )}
+                {(viewRun.draft_email_subject || viewRun.draft_email_body) && (
                   <Button variant="outline" size="sm" onClick={copyDraft} disabled={copied}>
                     <Copy className="mr-1 h-3 w-3" />
                     {copied ? 'Copied' : 'Copy email draft'}

@@ -11,9 +11,12 @@ export async function createPageRun(
     organizationId: string;
     aiPageId: string;
     handoffConversationId?: string | null;
+    customerLanguage?: string | null;
   }
 ): Promise<{ runId: string; conversationId: string } | null> {
   let conversationId: string | null = params.handoffConversationId ?? null;
+  const conversationLanguage =
+    typeof params.customerLanguage === 'string' ? params.customerLanguage.slice(0, 2).toLowerCase() || null : null;
 
   if (!conversationId) {
     const { data: conv } = await supabase
@@ -23,6 +26,7 @@ export async function createPageRun(
         ai_page_id: params.aiPageId,
         visitor_id: null,
         metadata: {},
+        conversation_language: conversationLanguage,
       })
       .select('id')
       .single();
@@ -57,6 +61,11 @@ export async function createPageRun(
   }
 
   if (!conversationId) return null;
+
+  if (conversationLanguage) {
+    // Keep conversation_language in sync with the visitor language used to start the session.
+    await supabase.from('conversations').update({ conversation_language: conversationLanguage }).eq('id', conversationId);
+  }
 
   const { data: run, error } = await supabase
     .from('ai_page_runs')

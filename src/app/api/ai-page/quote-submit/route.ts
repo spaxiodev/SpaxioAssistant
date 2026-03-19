@@ -16,6 +16,10 @@ import { validateCollectedFields } from '@/lib/ai-pages/intake-service';
 import type { IntakeFieldSchema } from '@/lib/ai-pages/types';
 import { getPricingContext, runEstimate } from '@/lib/quote-pricing/estimate-quote-service';
 import { createOutcomesForRun } from '@/lib/ai-pages/outcome-service';
+import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
+import { emitAutomationEvent } from '@/lib/automations/engine';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { canUseAutomation } from '@/lib/entitlements';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,9 +32,9 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-function formatMoney(amount: number, currency: string) {
+function formatMoney(amount: number, currency: string, moneyLocale: string) {
   const prefix = currency === 'USD' ? '$' : `${currency} `;
-  return `${prefix}${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  return `${prefix}${Number(amount).toLocaleString(moneyLocale, { minimumFractionDigits: 2 })}`;
 }
 
 export async function POST(request: Request) {
@@ -38,6 +42,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const rawRunId = body.run_id ?? body.runId;
   const rawConversationId = body.conversation_id ?? body.conversationId ?? null;
+  const language = typeof body.language === 'string' ? body.language.slice(0, 16) : 'en';
+  const customerLanguage = language.slice(0, 2).toLowerCase() || 'en';
+  const moneyLocale = customerLanguage === 'fr' ? 'fr-FR' : 'en-US';
+  const isFrench = customerLanguage === 'fr';
 
   const runId = normalizeUuid(String(rawRunId));
   if (!isUuid(runId)) {
@@ -99,7 +107,7 @@ export async function POST(request: Request) {
         success: false,
         error: 'missing_required',
         missing_required: missing,
-        message: `Please provide: ${missing.join(', ')}`,
+        message: isFrench ? `Veuillez fournir : ${missing.join(', ')}` : `Please provide: ${missing.join(', ')}`,
       },
       { status: 400, headers: corsHeaders }
     );
@@ -113,7 +121,7 @@ export async function POST(request: Request) {
   };
 
   // Run pricing engine to compute estimate (if configured)
-  let reply: string = 'Thanks — I’ve received your details.';
+  let reply: string = isFrench ? "Merci — j'ai bien reçu vos informations." : 'Thanks — I’ve received your details.';
   try {
     const pricingContext = await getPricingContext(supabase, {
       organizationId: run.organization_id,
@@ -145,15 +153,24 @@ export async function POST(request: Request) {
 
         const currency = pricingContext.profile.currency ?? 'USD';
         if (result.estimate_low != null && result.estimate_high != null) {
-          reply = `Based on what you shared, your estimate is **${formatMoney(result.estimate_low, currency)} – ${formatMoney(
+          reply = isFrench
+            ? `D'après ce que vous avez partagé, votre estimation est **${formatMoney(result.estimate_low, currency, moneyLocale)} – ${formatMoney(
+                result.estimate_high,
+                currency,
+                moneyLocale
+              )}**.`
+            : `Based on what you shared, your estimate is **${formatMoney(result.estimate_low, currency, moneyLocale)} – ${formatMoney(
             result.estimate_high,
-            currency
+            currency,
+            moneyLocale
           )}**.`;
         } else {
-          reply = `Based on what you shared, your price is **${formatMoney(result.total, currency)}**.`;
+          reply = isFrench ? `D'après ce que vous avez partagé, votre prix est **${formatMoney(result.total, currency, moneyLocale)}**.` : `Based on what you shared, your price is **${formatMoney(result.total, currency, moneyLocale)}**.`;
         }
         if (result.human_review_recommended) {
-          reply += ` A team member may review this before finalizing.`;
+          reply += isFrench
+            ? " Un membre de notre équipe peut examiner cette demande avant finalisation."
+            : ' A team member may review this before finalizing.';
         }
       }
     }
@@ -187,12 +204,137 @@ export async function POST(request: Request) {
     conversationId,
     sessionState: nextState,
     pageType,
+    customerLanguage,
     outcomeConfig: {
       create_quote_request: outcomeConfig.create_quote_request !== false,
       create_lead: outcomeConfig.create_lead !== false,
       create_ticket: outcomeConfig.create_ticket !== false,
     },
   });
+
+  // AI follow-ups and automations should use the visitor's resolved language.
+  const quoteRequestId = result.quoteRequestId ?? null;
+  const leadId = result.leadId ?? null;
+  const contactName = typeof collected.contact_name === 'string' ? collected.contact_name : '';
+  const contactEmail = typeof collected.contact_email === 'string' ? collected.contact_email : '';
+  const contactPhone = typeof collected.phone === 'string' ? collected.phone : null;
+  const estimate = (nextState as any).estimate as { total?: unknown; estimate_low?: unknown; estimate_high?: unknown } | undefined;
+  const estimateTotal = typeof estimate?.total === 'number' ? estimate.total : null;
+  const estimateLow = typeof estimate?.estimate_low === 'number' ? estimate.estimate_low : null;
+  const estimateHigh = typeof estimate?.estimate_high === 'number' ? estimate.estimate_high : null;
+
+  const formAnswers = (nextState.collected_fields ?? {}) as Record<string, unknown>;
+  const serviceType = typeof (collected as any).service_type === 'string' ? (collected as any).service_type : null;
+  const projectDetails = typeof (collected as any).project_details === 'string' ? (collected as any).project_details : null;
+  const location = typeof (collected as any).location === 'string' ? (collected as any).location : null;
+
+  if (process.env.OPENAI_API_KEY && quoteRequestId) {
+    triggerFollowUpRun(supabase, {
+      organizationId: run.organization_id,
+      sourceType: 'quote_request_submitted',
+      sourceId: quoteRequestId,
+      leadId,
+      context: {
+        customerLanguage,
+        quoteRequest: {
+          id: quoteRequestId,
+          customer_name: contactName,
+          customer_email: contactEmail,
+          customer_phone: contactPhone,
+          service_type: serviceType,
+          project_details: projectDetails,
+          location,
+          estimate_total: estimateTotal,
+          estimate_low: estimateLow,
+          estimate_high: estimateHigh,
+          form_answers: formAnswers,
+        },
+      },
+    }).catch((err) => console.warn('[ai-page/quote-submit] follow-up trigger failed', err));
+  }
+
+  if (process.env.OPENAI_API_KEY && leadId) {
+    triggerFollowUpRun(supabase, {
+      organizationId: run.organization_id,
+      sourceType: 'lead_form_submitted',
+      sourceId: leadId,
+      leadId,
+      context: {
+        customerLanguage,
+        lead: {
+          id: leadId,
+          name: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+          message: typeof (collected as any).message === 'string' ? (collected as any).message : null,
+          requested_service: serviceType,
+          requested_timeline: typeof (collected as any).requested_timeline === 'string' ? (collected as any).requested_timeline : null,
+          project_details: projectDetails,
+          location,
+        },
+      },
+    }).catch((err) => console.warn('[ai-page/quote-submit] lead follow-up trigger failed', err));
+  }
+
+  // Event-driven automations
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, run.organization_id);
+  const automationsAllowed = await canUseAutomation(supabase, run.organization_id, adminAllowed);
+  if (automationsAllowed) {
+    if (quoteRequestId) {
+      await emitAutomationEvent(supabase, {
+        organization_id: run.organization_id,
+        event_type: 'quote_request_submitted',
+        payload: {
+          trigger_type: 'quote_request_submitted',
+          conversation_id: conversationId ?? undefined,
+          quote_request_id: quoteRequestId,
+          lead_id: leadId ?? undefined,
+          customer_name: contactName,
+          customer_email: contactEmail,
+          customer_phone: contactPhone ?? undefined,
+          customer_language: customerLanguage,
+          estimate_total: estimateTotal ?? undefined,
+          estimate_low: estimateLow ?? undefined,
+          estimate_high: estimateHigh ?? undefined,
+          form_answers: formAnswers ?? undefined,
+        },
+        trace_id: `ai-quote-${quoteRequestId}`,
+        source: 'ai_page_quote_submit',
+        actor: { type: 'quote_request', id: quoteRequestId },
+      }).catch((err) => console.error('[ai-page/quote-submit] automation emit failed', err));
+    }
+
+    if (leadId) {
+      await emitAutomationEvent(supabase, {
+        organization_id: run.organization_id,
+        event_type: 'lead_form_submitted',
+        payload: {
+          trigger_type: 'lead_form_submitted',
+          conversation_id: conversationId ?? undefined,
+          lead_id: leadId,
+          customer_language: customerLanguage,
+          customer_name: contactName,
+          customer_email: contactEmail,
+          customer_phone: contactPhone ?? undefined,
+          lead: {
+            name: contactName,
+            email: contactEmail,
+            phone: contactPhone ?? undefined,
+            message: typeof (collected as any).message === 'string' ? (collected as any).message : undefined,
+            language: customerLanguage,
+          },
+          requested_service: serviceType ?? undefined,
+          requested_timeline:
+            typeof (collected as any).requested_timeline === 'string' ? (collected as any).requested_timeline : undefined,
+          project_details: projectDetails ?? undefined,
+          location: location ?? undefined,
+        },
+        trace_id: `ai-lead-${leadId}`,
+        source: 'ai_page_quote_submit',
+        actor: { type: 'lead', id: leadId },
+      }).catch((err) => console.error('[ai-page/quote-submit] lead automation emit failed', err));
+    }
+  }
 
   return NextResponse.json(
     {

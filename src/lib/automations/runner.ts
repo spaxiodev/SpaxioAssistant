@@ -10,6 +10,8 @@ import type { AutomationEventEnvelope } from './types';
 import type { Automation } from '@/lib/supabase/database.types';
 import { runAgentForWorkflow } from './agent-workflow';
 import { getAutomationNotificationEmail } from '@/lib/email';
+import { executeFollowUpAction } from '@/lib/follow-up/email';
+import { canUseAiFollowUp, canUseFollowUpDrafts, canUseFollowUpEmails } from '@/lib/entitlements';
 
 export interface RunAutomationParams {
   automation: Pick<
@@ -536,12 +538,82 @@ async function executeAction(
       };
 
     case 'send_follow_up_message':
-      // TODO: Send via email or in-chat
+    case 'generate_followup_draft':
+    case 'send_internal_summary':
+    case 'schedule_followup': {
+      const mappedConfig: Record<string, unknown> = { ...config };
+      if (automation.action_type === 'generate_followup_draft') mappedConfig.mode = 'ai_draft_for_approval';
+      if (automation.action_type === 'send_internal_summary') mappedConfig.mode = 'internal_only_notification';
+      if (automation.action_type === 'schedule_followup' && !mappedConfig.mode) {
+        mappedConfig.mode = 'template_auto_send';
+      }
+      const effectiveMode = String(
+        (automation.action_type === 'send_follow_up_message' ? config.mode : mappedConfig.mode) ?? 'ai_draft_for_approval'
+      );
+      const followUpEnabled = await canUseFollowUpEmails(supabase, automation.organization_id, false);
+      if (!followUpEnabled) {
+        return {
+          action_executed: automation.action_type,
+          success: false,
+          message: 'Follow-up emails are not available on this plan.',
+        };
+      }
+      if ((effectiveMode === 'ai_generated_auto_send' || effectiveMode === 'ai_draft_for_approval' || automation.action_type === 'generate_followup_draft')) {
+        const aiEnabled = await canUseAiFollowUp(supabase, automation.organization_id, false);
+        if (!aiEnabled) {
+          return {
+            action_executed: automation.action_type,
+            success: false,
+            message: 'AI follow-up is not available on this plan.',
+          };
+        }
+      }
+      if (effectiveMode === 'ai_draft_for_approval' || automation.action_type === 'generate_followup_draft') {
+        const draftsEnabled = await canUseFollowUpDrafts(supabase, automation.organization_id, false);
+        if (!draftsEnabled) {
+          return {
+            action_executed: automation.action_type,
+            success: false,
+            message: 'Follow-up draft approvals are not available on this plan.',
+          };
+        }
+      }
+      const result = await executeFollowUpAction({
+        supabase,
+        organizationId: automation.organization_id,
+        automationId: null,
+        automationName: automation.name ?? null,
+        input,
+        actionConfig:
+          automation.action_type === 'send_follow_up_message' ? config : mappedConfig,
+      });
+      if (result.status === 'sent') {
+        return {
+          action_executed: automation.action_type,
+          success: true,
+          message: 'Follow-up sent',
+          external_id: result.externalId ?? undefined,
+          draft_id: result.draftId ?? undefined,
+          follow_up_log_id: result.logId,
+        };
+      }
+      if (result.status === 'skipped') {
+        return {
+          action_executed: automation.action_type,
+          success: true,
+          message: result.reason,
+          draft_id: result.draftId ?? undefined,
+          follow_up_log_id: result.logId,
+        };
+      }
       return {
-        action_executed: 'send_follow_up_message',
-        success: true,
-        message: 'Follow-up message placeholder',
+        action_executed: automation.action_type,
+        success: false,
+        message: result.reason,
+        draft_id: result.draftId ?? undefined,
+        follow_up_log_id: result.logId,
       };
+    }
 
     case 'create_support_ticket': {
       const title =

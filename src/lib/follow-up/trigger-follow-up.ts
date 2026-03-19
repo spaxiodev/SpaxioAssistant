@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateFollowUpOutput } from './generate-follow-up';
 import { recordAiActionUsage } from '@/lib/billing/usage';
-import { hasExceededMonthlyAiActions } from '@/lib/entitlements';
+import { hasExceededMonthlyAiActions, canUseAiFollowUp } from '@/lib/entitlements';
 import type { FollowUpGenerationInput, FollowUpSourceType } from './types';
 
 export interface TriggerFollowUpOptions {
@@ -24,6 +24,11 @@ export async function triggerFollowUpRun(
   options: TriggerFollowUpOptions
 ): Promise<string | null> {
   const { organizationId, sourceType, sourceId, leadId, contactId, dealId, context } = options;
+
+  const followupEnabled = await canUseAiFollowUp(supabase, organizationId, false);
+  if (!followupEnabled) {
+    return null;
+  }
 
   const exceeded = await hasExceededMonthlyAiActions(supabase, organizationId, false);
   if (exceeded) {
@@ -51,11 +56,22 @@ export async function triggerFollowUpRun(
   }
 
   try {
+    const { data: settings } = await supabase
+      .from('business_settings')
+      .select('default_language')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    const businessDefaultLanguage =
+      typeof settings?.default_language === 'string' ? settings.default_language.trim().toLowerCase().slice(0, 2) : null;
+
     const output = await generateFollowUpOutput({
       organizationId,
       sourceType,
       sourceId,
-      context,
+      context: {
+        ...context,
+        businessDefaultLanguage,
+      },
     });
 
     await recordAiActionUsage(supabase, organizationId);

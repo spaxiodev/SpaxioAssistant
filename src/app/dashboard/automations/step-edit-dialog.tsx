@@ -42,6 +42,9 @@ export function StepEditDialog({ open, step, onClose, onSave }: Props) {
   const [actionType, setActionType] = useState<string>('send_email_notification');
   const [actionToEmail, setActionToEmail] = useState('');
   const [actionUrl, setActionUrl] = useState('');
+  const [followUpMode, setFollowUpMode] = useState<string>('ai_draft_for_approval');
+  const [followUpTemplateKey, setFollowUpTemplateKey] = useState<string>('lead_confirmation');
+  const [followUpInternalEmail, setFollowUpInternalEmail] = useState<string>('');
 
   useEffect(() => {
     if (!step) return;
@@ -55,6 +58,9 @@ export function StepEditDialog({ open, step, onClose, onSave }: Props) {
     setActionType(typeof cfg.action_type === 'string' ? cfg.action_type : 'send_email_notification');
     setActionToEmail(typeof actionConfig.to_email === 'string' ? actionConfig.to_email : '');
     setActionUrl(typeof actionConfig.url === 'string' ? actionConfig.url : '');
+    setFollowUpMode(typeof actionConfig.mode === 'string' ? actionConfig.mode : 'ai_draft_for_approval');
+    setFollowUpTemplateKey(typeof actionConfig.template_key === 'string' ? actionConfig.template_key : 'lead_confirmation');
+    setFollowUpInternalEmail(typeof actionConfig.internal_to_email === 'string' ? actionConfig.internal_to_email : '');
   }, [step]);
 
   if (!step) return null;
@@ -74,6 +80,17 @@ export function StepEditDialog({ open, step, onClose, onSave }: Props) {
       const actionConfig: Record<string, unknown> =
         actionType === 'send_email_notification'
           ? { to_email: actionToEmail.trim() || undefined }
+          : actionType === 'send_follow_up_message' || actionType === 'generate_followup_draft' || actionType === 'send_internal_summary' || actionType === 'schedule_followup'
+            ? {
+                mode:
+                  actionType === 'generate_followup_draft'
+                    ? 'ai_draft_for_approval'
+                    : actionType === 'send_internal_summary'
+                      ? 'internal_only_notification'
+                      : followUpMode,
+                template_key: followUpTemplateKey.trim() || undefined,
+                internal_to_email: followUpInternalEmail.trim() || undefined,
+              }
           : actionType === 'call_webhook' || actionType === 'call_external_url'
             ? { url: actionUrl.trim() || undefined }
             : {};
@@ -192,6 +209,55 @@ export function StepEditDialog({ open, step, onClose, onSave }: Props) {
                     className="mt-1 font-mono text-sm"
                   />
                 </div>
+              )}
+              {(actionType === 'send_follow_up_message' ||
+                actionType === 'generate_followup_draft' ||
+                actionType === 'send_internal_summary' ||
+                actionType === 'schedule_followup') && (
+                <>
+                  <div>
+                    <Label htmlFor="action-followup-mode">Follow-up mode</Label>
+                    <select
+                      id="action-followup-mode"
+                      value={
+                        actionType === 'generate_followup_draft'
+                          ? 'ai_draft_for_approval'
+                          : actionType === 'send_internal_summary'
+                            ? 'internal_only_notification'
+                            : followUpMode
+                      }
+                      onChange={(e) => setFollowUpMode(e.target.value)}
+                      disabled={actionType === 'generate_followup_draft' || actionType === 'send_internal_summary'}
+                      className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="template_auto_send">Auto-send template</option>
+                      <option value="ai_generated_auto_send">Auto-send AI</option>
+                      <option value="ai_draft_for_approval">AI draft for approval</option>
+                      <option value="internal_only_notification">Internal only</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="action-followup-template">Template key</Label>
+                    <Input
+                      id="action-followup-template"
+                      value={followUpTemplateKey}
+                      onChange={(e) => setFollowUpTemplateKey(e.target.value)}
+                      placeholder="lead_confirmation"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="action-followup-internal">Internal email (optional)</Label>
+                    <Input
+                      id="action-followup-internal"
+                      type="email"
+                      value={followUpInternalEmail}
+                      onChange={(e) => setFollowUpInternalEmail(e.target.value)}
+                      placeholder="team@yourbusiness.com"
+                      className="mt-1"
+                    />
+                  </div>
+                </>
               )}
             </>
           )}

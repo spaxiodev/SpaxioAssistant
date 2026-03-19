@@ -60,6 +60,9 @@ export function CreateAutomationModal({
   const [actionType, setActionType] = useState<string>('send_email_notification');
   const [status, setStatus] = useState<'draft' | 'active' | 'paused'>('draft');
   const [notificationEmail, setNotificationEmail] = useState('');
+  const [followUpMode, setFollowUpMode] = useState<'template_auto_send' | 'ai_generated_auto_send' | 'ai_draft_for_approval' | 'internal_only_notification'>('ai_draft_for_approval');
+  const [followUpTemplateKey, setFollowUpTemplateKey] = useState('lead_confirmation');
+  const [followUpInternalEmail, setFollowUpInternalEmail] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [showCreatedSuccess, setShowCreatedSuccess] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -83,6 +86,16 @@ export function CreateAutomationModal({
       setWebhookUrl(automationWithWebhook?.webhook_url ?? '');
       const config = (editAutomation.action_config as Record<string, unknown>) ?? {};
       setNotificationEmail(typeof config.to_email === 'string' ? config.to_email : '');
+      setFollowUpMode(
+        config.mode === 'template_auto_send' ||
+          config.mode === 'ai_generated_auto_send' ||
+          config.mode === 'ai_draft_for_approval' ||
+          config.mode === 'internal_only_notification'
+          ? config.mode
+          : 'ai_draft_for_approval'
+      );
+      setFollowUpTemplateKey(typeof config.template_key === 'string' ? config.template_key : 'lead_confirmation');
+      setFollowUpInternalEmail(typeof config.internal_to_email === 'string' ? config.internal_to_email : '');
     } else if (initialTemplateKey) {
       const template = getTemplateByKey(initialTemplateKey);
       if (template) {
@@ -103,6 +116,9 @@ export function CreateAutomationModal({
       setActionType('send_email_notification');
       setStatus('draft');
       setNotificationEmail('');
+      setFollowUpMode('ai_draft_for_approval');
+      setFollowUpTemplateKey('lead_confirmation');
+      setFollowUpInternalEmail('');
       setWebhookUrl('');
     }
   }, [open, editAutomation, initialTemplateKey, automationWithWebhook?.webhook_url]);
@@ -118,6 +134,21 @@ export function CreateAutomationModal({
           : {});
       if (actionType === 'send_email_notification') {
         actionConfig.to_email = notificationEmail.trim() || undefined;
+      }
+      if (
+        actionType === 'send_follow_up_message' ||
+        actionType === 'generate_followup_draft' ||
+        actionType === 'send_internal_summary' ||
+        actionType === 'schedule_followup'
+      ) {
+        actionConfig.mode =
+          actionType === 'generate_followup_draft'
+            ? 'ai_draft_for_approval'
+            : actionType === 'send_internal_summary'
+              ? 'internal_only_notification'
+              : followUpMode;
+        actionConfig.template_key = followUpTemplateKey || undefined;
+        actionConfig.internal_to_email = followUpInternalEmail.trim() || undefined;
       }
       const payload = {
         name: name.trim(),
@@ -405,6 +436,55 @@ export function CreateAutomationModal({
               />
             </div>
           )}
+          {(actionType === 'send_follow_up_message' ||
+            actionType === 'generate_followup_draft' ||
+            actionType === 'send_internal_summary' ||
+            actionType === 'schedule_followup') && (
+            <>
+              <div>
+                <Label htmlFor="automation-followup-mode">Automatic follow-up mode</Label>
+                <select
+                  id="automation-followup-mode"
+                  value={
+                    actionType === 'generate_followup_draft'
+                      ? 'ai_draft_for_approval'
+                      : actionType === 'send_internal_summary'
+                        ? 'internal_only_notification'
+                        : followUpMode
+                  }
+                  onChange={(e) => setFollowUpMode(e.target.value as typeof followUpMode)}
+                  disabled={actionType === 'generate_followup_draft' || actionType === 'send_internal_summary'}
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="template_auto_send">Auto-send template</option>
+                  <option value="ai_generated_auto_send">Auto-send AI</option>
+                  <option value="ai_draft_for_approval">AI draft for approval</option>
+                  <option value="internal_only_notification">Internal only</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="automation-followup-template">Template</Label>
+                <Input
+                  id="automation-followup-template"
+                  value={followUpTemplateKey}
+                  onChange={(e) => setFollowUpTemplateKey(e.target.value)}
+                  placeholder="lead_confirmation"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="automation-followup-internal">Internal notification email (optional)</Label>
+                <Input
+                  id="automation-followup-internal"
+                  type="email"
+                  value={followUpInternalEmail}
+                  onChange={(e) => setFollowUpInternalEmail(e.target.value)}
+                  placeholder="team@yourbusiness.com"
+                  className="mt-1"
+                />
+              </div>
+            </>
+          )}
           <div>
             <Label htmlFor="automation-status">Status</Label>
             <select
@@ -578,6 +658,55 @@ export function CreateAutomationModal({
                 className="mt-1"
               />
             </div>
+          )}
+          {(actionType === 'send_follow_up_message' ||
+            actionType === 'generate_followup_draft' ||
+            actionType === 'send_internal_summary' ||
+            actionType === 'schedule_followup') && (
+            <>
+              <div>
+                <Label htmlFor="automation-followup-mode-2">Automatic follow-up mode</Label>
+                <select
+                  id="automation-followup-mode-2"
+                  value={
+                    actionType === 'generate_followup_draft'
+                      ? 'ai_draft_for_approval'
+                      : actionType === 'send_internal_summary'
+                        ? 'internal_only_notification'
+                        : followUpMode
+                  }
+                  onChange={(e) => setFollowUpMode(e.target.value as typeof followUpMode)}
+                  disabled={actionType === 'generate_followup_draft' || actionType === 'send_internal_summary'}
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="template_auto_send">Auto-send template</option>
+                  <option value="ai_generated_auto_send">Auto-send AI</option>
+                  <option value="ai_draft_for_approval">AI draft for approval</option>
+                  <option value="internal_only_notification">Internal only</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="automation-followup-template-2">Template</Label>
+                <Input
+                  id="automation-followup-template-2"
+                  value={followUpTemplateKey}
+                  onChange={(e) => setFollowUpTemplateKey(e.target.value)}
+                  placeholder="lead_confirmation"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="automation-followup-internal-2">Internal notification email (optional)</Label>
+                <Input
+                  id="automation-followup-internal-2"
+                  type="email"
+                  value={followUpInternalEmail}
+                  onChange={(e) => setFollowUpInternalEmail(e.target.value)}
+                  placeholder="team@yourbusiness.com"
+                  className="mt-1"
+                />
+              </div>
+            </>
           )}
           <div>
             <Label htmlFor="automation-status">Status</Label>

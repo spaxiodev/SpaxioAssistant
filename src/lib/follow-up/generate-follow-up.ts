@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import type { FollowUpGenerationInput, FollowUpModelOutput } from './types';
 
-const SYSTEM_PROMPT = `You are a sales and customer success assistant. Given context about a new lead, quote request, or conversation milestone, produce a concise follow-up plan.
+const SYSTEM_PROMPT_BASE = `You are a sales and customer success assistant. Given context about a new lead, quote request, or conversation milestone, produce a concise follow-up plan.
 
 Return a JSON object with exactly these keys (all strings unless noted):
 - summary: 1-3 sentence plain-language summary of what happened and why it matters.
@@ -21,7 +21,14 @@ Return a JSON object with exactly these keys (all strings unless noted):
 - draft_task_description: Optional task description.
 - suggested_crm_stage: Optional stage name if moving deal/lead (e.g. "qualified", "proposal").
 
-Use only the provided context. Do not invent contact details. Be concise and business-relevant.
+Safety requirements:
+- Use only the provided context. Do not invent contact details, pricing, policies, guarantees, or legal/compliance claims.
+- Do not promise bookings, timelines, or outcomes unless explicitly supported by the provided business context.
+- If critical details are missing, ask for those details in the draft instead of guessing.
+- Keep tone professional, concise, and non-robotic.
+- Do not include empty greetings or placeholders.
+
+Use only the provided context. Be concise and business-relevant.
 Reply with only the JSON, no markdown or explanation.`;
 
 function buildUserContent(input: FollowUpGenerationInput): string {
@@ -66,6 +73,21 @@ function buildUserContent(input: FollowUpGenerationInput): string {
   if (input.context.industry) {
     parts.push(`Industry: ${input.context.industry}`);
   }
+  if (input.context.businessDescription) {
+    parts.push(`Business description: ${input.context.businessDescription}`);
+  }
+  if (input.context.toneOfVoice) {
+    parts.push(`Preferred tone: ${input.context.toneOfVoice}`);
+  }
+  if (Array.isArray(input.context.services) && input.context.services.length > 0) {
+    parts.push(`Services: ${input.context.services.join(', ')}`);
+  }
+  if (input.context.pricingNotes) {
+    parts.push(`Pricing notes (do not invent beyond this): ${input.context.pricingNotes}`);
+  }
+  if (input.context.faq && typeof input.context.faq === 'object') {
+    parts.push(`FAQ context: ${JSON.stringify(input.context.faq).slice(0, 1500)}`);
+  }
   parts.push(`Source: ${input.sourceType}`, `Source ID: ${input.sourceId}`);
   return parts.filter(Boolean).join('\n').slice(0, 6000);
 }
@@ -96,10 +118,26 @@ export async function generateFollowUpOutput(input: FollowUpGenerationInput): Pr
   const openai = new OpenAI({ apiKey });
   const userContent = buildUserContent(input);
 
+  const customerLang = (input.context.customerLanguage ?? input.context.businessDefaultLanguage ?? 'en')
+    .toString()
+    .toLowerCase()
+    .slice(0, 2);
+  const businessLang = (input.context.businessDefaultLanguage ?? customerLang).toString().toLowerCase().slice(0, 2);
+
+  const languageBlock = `Language output requirements:
+- Write internal fields (summary, recommended_action, draft_note, draft_task_title, draft_task_description, suggested_crm_stage) in business language: "${businessLang}".
+- Write customer-facing email fields (draft_email_subject, draft_email_body) in customer language: "${customerLang}".
+- Do not mix languages inside a single field.
+- If "${customerLang}" and "${businessLang}" are different, keep them separate as specified above.`;
+
+  const systemPrompt = `${SYSTEM_PROMPT_BASE}
+
+${languageBlock}`;
+
   const completion = await openai.chat.completions.create({
     model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent || 'No context provided.' },
     ],
     max_tokens: 800,

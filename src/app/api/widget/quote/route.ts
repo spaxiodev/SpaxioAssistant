@@ -34,6 +34,16 @@ function sanitize(s: unknown, max = 5000): string {
   return String(s).trim().slice(0, max);
 }
 
+function normalizeLanguageCode(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  // Normalize "fr-CA" -> "fr"
+  const two = v.includes('-') ? v.slice(0, 2) : v;
+  const code = two.slice(0, 2);
+  return code ? code : null;
+}
+
 function toInputs(answers: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(answers)) {
@@ -55,6 +65,10 @@ export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
     const body = await request.json().catch(() => ({}));
+    const explicitLanguage = normalizeLanguageCode(body.language ?? body.activeLocale);
+    const browserLocale = normalizeLanguageCode(body.browserLocale);
+    const resolvedLanguage = explicitLanguage ?? browserLocale ?? 'en';
+
     const rawWidgetId = body.widgetId;
     const rawConversationId = body.conversationId ?? null;
     const widgetId = rawWidgetId ? normalizeUuid(String(rawWidgetId)) : '';
@@ -71,8 +85,16 @@ export async function POST(request: Request) {
       ? (body.answers as Record<string, unknown>)
       : {};
 
+    const moneyLocale = resolvedLanguage === 'fr' ? 'fr-FR' : 'en-US';
+    const t = {
+      missingFields: resolvedLanguage === 'fr' ? 'Champs requis manquants (nom, email)' : 'Missing required fields (name, email)',
+      invalidEmail: resolvedLanguage === 'fr' ? "Veuillez saisir une adresse e-mail valide" : 'Invalid email',
+      tooManyRequests: resolvedLanguage === 'fr' ? 'Trop de demandes. Veuillez réessayer plus tard.' : 'Too many requests',
+      quoteSubmitted: resolvedLanguage === 'fr' ? 'Demande de devis envoyée' : 'Quote request submitted',
+    } as const;
+
     if (!rawWidgetId || !name || !email) {
-      return withCors({ error: 'Missing required fields (name, email)' }, 400);
+      return withCors({ error: t.missingFields }, 400);
     }
     if (!isUuid(widgetId)) {
       return withCors({ error: 'Invalid widgetId' }, 400);
@@ -80,13 +102,13 @@ export async function POST(request: Request) {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return withCors({ error: 'Invalid email' }, 400);
+      return withCors({ error: t.invalidEmail }, 400);
     }
 
     const perIpKey = `widget-quote:ip:${ip}`;
     const rl = rateLimit({ key: perIpKey, limit: 30, windowMs: 60_000 });
     if (!rl.allowed) {
-      return withCors({ error: 'Too many requests' }, 429);
+      return withCors({ error: t.tooManyRequests }, 429);
     }
 
     const supabase = createAdminClient();
@@ -121,6 +143,7 @@ export async function POST(request: Request) {
           conversation_id: conversationId,
           source: 'widget_quote',
           qualification_priority: 'high',
+          customer_language: resolvedLanguage,
         })
         .eq('id', existingLead.id);
       leadId = existingLead.id;
@@ -135,6 +158,7 @@ export async function POST(request: Request) {
           phone: phone || null,
           source: 'widget_quote',
           qualification_priority: 'high',
+          customer_language: resolvedLanguage,
         })
         .select('id')
         .single();
@@ -184,6 +208,7 @@ export async function POST(request: Request) {
         customer_name: name,
         customer_email: email,
         customer_phone: phone || null,
+        customer_language: resolvedLanguage,
         form_answers: formAnswers,
         estimate_total: estimateTotal,
         estimate_low: estimateLow,
@@ -213,6 +238,7 @@ export async function POST(request: Request) {
         sourceId: quote.id,
         leadId,
         context: {
+          customerLanguage: resolvedLanguage,
           quoteRequest: {
             id: quote.id,
             customer_name: name,
@@ -242,6 +268,7 @@ export async function POST(request: Request) {
           customer_name: name,
           customer_email: email,
           customer_phone: phone || undefined,
+          customer_language: resolvedLanguage,
           estimate_total: estimateTotal ?? undefined,
           estimate_low: estimateLow ?? undefined,
           estimate_high: estimateHigh ?? undefined,
@@ -251,22 +278,39 @@ export async function POST(request: Request) {
         source: 'widget_quote',
         actor: { type: 'quote_request', id: quote.id },
       }).catch((err) => console.error('[widget/quote] automation emit failed', err));
+      emitAutomationEvent(supabase, {
+        organization_id: orgId,
+        event_type: 'new_high_intent_lead',
+        payload: {
+          trigger_type: 'new_high_intent_lead',
+          conversation_id: conversationId ?? undefined,
+          quote_request_id: quote.id,
+          lead_id: leadId,
+          customer_name: name,
+          customer_email: email,
+          customer_phone: phone || undefined,
+          qualification_priority: 'high',
+        },
+        trace_id: `high-intent-quote-${quote.id}`,
+        source: 'widget_quote',
+        actor: { type: 'quote_request', id: quote.id },
+      }).catch((err) => console.error('[widget/quote] high intent emit failed', err));
     }
 
     // 6. Format estimate string for response
     let estimateStr = '';
     if (estimateLow != null && estimateHigh != null) {
       const prefix = currency === 'USD' ? '$' : `${currency} `;
-      estimateStr = `${prefix}${Number(estimateLow).toLocaleString('en-US', { minimumFractionDigits: 2 })} – ${prefix}${Number(estimateHigh).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      estimateStr = `${prefix}${Number(estimateLow).toLocaleString(moneyLocale, { minimumFractionDigits: 2 })} – ${prefix}${Number(estimateHigh).toLocaleString(moneyLocale, { minimumFractionDigits: 2 })}`;
     } else if (estimateTotal != null) {
       const prefix = currency === 'USD' ? '$' : `${currency} `;
-      estimateStr = `${prefix}${Number(estimateTotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      estimateStr = `${prefix}${Number(estimateTotal).toLocaleString(moneyLocale, { minimumFractionDigits: 2 })}`;
     }
 
     return withCors({
       success: true,
       estimate: estimateStr || undefined,
-      message: 'Quote request submitted',
+      message: t.quoteSubmitted,
     }, 200);
   } catch (err) {
     const res = handleApiError(err, 'widget/quote');

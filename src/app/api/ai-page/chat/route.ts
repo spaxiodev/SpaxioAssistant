@@ -64,6 +64,7 @@ export async function POST(request: Request) {
   const rawConversationId = body.conversation_id ?? body.conversationId;
   const message = sanitizeText(body.message, 8000);
   const language = typeof body.language === 'string' ? body.language.slice(0, 16) : 'en';
+  const conversationLanguage = language.slice(0, 2).toLowerCase() || 'en';
 
   if (!message) {
     return NextResponse.json({ error: 'Missing message' }, { status: 400, headers: corsHeaders });
@@ -253,7 +254,10 @@ export async function POST(request: Request) {
     content: replyToStore,
   });
 
-  await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', effectiveConvId);
+  await supabase
+    .from('conversations')
+    .update({ updated_at: new Date().toISOString(), conversation_language: conversationLanguage })
+    .eq('id', effectiveConvId);
 
   const currentState = (runRow.session_state as SessionState) ?? {};
   const { data: pageFull } = await supabase.from('ai_pages').select('intake_schema').eq('id', pageId).single();

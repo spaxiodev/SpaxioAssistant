@@ -13,16 +13,20 @@ export interface EmailLayoutOptions {
   title: string;
   /** CTA button: { label, url } */
   cta?: { label: string; url: string };
+  /** Language for localized footer text */
+  language?: string;
 }
 
 /** Wrap content in branded email layout. */
-export function emailLayout({ content, badge, title, cta }: EmailLayoutOptions): string {
+export function emailLayout({ content, badge, title, cta, language }: EmailLayoutOptions): string {
   const badgeHtml = badge
     ? `<span style="display:inline-block;padding:6px 12px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:600;border-radius:6px;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(badge)}</span>`
     : '';
   const ctaHtml = cta
     ? `<a href="${escapeHtml(cta.url)}" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#fff!important;font-size:16px;font-weight:600;text-decoration:none;border-radius:10px;">${escapeHtml(cta.label)}</a>`
     : '';
+  const lang = typeof language === 'string' ? language.trim().toLowerCase().slice(0, 2) : 'en';
+  const footerText = lang === 'fr' ? 'Spaxio Assistant — assistant IA pour votre entreprise' : 'Spaxio Assistant — AI website assistant for your business';
   return `
 <!DOCTYPE html>
 <html>
@@ -57,7 +61,7 @@ export function emailLayout({ content, badge, title, cta }: EmailLayoutOptions):
           <tr>
             <td style="padding:24px 32px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;font-size:12px;color:#64748b;">
-                Spaxio Assistant — AI website assistant for your business
+                ${escapeHtml(footerText)}
               </p>
             </td>
           </tr>

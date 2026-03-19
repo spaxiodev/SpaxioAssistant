@@ -37,6 +37,16 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
+function normalizeLanguageCode(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  // Normalize "fr-CA" -> "fr"
+  const two = v.includes('-') ? v.slice(0, 2) : v;
+  const code = two.slice(0, 2);
+  return code || null;
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
@@ -57,6 +67,7 @@ export async function POST(request: Request) {
   const pageUrl = typeof body.pageUrl === 'string' ? body.pageUrl.slice(0, 2048) : undefined;
   const browserLocale = typeof body.browserLocale === 'string' ? body.browserLocale.slice(0, 32) : undefined;
   const manualLanguageOverride = typeof body.manualLanguageOverride === 'string' ? body.manualLanguageOverride.slice(0, 16) : undefined;
+  const normalizedIncomingLanguage = normalizeLanguageCode(activeLocale ?? language ?? manualLanguageOverride) ?? 'en';
 
   if (!rawWidgetId || !message) {
     return NextResponse.json({ error: 'Missing widgetId or message' }, { status: 400, headers: corsHeaders });
@@ -166,6 +177,7 @@ export async function POST(request: Request) {
     }
   }
 
+  let createdNewConversation = false;
   if (!convId) {
     const { data: newConv } = await supabase
       .from('conversations')
@@ -173,15 +185,35 @@ export async function POST(request: Request) {
         widget_id: widgetId,
         visitor_id: null,
         metadata: {},
+        conversation_language: normalizedIncomingLanguage,
       })
       .select('id')
       .single();
     convId = newConv?.id ?? null;
+    createdNewConversation = !!newConv?.id;
   }
 
   if (!convId) {
     console.error('Failed to create conversation for widget', { widgetIdSample: widgetId.slice(0, 8) });
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500, headers: corsHeaders });
+  }
+
+  if (createdNewConversation) {
+    const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
+    const automationsAllowed = await canUseAutomation(supabase, widget.organization_id, adminAllowed);
+    if (automationsAllowed) {
+      emitAutomationEvent(supabase, {
+        organization_id: widget.organization_id,
+        event_type: 'conversation_started',
+        payload: {
+          trigger_type: 'conversation_started',
+          conversation_id: convId,
+        },
+        trace_id: `conversation-${convId}`,
+        source: 'widget_chat',
+        actor: { type: 'conversation', id: convId },
+      }).catch((err) => console.warn('[widget/chat] conversation_started emit failed', err));
+    }
   }
 
   // Simple abuse guard: cap recent messages per conversation
@@ -222,6 +254,7 @@ export async function POST(request: Request) {
       : buildSystemPrompt(settings as BusinessSettingsContext | null);
 
   const effectiveLocale = activeLocale || language;
+  const resolvedCustomerLanguage = normalizeLanguageCode(effectiveLocale) ?? normalizedIncomingLanguage;
   const languageInstruction = effectiveLocale && matchAIResponseToWebsiteLanguage
     ? buildLanguageInstruction({
         activeLocale: effectiveLocale,
@@ -484,7 +517,10 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
       content: replyToStore,
     });
 
-    await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString(), conversation_language: resolvedCustomerLanguage })
+      .eq('id', convId);
 
     await supabase.from('conversation_events').insert({
       conversation_id: convId,
@@ -568,6 +604,7 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
                 organization_id: widget.organization_id,
                 conversation_id: convId,
                 customer_name: name.slice(0, 500),
+                customer_language: resolvedCustomerLanguage,
                 service_type: typeof parsed.service_type === 'string' ? parsed.service_type.slice(0, 500) : null,
                 project_details: typeof parsed.project_details === 'string' ? parsed.project_details.slice(0, 2000) : null,
                 dimensions_size: typeof parsed.dimensions_size === 'string' ? parsed.dimensions_size.slice(0, 500) : null,
@@ -588,6 +625,7 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
                       conversation_id: convId,
                       quote_request_id: newQuote.id,
                       customer_name: name,
+                      customer_language: resolvedCustomerLanguage,
                       service_type: parsed.service_type ?? undefined,
                       project_details: parsed.project_details ?? undefined,
                     },
@@ -666,6 +704,7 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
                   name: leadName.slice(0, 500),
                   email: leadEmail ? leadEmail.slice(0, 500) : 'unknown@example.com',
                   phone: leadPhone ? leadPhone.slice(0, 100) : null,
+                  customer_language: resolvedCustomerLanguage,
                   requested_service:
                     typeof parsedLead.requested_service === 'string'
                       ? parsedLead.requested_service.slice(0, 500)
