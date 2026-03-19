@@ -10,17 +10,14 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ArrowLeft, MessageSquare, Monitor, LayoutGrid } from 'lucide-react';
 import { Link } from '@/components/intl-link';
 
+// Streamlined list: only types with real behavioral differentiation (website-scanner, automations, etc.)
 const ROLE_TYPES = [
   { value: 'website_chatbot', label: 'Website assistant' },
   { value: 'support_agent', label: 'Support assistant' },
   { value: 'lead_qualification', label: 'Lead qualification' },
   { value: 'sales_agent', label: 'Sales assistant' },
-  { value: 'booking_agent', label: 'Booking assistant' },
   { value: 'quote_assistant', label: 'Quote assistant' },
   { value: 'faq_agent', label: 'FAQ assistant' },
-  { value: 'follow_up_agent', label: 'Follow-up assistant' },
-  { value: 'internal_knowledge', label: 'Internal knowledge' },
-  { value: 'workflow_agent', label: 'Workflow (advanced)' },
   { value: 'custom', label: 'Custom' },
 ] as const;
 

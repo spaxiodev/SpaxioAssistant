@@ -11,9 +11,15 @@ const ROLE_LABELS: Record<string, string> = {
   website_chatbot: 'Website assistant',
   support_agent: 'Support',
   lead_qualification: 'Lead qualification',
+  sales_agent: 'Sales',
+  quote_assistant: 'Quote',
+  faq_agent: 'FAQ',
+  custom: 'Custom',
+  // Deprecated (kept for display of existing agents): internal_knowledge, workflow_agent, booking_agent, follow_up_agent
   internal_knowledge: 'Internal knowledge',
   workflow_agent: 'Workflow',
-  custom: 'Custom',
+  booking_agent: 'Booking',
+  follow_up_agent: 'Follow-up',
 };
 
 export default async function AgentsPage() {

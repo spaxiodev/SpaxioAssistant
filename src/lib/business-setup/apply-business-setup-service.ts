@@ -23,15 +23,14 @@ import type {
   ExtractedBranding,
 } from './types';
 
+// Streamlined: only types with real behavioral logic (deprecated types fallback to website_chatbot)
 const ROLE_TYPES = [
   'website_chatbot',
   'support_agent',
   'lead_qualification',
   'sales_agent',
-  'booking_agent',
   'quote_assistant',
   'faq_agent',
-  'follow_up_agent',
   'custom',
 ] as const;
 
