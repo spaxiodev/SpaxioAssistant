@@ -69,29 +69,6 @@ register({
   },
 });
 
-// --- generate_lead_summary ---
-register({
-  id: 'generate_lead_summary',
-  name: 'Generate lead summary',
-  description: 'Generate a short summary of a lead or conversation for CRM or internal use.',
-  parameters: [
-    { name: 'conversation_summary', type: 'string', description: 'Brief summary of the conversation or lead', required: true },
-    { name: 'contact_name', type: 'string', description: 'Contact name if known', required: false },
-    { name: 'contact_email', type: 'string', description: 'Contact email if known', required: false },
-  ],
-  async execute(params) {
-    const summary = typeof params.conversation_summary === 'string' ? params.conversation_summary.slice(0, 2000) : '';
-    const name = typeof params.contact_name === 'string' ? params.contact_name.slice(0, 200) : '';
-    const email = typeof params.contact_email === 'string' ? params.contact_email.slice(0, 320) : '';
-    return {
-      lead_summary: summary,
-      contact_name: name || null,
-      contact_email: email || null,
-      generated_at: new Date().toISOString(),
-    };
-  },
-});
-
 // --- call_webhook ---
 register({
   id: 'call_webhook',

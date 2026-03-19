@@ -66,7 +66,7 @@ export default async function AgentDetailPage({ params }: Props) {
       .maybeSingle(),
     supabase
       .from('ai_pages')
-      .select('id, slug, title, is_published')
+      .select('id, slug, title, is_published, is_enabled')
       .eq('organization_id', orgId)
       .eq('agent_id', id)
       .order('slug'),

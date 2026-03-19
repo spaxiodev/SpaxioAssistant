@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Link } from '@/components/intl-link';
 import { Copy } from 'lucide-react';
+import { AiPageEditActions } from '@/components/ai-page/ai-page-edit-actions';
 
-type AiPage = { id: string; slug: string; title: string; is_published: boolean | null };
+type AiPage = { id: string; slug: string; title: string; is_published: boolean | null; is_enabled?: boolean | null };
 
 export function AgentDeploymentTab({
   agentId,
@@ -25,6 +27,7 @@ export function AgentDeploymentTab({
   aiPages?: AiPage[];
   locale?: string;
 }) {
+  const router = useRouter();
   const [scriptTag, setScriptTag] = useState<string>('');
   const { toast } = useToast();
   const t = useTranslations('dashboard');
@@ -86,13 +89,23 @@ export function AgentDeploymentTab({
               const embedCode = `<iframe src="${embedUrl}" title="Assistant" width="100%" height="600" frameborder="0" allow="clipboard-write"></iframe>`;
               return (
                 <div key={page.id} className="space-y-3 rounded-lg border border-border/50 bg-muted/30 p-4">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-foreground">{page.title}</p>
-                    {!page.is_published && (
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
-                        {t('installFullPageDraftNote')}
-                      </span>
-                    )}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground">{page.title}</p>
+                      {!page.is_published && (
+                        <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+                          {t('installFullPageDraftNote')}
+                        </span>
+                      )}
+                    </div>
+                    <AiPageEditActions
+                      pageId={page.id}
+                      pageTitle={page.title}
+                      isPublished={!!page.is_published}
+                      isEnabled={page.is_enabled !== false}
+                      showPause
+                      onDeleteSuccess={() => router.refresh()}
+                    />
                   </div>
                   <div>
                     <p className="mb-1 text-xs font-medium text-muted-foreground">Shareable link</p>

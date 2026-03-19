@@ -12,18 +12,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Pause, Play, Trash2 } from 'lucide-react';
 
 type Props = {
   pageId: string;
   pageTitle: string;
   isPublished: boolean;
+  isEnabled?: boolean;
+  showPause?: boolean;
+  /** When provided, called after delete instead of navigating to AI Pages (e.g. stay on agent page) */
+  onDeleteSuccess?: () => void;
 };
 
-export function AiPageEditActions({ pageId, pageTitle, isPublished }: Props) {
+export function AiPageEditActions({
+  pageId,
+  pageTitle,
+  isPublished,
+  isEnabled = true,
+  showPause = false,
+  onDeleteSuccess,
+}: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [publishing, setPublishing] = useState(false);
+  const [pausing, setPausing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -47,6 +59,26 @@ export function AiPageEditActions({ pageId, pageTitle, isPublished }: Props) {
     }
   }
 
+  async function handlePauseToggle() {
+    setPausing(true);
+    try {
+      const res = await fetch(`/api/dashboard/ai-pages/${pageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_enabled: !isEnabled }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: data.error || 'Failed to update', variant: 'destructive' });
+        return;
+      }
+      toast({ title: isEnabled ? 'Paused' : 'Resumed' });
+      router.refresh();
+    } finally {
+      setPausing(false);
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true);
     try {
@@ -58,7 +90,11 @@ export function AiPageEditActions({ pageId, pageTitle, isPublished }: Props) {
       }
       toast({ title: 'AI Page deleted' });
       setDeleteOpen(false);
-      router.push('/dashboard/ai-pages');
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      } else {
+        router.push('/dashboard/agents');
+      }
     } finally {
       setDeleting(false);
     }
@@ -86,6 +122,27 @@ export function AiPageEditActions({ pageId, pageTitle, isPublished }: Props) {
             </>
           )}
         </Button>
+        {showPause && (
+          <Button
+            variant={isEnabled ? 'outline' : 'secondary'}
+            size="sm"
+            onClick={handlePauseToggle}
+            disabled={pausing}
+          >
+            {pausing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isEnabled ? (
+              <>
+                <Pause className="mr-1 h-4 w-4" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="mr-1 h-4 w-4" />
+                Resume
+              </>
+            )}
+          </Button>
+        )}
         <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="mr-1 h-4 w-4" />
           Delete

@@ -28,7 +28,7 @@ type AgentForTabs = {
   widget_enabled?: boolean;
 };
 
-type AiPageForDeployment = { id: string; slug: string; title: string; is_published: boolean | null };
+type AiPageForDeployment = { id: string; slug: string; title: string; is_published: boolean | null; is_enabled?: boolean | null };
 
 type AgentDetailTabsProps = {
   agentId: string;

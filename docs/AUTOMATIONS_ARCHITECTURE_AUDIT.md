@@ -51,7 +51,7 @@
 | **Agent/chat** | Widget chat: `src/app/api/widget/chat/route.ts` — loads widget → agent (optional) → business_settings, builds system prompt via `buildSystemPromptForAgent` / `buildSystemPrompt` from `@/lib/assistant/prompt`, then `getChatCompletion` or `runChatWithToolsLoop`. |
 | **Model provider** | `@/lib/ai/provider.ts`: OpenAI only (`getChatCompletion`). Agent has model_provider + model_id. |
 | **RAG / vector** | `@/lib/knowledge/search.ts` — `searchKnowledge()` uses `getEmbedding()` and Supabase RPC `match_knowledge_chunks`. Knowledge tables: knowledge_sources, knowledge_documents, knowledge_chunks (with embedding). |
-| **Tool calling** | `@/lib/ai/chat-with-tools.ts` — `runChatWithToolsLoop`, `buildOpenAIToolsSchema`. Tools from `@/lib/tools/registry.ts` (search_knowledge_base, send_email, generate_lead_summary, etc.). ToolContext: organizationId, supabase, conversationId, agentId, widgetId. |
+| **Tool calling** | `@/lib/ai/chat-with-tools.ts` — `runChatWithToolsLoop`, `buildOpenAIToolsSchema`. Tools from `@/lib/tools/registry.ts` (search_knowledge_base, send_email, call_webhook, create_ticket, handoff_to_human, capture_contact_info, schedule_booking). ToolContext: organizationId, supabase, conversationId, agentId, widgetId. |
 | **Prompts** | `@/lib/assistant/prompt.ts` — buildSystemPrompt(settings), buildSystemPromptForAgent(agent, settings). |
 | **Ingestion** | Knowledge: ingest-url, upload, ingest API + `@/lib/knowledge/ingest.ts`, chunking, embeddings. No “website ingestion” in automations. |
 

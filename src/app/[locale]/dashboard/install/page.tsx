@@ -177,7 +177,7 @@ export default async function InstallPage({ params }: Props) {
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t('installFullPageCreatePrompt')}{' '}
-                <Link href="/dashboard/ai-pages" className="text-primary underline">
+                <Link href="/dashboard/agents/new" className="text-primary underline">
                   {t('installFullPageCreateLink')}
                 </Link>{' '}
                 {t('installFullPageCreateSuffix')}
