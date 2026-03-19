@@ -167,13 +167,13 @@ export default function AIChatCard({
   return (
     <div
       className={cn(
-        "flex h-full w-[360px] max-w-full flex-col overflow-hidden rounded-[24px] border border-border-soft bg-background/70 shadow-[0_18px_70px_rgba(2,6,23,0.18)] backdrop-blur supports-[backdrop-filter]:bg-background/60 opacity-100",
+        "flex h-full w-[400px] max-w-full flex-col overflow-hidden rounded-[24px] border border-border-soft bg-background/70 shadow-[0_14px_50px_rgba(2,6,23,0.14)] backdrop-blur supports-[backdrop-filter]:bg-background/60 opacity-100",
         className
       )}
       style={accentStyle}
     >
       {/* Header: title + close button */}
-      <header className="relative flex shrink-0 items-center justify-between gap-2 border-b border-border-soft/70 px-4 py-3">
+      <header className="relative flex shrink-0 items-center justify-between gap-2 border-b border-border-soft/70 px-4 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className="relative grid size-10 place-items-center overflow-hidden rounded-full border border-border-soft/80"
@@ -197,7 +197,7 @@ export default function AIChatCard({
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold text-foreground">{chatbotName}</h2>
             {assistantSubtitle ? (
-              <p className="truncate text-xs text-muted-foreground">{assistantSubtitle}</p>
+              <p className="truncate text-[11px] leading-tight text-muted-foreground">{assistantSubtitle}</p>
             ) : null}
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function AIChatCard({
       </header>
 
       {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5">
         <div className="flex flex-col gap-3 text-sm">
           <AnimatePresence>
             {showSuggestions ? (
@@ -241,7 +241,7 @@ export default function AIChatCard({
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => sendSuggestion(s)}
-                      className="rounded-full border border-border-soft bg-background/40 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-background/70 focus:outline-none focus:ring-2 focus:ring-ring/60"
+                      className="rounded-full border border-border-soft bg-background/40 px-3 py-1.25 text-xs font-medium leading-none text-foreground shadow-sm transition-colors hover:bg-background/70 focus:outline-none focus:ring-2 focus:ring-ring/60"
                       style={
                         primaryBrandColor
                           ? { boxShadow: `0 0 0 1px ${primaryBrandColor}20 inset` }
@@ -267,7 +267,7 @@ export default function AIChatCard({
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
                 className={cn(
-                  "max-w-[82%] rounded-2xl px-3 py-2 shadow-sm",
+                  "max-w-[86%] rounded-2xl px-4 py-2.5 shadow-sm",
                   isAi
                     ? "self-start border border-border-soft bg-card/70 text-foreground"
                     : "self-end font-semibold"
@@ -298,7 +298,7 @@ export default function AIChatCard({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="flex max-w-[42%] items-center gap-1 self-start rounded-2xl border border-border-soft bg-card/70 px-3 py-2"
+                className="flex max-w-[42%] items-center gap-1 self-start rounded-2xl border border-border-soft bg-card/70 px-4 py-2.5"
               >
                 <span className="h-2 w-2 animate-pulse rounded-full bg-foreground/70" />
                 <span
@@ -321,11 +321,11 @@ export default function AIChatCard({
       </div>
 
       {/* Input row */}
-      <div className="flex shrink-0 items-end gap-2 border-t border-border-soft/70 p-3">
+      <div className="flex shrink-0 items-center gap-2 border-t border-border-soft/70 px-4 py-2.5">
         <textarea
           ref={textareaRef}
           rows={1}
-          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
+          className="min-h-[44px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
           style={
             primaryBrandColor
               ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
@@ -346,7 +346,7 @@ export default function AIChatCard({
           type="button"
           onClick={handleSend}
           aria-label={ariaLabelSend}
-          className="shrink-0 rounded-xl p-2 shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          className="shrink-0 rounded-xl h-[44px] w-[44px] flex items-center justify-center shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           style={
             primaryBrandColor
               ? {
@@ -363,7 +363,7 @@ export default function AIChatCard({
 
       {/* Footer: compact, no empty space */}
       {showPoweredBy && (
-        <footer className="shrink-0 border-t border-border-soft/70 px-3 py-1.5">
+        <footer className="shrink-0 border-t border-border-soft/70 px-4 py-1.5">
           <span className="text-[10px] text-muted-foreground/70">{poweredByText}</span>
         </footer>
       )}

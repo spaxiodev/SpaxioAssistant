@@ -390,7 +390,7 @@ function WidgetContent() {
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
-        <div className="mb-2 flex w-full max-w-[360px] items-center gap-2">
+        <div className="mb-1.5 flex w-full max-w-[400px] items-center gap-2">
           <select
             aria-label="Language"
             value={resolvedLocale}
@@ -410,7 +410,7 @@ function WidgetContent() {
           href={`${baseUrl}/${resolvedLocale}/a/${pageHandoff.target_page_slug}${pageHandoff.context_token ? `?handoff=${encodeURIComponent(pageHandoff.context_token)}` : ''}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-2 flex w-full max-w-[360px] items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20"
+          className="mb-1.5 flex w-full max-w-[400px] items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20"
         >
           {pageHandoff.button_label}
         </a>
@@ -423,7 +423,7 @@ function WidgetContent() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.99 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="flex w-full max-w-[360px] flex-col gap-4"
+            className="flex w-full max-w-[400px] flex-col gap-4"
           >
             <div className="rounded-lg border bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
@@ -557,12 +557,12 @@ function WidgetContent() {
                     ))}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex">
                     <Button
                       onClick={runQuoteEstimate}
                       disabled={quoteEstimateLoading || quoteVars.length === 0}
                       variant="outline"
-                      className="flex-1"
+                      className="w-full"
                     >
                       {quoteEstimateLoading ? (
                         <span className="flex items-center gap-2">
@@ -571,17 +571,6 @@ function WidgetContent() {
                         </span>
                       ) : (
                         t('quoteFormCalculate')
-                      )}
-                    </Button>
-
-                    <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} className="flex-1">
-                      {quoteSubmitLoading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          {t('loading')}
-                        </span>
-                      ) : (
-                        t('quoteFormSubmitRequest')
                       )}
                     </Button>
                   </div>
@@ -643,7 +632,7 @@ function WidgetContent() {
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
             <AIChatCard
-              className="w-full max-w-[360px] h-full shrink-0"
+              className="w-full max-w-[400px] h-full shrink-0"
               primaryBrandColor={color}
               chatbotName={chatbotName}
               assistantSubtitle={config?.businessName ?? null}
@@ -674,7 +663,7 @@ export default function WidgetPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full min-h-[460px] items-center justify-center bg-black/90 text-white">
+        <div className="flex h-full min-h-[560px] items-center justify-center bg-black/90 text-white">
           Loading...
         </div>
       }
