@@ -267,7 +267,7 @@ export function WidgetVoiceUI({
         style={accentStyle}
       >
         {/* Header – same as AIChatCard */}
-        <div className="px-4 py-3 border-b border-white/10 relative z-10 flex items-center justify-between gap-2 shrink-0">
+        <div className="px-3 py-2 relative z-10 flex items-center justify-between gap-2 shrink-0">
           <h2 className="text-lg font-semibold text-white truncate min-w-0">{chatbotName}</h2>
           <div className="flex items-center gap-1 shrink-0">
             {phase === 'active' && (
@@ -329,12 +329,12 @@ export function WidgetVoiceUI({
 
           {(phase === 'active' || phase === 'ended') && (
             <>
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
                 {transcript.map((line, i) => (
                   <div
                     key={i}
                     className={cn(
-                      'rounded-xl px-3 py-2 text-sm max-w-[80%] shadow-md backdrop-blur-md',
+                      'rounded-2xl px-4 py-3 text-sm max-w-[82%] shadow-md backdrop-blur-md',
                       line.role === 'user' ? 'self-end ml-auto' : 'self-start bg-white/10'
                     )}
                     style={
@@ -382,7 +382,7 @@ export function WidgetVoiceUI({
         </div>
 
         {showPoweredBy && (
-          <div className="border-t border-white/5 px-4 py-1.5 flex items-center justify-center shrink-0 relative z-10">
+          <div className="px-4 py-2 flex items-center justify-center shrink-0 relative z-10">
             <span className="text-[10px] text-white/40">{poweredByText}</span>
           </div>
         )}

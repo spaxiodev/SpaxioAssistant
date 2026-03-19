@@ -167,13 +167,13 @@ export default function AIChatCard({
   return (
     <div
       className={cn(
-        "flex h-full w-[400px] max-w-full flex-col overflow-hidden rounded-[24px] border border-border-soft bg-background/70 shadow-[0_14px_50px_rgba(2,6,23,0.14)] backdrop-blur supports-[backdrop-filter]:bg-background/60 opacity-100",
+        "relative flex h-full w-[400px] max-w-full flex-col overflow-hidden rounded-[26px] border border-border-soft/50 bg-background/65 shadow-[0_18px_60px_rgba(2,6,23,0.18)] backdrop-blur supports-[backdrop-filter]:bg-background/55 opacity-100",
         className
       )}
       style={accentStyle}
     >
       {/* Header: title + close button */}
-      <header className="relative flex shrink-0 items-center justify-between gap-2 border-b border-border-soft/70 px-4 py-2">
+      <header className="relative flex shrink-0 items-center justify-between gap-2 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className="relative grid size-10 place-items-center overflow-hidden rounded-full border border-border-soft/80"
@@ -212,46 +212,36 @@ export default function AIChatCard({
             <X className="h-4 w-4" strokeWidth={2.5} />
           </button>
         )}
-
-        {primaryBrandColor ? (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-            style={{ background: `linear-gradient(90deg, ${primaryBrandColor}33 0%, transparent 65%)` }}
-          />
-        ) : null}
       </header>
 
       {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5">
-        <div className="flex flex-col gap-3 text-sm">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex flex-col gap-4 text-sm">
           <AnimatePresence>
             {showSuggestions ? (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="rounded-2xl border border-border-soft bg-muted/35 p-3"
+                className="mb-1 flex flex-wrap gap-2"
               >
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((s) => (
-                    <motion.button
-                      key={s}
-                      type="button"
-                      whileHover={{ y: -1 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => sendSuggestion(s)}
-                      className="rounded-full border border-border-soft bg-background/40 px-3 py-1.25 text-xs font-medium leading-none text-foreground shadow-sm transition-colors hover:bg-background/70 focus:outline-none focus:ring-2 focus:ring-ring/60"
-                      style={
-                        primaryBrandColor
-                          ? { boxShadow: `0 0 0 1px ${primaryBrandColor}20 inset` }
-                          : undefined
-                      }
-                    >
-                      {s}
-                    </motion.button>
-                  ))}
-                </div>
+                {suggestions.map((s) => (
+                  <motion.button
+                    key={s}
+                    type="button"
+                    whileHover={{ y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => sendSuggestion(s)}
+                    className="rounded-full border border-border-soft bg-background/35 px-2.5 py-1 text-[12px] font-medium leading-none text-foreground shadow-sm transition-colors hover:bg-background/60 focus:outline-none focus:ring-2 focus:ring-ring/60"
+                    style={
+                      primaryBrandColor
+                        ? { boxShadow: `0 0 0 1px ${primaryBrandColor}20 inset` }
+                        : undefined
+                    }
+                  >
+                    {s}
+                  </motion.button>
+                ))}
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -267,10 +257,10 @@ export default function AIChatCard({
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
                 className={cn(
-                  "max-w-[86%] rounded-2xl px-4 py-2.5 shadow-sm",
+                  "max-w-[90%] rounded-2xl px-4 py-3 shadow-sm",
                   isAi
                     ? "self-start border border-border-soft bg-card/70 text-foreground"
-                    : "self-end font-semibold"
+                    : "self-end font-semibold bg-muted/25 border border-border-soft/35"
                 )}
                 style={
                   !isAi && primaryBrandColor
@@ -320,53 +310,53 @@ export default function AIChatCard({
         </div>
       </div>
 
-      {/* Input row */}
-      <div className="flex shrink-0 items-center gap-2 border-t border-border-soft/70 px-4 py-2.5">
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          className="min-h-[44px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
-          style={
-            primaryBrandColor
-              ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
-              : undefined
-          }
-          placeholder={placeholder}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
+      {/* Floating input bar */}
+      <div className="mx-3 mb-3 mt-2 shrink-0 rounded-2xl border border-border-soft/40 bg-background/55 px-3 py-2.5 shadow-[0_10px_30px_rgba(2,6,23,0.16)] backdrop-blur">
+        {showPoweredBy && (
+          <div className="mb-1 text-center text-[10px] text-muted-foreground/70">
+            {poweredByText}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className="min-h-[48px] max-h-[128px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/45 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
+            style={
+              primaryBrandColor
+                ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
+                : undefined
             }
-          }}
-          aria-label={placeholder}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          aria-label={ariaLabelSend}
-          className="shrink-0 rounded-xl h-[44px] w-[44px] flex items-center justify-center shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          style={
-            primaryBrandColor
-              ? {
-                  backgroundColor: primaryBrandColor,
-                  color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
-                }
-              : undefined
-          }
-          disabled={isTyping || input.trim().length === 0}
-        >
-          <Send className="h-4 w-4" />
-        </button>
+            placeholder={placeholder}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            aria-label={placeholder}
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            aria-label={ariaLabelSend}
+            className="shrink-0 rounded-xl h-[48px] w-[48px] flex items-center justify-center shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            style={
+              primaryBrandColor
+                ? {
+                    backgroundColor: primaryBrandColor,
+                    color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                  }
+                : undefined
+            }
+            disabled={isTyping || input.trim().length === 0}
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-
-      {/* Footer: compact, no empty space */}
-      {showPoweredBy && (
-        <footer className="shrink-0 border-t border-border-soft/70 px-4 py-1.5">
-          <span className="text-[10px] text-muted-foreground/70">{poweredByText}</span>
-        </footer>
-      )}
     </div>
   );
 }
