@@ -6,8 +6,11 @@ import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations';
 import type { CustomTranslations } from '@/lib/widget/translations';
+import { useTheme } from '@/components/theme-provider';
+import { CheckCircle2 } from 'lucide-react';
 
 type QuoteVariable = {
   key: string;
@@ -53,6 +56,7 @@ function WidgetContent() {
   const widgetId = searchParams.get('widgetId');
   const initialLang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
+  const { setTheme } = useTheme();
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   /** Active UI/API language: from URL, then postMessage, or manual override. */
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(initialLang));
@@ -105,6 +109,12 @@ function WidgetContent() {
       if (e.data?.type === 'spaxio-init' && e.data.widgetId === widgetId) {
         (window as unknown as { __spaxioReady?: boolean }).__spaxioReady = true;
       }
+      if (e.data?.type === 'spaxio-theme-change' && typeof e.data.theme === 'string') {
+        // If the message targets a specific widget, respect it.
+        if (typeof e.data.widgetId === 'string' && e.data.widgetId !== widgetId) return;
+        const next = e.data.theme === 'light' ? 'light' : 'dark';
+        setTheme(next);
+      }
       if (e.data?.type === 'spaxio-lang-change' && typeof e.data.language === 'string') {
         const next = normalizeLocale(e.data.language);
         setActiveLocale((prev) => (prev === next ? prev : next));
@@ -114,6 +124,16 @@ function WidgetContent() {
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, [widgetId]);
+
+  // Theme fallback: if the host doesn't provide theme info, follow prefers-color-scheme.
+  useEffect(() => {
+    try {
+      const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
+      setTheme(mql && mql.matches ? 'dark' : 'light');
+    } catch {
+      // ignore
+    }
+  }, [setTheme]);
 
   // Effective locale: manual override wins, then active (from URL/postMessage)
   const effectiveLocale = manualLanguageOverride
@@ -207,7 +227,7 @@ function WidgetContent() {
         ]);
       }
       if (data.action && typeof data.action === 'object' && typeof data.action.type === 'string') {
-        if (data.action.type === 'open_quote_form' && config?.quoteVariables?.length) {
+        if (data.action.type === 'open_quote_form') {
           setShowQuoteForm(true);
           setQuoteEstimateResult(null);
           setQuoteSubmitted(false);
@@ -218,7 +238,7 @@ function WidgetContent() {
           setLeadPhone('');
           setLeadErrors({});
           const defaults: Record<string, string> = {};
-          config.quoteVariables.forEach((v) => {
+          (config?.quoteVariables ?? []).forEach((v) => {
             if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
           });
           setQuoteFormInputs(defaults);
@@ -366,7 +386,7 @@ function WidgetContent() {
   return (
     <div
       ref={contentRef}
-      className="flex min-h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a]"
+      className="flex min-h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a] transition-colors duration-300"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
@@ -395,212 +415,257 @@ function WidgetContent() {
           {pageHandoff.button_label}
         </a>
       )}
-      {showQuoteForm && quoteVars.length > 0 ? (
-        <div className="flex w-full max-w-[360px] flex-col gap-4 rounded-lg border bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold text-foreground">
-              {(config?.quoteFormConfig?.intro_text as string)?.trim() || t('quoteFormTitle')}
-            </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowQuoteForm(false);
-                setQuoteEstimateResult(null);
-                setQuoteSubmitted(false);
-                setQuoteSubmitResult(null);
-                setQuoteSubmitError(null);
-                setLeadErrors({});
-              }}
-            >
-              {t('quoteFormBackToChat')}
-            </Button>
-          </div>
-          {quoteSubmitted ? (
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-green-600 dark:text-green-500">{t('quoteFormSuccess')}</p>
-              {quoteSubmitResult?.estimate && (
-                <p className="rounded-lg border bg-muted/30 p-3 text-sm">
-                  <span className="text-muted-foreground">{t('quoteFormYourEstimate')}: </span>
-                  <span className="font-semibold">{quoteSubmitResult.estimate}</span>
-                </p>
-              )}
-            </div>
-          ) : (
-          <>
-          <div className="grid gap-3">
-            <div>
-              <Label htmlFor="quote-lead-name" className="text-sm text-foreground">
-                {t('leadFormName')} *
-              </Label>
-              <Input
-                id="quote-lead-name"
-                type="text"
-                value={leadName}
-                onChange={(e) => { setLeadName(e.target.value); setLeadErrors((prev) => ({ ...prev, name: undefined })); }}
-                className={`mt-1 ${leadErrors.name ? 'border-red-500' : ''}`}
-                placeholder={t('leadFormName')}
-              />
-              {leadErrors.name && <p className="mt-1 text-xs text-red-600">{leadErrors.name}</p>}
-            </div>
-            <div>
-              <Label htmlFor="quote-lead-email" className="text-sm text-foreground">
-                {t('leadFormEmail')} *
-              </Label>
-              <Input
-                id="quote-lead-email"
-                type="email"
-                value={leadEmail}
-                onChange={(e) => { setLeadEmail(e.target.value); setLeadErrors((prev) => ({ ...prev, email: undefined })); }}
-                className={`mt-1 ${leadErrors.email ? 'border-red-500' : ''}`}
-                placeholder={t('leadFormEmail')}
-              />
-              {leadErrors.email && <p className="mt-1 text-xs text-red-600">{leadErrors.email}</p>}
-            </div>
-            <div>
-              <Label htmlFor="quote-lead-phone" className="text-sm text-foreground">
-                {t('leadFormPhone')} <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="quote-lead-phone"
-                type="tel"
-                value={leadPhone}
-                onChange={(e) => setLeadPhone(e.target.value)}
-                className="mt-1"
-                placeholder={t('leadFormPhone')}
-              />
-            </div>
-          </div>
-          <div className="grid gap-3">
-            {quoteVars.map((v) => (
-              <div key={v.key}>
-                <Label htmlFor={`quote-${v.key}`} className="text-sm text-foreground">
-                  {v.label}
-                  {v.required ? ' *' : ''}
-                </Label>
-                {v.variable_type === 'boolean' ? (
-                  <select
-                    id={`quote-${v.key}`}
-                    value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
-                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                ) : v.variable_type === 'select' && Array.isArray(v.options) ? (
-                  <select
-                    id={`quote-${v.key}`}
-                    value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
-                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    {(v.options as { value: string; label: string }[]).map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+      <AnimatePresence mode="wait">
+        {showQuoteForm ? (
+          <motion.div
+            key="quote-form"
+            initial={{ opacity: 0, y: 10, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.99 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="flex w-full max-w-[360px] flex-col gap-4"
+          >
+            <div className="rounded-lg border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-foreground">
+                  {(config?.quoteFormConfig?.intro_text as string)?.trim() || t('quoteFormTitle')}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowQuoteForm(false);
+                    setQuoteEstimateResult(null);
+                    setQuoteSubmitted(false);
+                    setQuoteSubmitResult(null);
+                    setQuoteSubmitError(null);
+                    setLeadErrors({});
+                  }}
+                >
+                  {t('quoteFormBackToChat')}
+                </Button>
+              </div>
+
+              {quoteSubmitted ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-200">{t('quoteFormSuccess')}</p>
+                  </div>
+                  {quoteSubmitResult?.estimate && (
+                    <p className="rounded-lg border bg-muted/30 p-3 text-sm">
+                      <span className="text-muted-foreground">{t('quoteFormYourEstimate')}: </span>
+                      <span className="font-semibold">{quoteSubmitResult.estimate}</span>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-3">
+                    <div>
+                      <Label htmlFor="quote-lead-name" className="text-sm text-foreground">
+                        {t('leadFormName')} *
+                      </Label>
+                      <Input
+                        id="quote-lead-name"
+                        type="text"
+                        value={leadName}
+                        onChange={(e) => {
+                          setLeadName(e.target.value);
+                          setLeadErrors((prev) => ({ ...prev, name: undefined }));
+                        }}
+                        className={`mt-1 ${leadErrors.name ? 'border-red-500' : ''}`}
+                        placeholder={t('leadFormName')}
+                      />
+                      {leadErrors.name && <p className="mt-1 text-xs text-red-600">{leadErrors.name}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="quote-lead-email" className="text-sm text-foreground">
+                        {t('leadFormEmail')} *
+                      </Label>
+                      <Input
+                        id="quote-lead-email"
+                        type="email"
+                        value={leadEmail}
+                        onChange={(e) => {
+                          setLeadEmail(e.target.value);
+                          setLeadErrors((prev) => ({ ...prev, email: undefined }));
+                        }}
+                        className={`mt-1 ${leadErrors.email ? 'border-red-500' : ''}`}
+                        placeholder={t('leadFormEmail')}
+                      />
+                      {leadErrors.email && <p className="mt-1 text-xs text-red-600">{leadErrors.email}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="quote-lead-phone" className="text-sm text-foreground">
+                        {t('leadFormPhone')} <span className="text-muted-foreground">(optional)</span>
+                      </Label>
+                      <Input
+                        id="quote-lead-phone"
+                        type="tel"
+                        value={leadPhone}
+                        onChange={(e) => setLeadPhone(e.target.value)}
+                        className="mt-1"
+                        placeholder={t('leadFormPhone')}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {quoteVars.map((v) => (
+                      <div key={v.key}>
+                        <Label htmlFor={`quote-${v.key}`} className="text-sm text-foreground">
+                          {v.label}
+                          {v.required ? ' *' : ''}
+                        </Label>
+                        {v.variable_type === 'boolean' ? (
+                          <select
+                            id={`quote-${v.key}`}
+                            value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                          </select>
+                        ) : v.variable_type === 'select' && Array.isArray(v.options) ? (
+                          <select
+                            id={`quote-${v.key}`}
+                            value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            {(v.options as { value: string; label: string }[]).map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            id={`quote-${v.key}`}
+                            type={v.variable_type === 'number' || v.variable_type === 'area' || v.variable_type === 'quantity' ? 'number' : 'text'}
+                            placeholder={v.unit_label ?? ''}
+                            value={quoteFormInputs[v.key] ?? ''}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                            className="mt-1"
+                          />
+                        )}
+                      </div>
                     ))}
-                  </select>
-                ) : (
-                  <Input
-                    id={`quote-${v.key}`}
-                    type={v.variable_type === 'number' || v.variable_type === 'area' || v.variable_type === 'quantity' ? 'number' : 'text'}
-                    placeholder={v.unit_label ?? ''}
-                    value={quoteFormInputs[v.key] ?? ''}
-                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={runQuoteEstimate} disabled={quoteEstimateLoading} variant="outline" className="flex-1">
-              {quoteEstimateLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  {t('loading')}
-                </span>
-              ) : (
-                t('quoteFormCalculate')
-              )}
-            </Button>
-            <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} className="flex-1">
-              {quoteSubmitLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  {t('loading')}
-                </span>
-              ) : (
-                t('quoteFormSubmitRequest')
-              )}
-            </Button>
-          </div>
-          {quoteSubmitError && (
-            <p className="text-xs text-red-600">{quoteSubmitError}</p>
-          )}
-          {quoteEstimateResult && (
-            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <p className="mb-2 font-medium text-foreground">{t('quoteFormYourEstimate')}</p>
-              {quoteEstimateResult.missing_required.length > 0 && (
-                <p className="mb-2 text-amber-600">
-                  {t('quoteFormMissing')}: {quoteEstimateResult.missing_required.join(', ')}
-                </p>
-              )}
-              {quoteEstimateResult.applied_rules.length > 0 && (
-                <ul className="mb-2 space-y-1">
-                  {quoteEstimateResult.applied_rules.map((item, i) => (
-                    <li key={i} className="flex justify-between">
-                      <span className="text-muted-foreground">{item.label ?? item.rule_name}</span>
-                      <span>
-                        {quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}
-                        {Number(item.amount).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={runQuoteEstimate}
+                      disabled={quoteEstimateLoading || quoteVars.length === 0}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      {quoteEstimateLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {t('loading')}
+                        </span>
+                      ) : (
+                        t('quoteFormCalculate')
+                      )}
+                    </Button>
+
+                    <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} className="flex-1">
+                      {quoteSubmitLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          {t('loading')}
+                        </span>
+                      ) : (
+                        t('quoteFormSubmitRequest')
+                      )}
+                    </Button>
+                  </div>
+
+                  {quoteEstimateResult && (
+                    <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                      <p className="mb-2 font-medium text-foreground">{t('quoteFormYourEstimate')}</p>
+                      {quoteEstimateResult.missing_required.length > 0 && (
+                        <p className="mb-2 text-amber-600">
+                          {t('quoteFormMissing')}: {quoteEstimateResult.missing_required.join(', ')}
+                        </p>
+                      )}
+                      {quoteEstimateResult.applied_rules.length > 0 && (
+                        <ul className="mb-2 space-y-1">
+                          {quoteEstimateResult.applied_rules.map((item, i) => (
+                            <li key={i} className="flex justify-between">
+                              <span className="text-muted-foreground">{item.label ?? item.rule_name}</span>
+                              <span>
+                                {quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}
+                                {Number(item.amount).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="flex justify-between border-t pt-2 font-semibold">
+                        <span>{t('quoteFormTotal')}</span>
+                        <span>
+                          {quoteEstimateResult.estimate_low != null && quoteEstimateResult.estimate_high != null
+                            ? `${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_low).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })} – ${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_high).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`
+                            : `${quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}${Number(quoteEstimateResult.total).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
+                    {quoteSubmitLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        {t('loading')}
                       </span>
-                    </li>
-                  ))}
-                </ul>
+                    ) : (
+                      t('quoteFormSubmitRequest')
+                    )}
+                  </Button>
+
+                  {quoteSubmitError && <p className="text-sm text-red-600">{quoteSubmitError}</p>}
+                </>
               )}
-              <div className="flex justify-between border-t pt-2 font-semibold">
-                <span>{t('quoteFormTotal')}</span>
-                <span>
-                  {quoteEstimateResult.estimate_low != null && quoteEstimateResult.estimate_high != null
-                    ? `${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_low).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })} – ${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_high).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`
-                    : `${quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}${Number(quoteEstimateResult.total).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`}
-                </span>
-              </div>
             </div>
-          )}
-          <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
-            {quoteSubmitLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                {t('loading')}
-              </span>
-            ) : (
-              t('quoteFormSubmitRequest')
-            )}
-          </Button>
-          {quoteSubmitError && <p className="text-sm text-red-600">{quoteSubmitError}</p>}
-          </>
-          )}
-        </div>
-      ) : (
-      <AIChatCard
-        className="w-full max-w-[360px] h-[460px] min-h-[460px] shrink-0"
-        primaryBrandColor={color}
-        chatbotName={chatbotName}
-        welcomeMessage={welcome}
-        messages={aiMessages}
-        onSend={send}
-        isTyping={loading}
-        input={input}
-        onInputChange={setInput}
-        placeholder={t('placeholder')}
-        onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
-        showPoweredBy
-        ariaLabelSend={t('send')}
-        ariaLabelClose={t('close')}
-        poweredByText={t('poweredBy')}
-      />
-      )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, y: 10, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.99 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <AIChatCard
+              className="w-full max-w-[360px] h-full shrink-0"
+              primaryBrandColor={color}
+              chatbotName={chatbotName}
+              assistantSubtitle={config?.businessName ?? null}
+              assistantAvatarUrl={config?.widgetLogoUrl ?? null}
+              welcomeMessage={welcome}
+              messages={aiMessages}
+              onSend={send}
+              isTyping={loading}
+              input={input}
+              onInputChange={setInput}
+              placeholder={t('placeholder')}
+              suggestions={[t('suggestionQuote'), t('suggestionServices'), t('suggestionHours')]}
+              typingIndicatorText={t('typingIndicator')}
+              onClose={() => window.parent?.postMessage({ type: 'spaxio-close' }, '*')}
+              showPoweredBy
+              ariaLabelSend={t('send')}
+              ariaLabelClose={t('close')}
+              poweredByText={t('poweredBy')}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

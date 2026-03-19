@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import type { AIChatMessage } from '@/components/ui/ai-chat';
 import { Loader2 } from 'lucide-react';
-import type { SessionState } from '@/lib/ai-pages/types';
+import type { IntakeFieldSchema, SessionState } from '@/lib/ai-pages/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { getAiPageTranslation } from '@/lib/ai-page/translations';
+import { useTheme } from '@/components/theme-provider';
+import ReactMarkdown from 'react-markdown';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -89,8 +93,35 @@ function shouldOpenQuoteForm(text: string, locale: string): boolean {
   return patterns.some((re) => re.test(s));
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const value = (hex || "").replace("#", "");
+  if (value.length === 3) {
+    const r = parseInt(value[0] + value[0], 16);
+    const g = parseInt(value[1] + value[1], 16);
+    const b = parseInt(value[2] + value[2], 16);
+    return isNaN(r) || isNaN(g) || isNaN(b) ? null : { r, g, b };
+  }
+  if (value.length !== 6) return null;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return isNaN(r) || isNaN(g) || isNaN(b) ? null : { r, g, b };
+}
+
+function isLightColor(hex: string): boolean {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return false;
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.7;
+}
+
 export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken }: Props) {
   const resolvedLocale = normalizeLocale(locale);
+  const { setTheme } = useTheme();
   const [activeLangOverride, setActiveLangOverride] = useState<string | null>(langOverride ?? null);
   const effectiveDisplayLocale = activeLangOverride ?? resolvedLocale;
 
@@ -100,6 +131,10 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'spaxio-theme-change' && typeof e.data.theme === 'string') {
+        const next = e.data.theme === 'light' ? 'light' : 'dark';
+        setTheme(next);
+      }
       if (e.data?.type === 'spaxio-lang-change' && typeof e.data.language === 'string') {
         const next = normalizeLocale(e.data.language);
         if (next) setActiveLangOverride(next);
@@ -108,6 +143,16 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, []);
+
+  // Theme fallback: if the host doesn't provide theme info, follow prefers-color-scheme.
+  useEffect(() => {
+    try {
+      const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
+      setTheme(mql && mql.matches ? 'dark' : 'light');
+    } catch {
+      // ignore
+    }
+  }, [setTheme]);
 
   const t = (key: Parameters<typeof getAiPageTranslation>[1]) =>
     getAiPageTranslation(effectiveDisplayLocale, key);
@@ -118,7 +163,8 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     intro_copy: string | null;
     trust_copy: string | null;
     page_type: string;
-    intake_schema?: { key: string; label: string; required?: boolean }[];
+    intake_schema?: IntakeFieldSchema[];
+    branding_config?: Record<string, unknown>;
     handoff_context?: { intro_message?: string; context_snippet?: Record<string, unknown> };
     quoteVariables?: QuoteVariable[];
     quoteCurrency?: string;
@@ -139,6 +185,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
   const [quoteFormInputs, setQuoteFormInputs] = useState<Record<string, string>>({});
   const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
+  const [quoteSuccessFlash, setQuoteSuccessFlash] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -183,14 +230,14 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
       const trimmed = text.trim();
       if (
         config?.page_type === 'quote' &&
-        Array.isArray(config?.quoteVariables) &&
-        config.quoteVariables.length > 0 &&
+        Array.isArray(config?.intake_schema) &&
+        config.intake_schema.length > 0 &&
         shouldOpenQuoteForm(trimmed, resolvedLocale)
       ) {
         setShowQuoteForm(true);
         setQuoteSubmitError(null);
         const defaults: Record<string, string> = {};
-        config.quoteVariables.forEach((v) => {
+        (config.quoteVariables ?? []).forEach((v) => {
           if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
         });
         setQuoteFormInputs(defaults);
@@ -225,13 +272,14 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         // Show quote form when AI returns open_quote_form action (e.g. user asked for a quote)
         if (
           data.action?.type === 'open_quote_form' &&
-          Array.isArray(config?.quoteVariables) &&
-          config.quoteVariables.length > 0
+          config?.page_type === 'quote' &&
+          Array.isArray(config?.intake_schema) &&
+          config.intake_schema.length > 0
         ) {
           setShowQuoteForm(true);
           setQuoteSubmitError(null);
           const defaults: Record<string, string> = {};
-          config.quoteVariables.forEach((v) => {
+          (config.quoteVariables ?? []).forEach((v) => {
             if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
           });
           setQuoteFormInputs(defaults);
@@ -246,15 +294,15 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
   function openQuoteFormFromQuickAction() {
     if (
       config?.page_type !== 'quote' ||
-      !Array.isArray(config?.quoteVariables) ||
-      config.quoteVariables.length === 0
+      !Array.isArray(config?.intake_schema) ||
+      config.intake_schema.length === 0
     ) {
       return;
     }
     setShowQuoteForm(true);
     setQuoteSubmitError(null);
     const defaults: Record<string, string> = {};
-    config.quoteVariables.forEach((v) => {
+    (config.quoteVariables ?? []).forEach((v) => {
       if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
     });
     setQuoteFormInputs(defaults);
@@ -307,6 +355,10 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         setMessages((m) => [...m, { role: 'assistant', content: data.reply }]);
       }
       if (data.session_state) setSessionState(data.session_state);
+      if (data?.success) {
+        setQuoteSuccessFlash(t('quoteFormSuccess'));
+        window.setTimeout(() => setQuoteSuccessFlash(null), 3500);
+      }
       setShowQuoteForm(false);
     } catch (e) {
       setQuoteSubmitError(e instanceof Error ? e.message : 'Failed to submit quote');
@@ -337,6 +389,21 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     config.welcome_message ||
     'How can I help you today?';
 
+  const branding = (config.branding_config ?? {}) as Record<string, unknown>;
+  const accentColor =
+    (typeof branding.primaryBrandColor === 'string' ? branding.primaryBrandColor : null) ||
+    (typeof branding.primary_brand_color === 'string' ? branding.primary_brand_color : null) ||
+    '#0f172a';
+  const accentTextColor = isLightColor(accentColor) ? '#0b1220' : '#ffffff';
+  const assistantLogoUrl =
+    (typeof branding.widgetLogoUrl === 'string' ? branding.widgetLogoUrl : null) ||
+    (typeof branding.widget_logo_url === 'string' ? branding.widget_logo_url : null) ||
+    null;
+  const businessName =
+    (typeof branding.businessName === 'string' ? branding.businessName : null) ||
+    (typeof branding.business_name === 'string' ? branding.business_name : null) ||
+    null;
+
   const aiMessages: AIChatMessage[] =
     messages.length === 0
       ? [{ sender: 'ai', text: welcome }]
@@ -346,135 +413,298 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         }));
 
   const quoteVars = config?.quoteVariables ?? [];
+  const quoteIntakeFields = config?.intake_schema ?? [];
+  const hasQuoteIntake = config?.page_type === 'quote' && Array.isArray(quoteIntakeFields) && quoteIntakeFields.length > 0;
+
+  const quoteVarsByKey = new Map(quoteVars.map((v) => [v.key, v]));
+  const projectFields = quoteIntakeFields.filter((f) => !['contact_name', 'contact_email', 'phone'].includes(f.key));
 
   return (
-    <div className="flex min-h-screen flex-col bg-transparent">
+    <div className="relative flex min-h-screen flex-col bg-background">
       <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
-          {aiMessages.map((msg, i) => (
-            <div
-              key={i}
-              className={
-                msg.sender === 'user'
-                  ? 'ml-auto max-w-[85%] whitespace-pre-wrap rounded-2xl bg-foreground px-4 py-2 text-sm text-background sm:max-w-[70%]'
-                  : 'mr-auto max-w-[85%] whitespace-pre-wrap rounded-2xl bg-muted px-4 py-2 text-sm text-foreground sm:max-w-[70%]'
-              }
-            >
-              {msg.text}
-            </div>
-          ))}
-          {loading && (
-            <div className="mr-auto max-w-[85%] rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground sm:max-w-[70%]">
-              {t('thinking')}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showQuoteForm && quoteVars.length > 0 && (
-        <div className="w-full border-t bg-background/95 backdrop-blur">
-          <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-6">
-            <div className="rounded-2xl border bg-card p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">{t('quoteFormTitle')}</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowQuoteForm(false);
-                    setQuoteSubmitError(null);
-                  }}
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="rounded-3xl border border-border-soft bg-card/60 p-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/50 sm:p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div
+                  className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-border-soft"
+                  style={
+                    accentColor
+                      ? {
+                          backgroundColor: accentColor,
+                          color: accentTextColor,
+                        }
+                      : undefined
+                  }
+                  aria-hidden="true"
                 >
-                  {t('backToChat')}
-                </Button>
+                  {assistantLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={assistantLogoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-semibold">AI</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-semibold text-foreground">{config.title}</h1>
+                  {businessName ? (
+                    <p className="truncate text-sm text-muted-foreground">{businessName}</p>
+                  ) : null}
+                  {config.description ? (
+                    <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{config.description}</p>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="contact_name">{t('name')} *</Label>
-                  <Input id="contact_name" className="mt-1" value={quoteContactName} onChange={(e) => setQuoteContactName(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="contact_email">{t('email')} *</Label>
-                  <Input id="contact_email" className="mt-1" value={quoteContactEmail} onChange={(e) => setQuoteContactEmail(e.target.value)} />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label htmlFor="contact_phone">{t('phoneOptional')}</Label>
-                  <Input id="contact_phone" className="mt-1" value={quoteContactPhone} onChange={(e) => setQuoteContactPhone(e.target.value)} />
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {quoteVars.map((v) => (
-                  <div key={v.key}>
-                    <Label htmlFor={`quote-${v.key}`}>
-                      {v.label}
-                      {v.required ? ' *' : ''}
-                    </Label>
-                    {v.variable_type === 'boolean' ? (
-                      <select
-                        id={`quote-${v.key}`}
-                        value={quoteFormInputs[v.key] ?? v.default_value ?? 'false'}
-                        onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
-                      </select>
-                    ) : v.variable_type === 'select' && Array.isArray(v.options) ? (
-                      <select
-                        id={`quote-${v.key}`}
-                        value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
-                        onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        {(v.options as { value: string; label: string }[]).map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Input
-                        id={`quote-${v.key}`}
-                        type={v.variable_type === 'number' || v.variable_type === 'area' || v.variable_type === 'quantity' ? 'number' : 'text'}
-                        placeholder={v.unit_label ?? ''}
-                        value={quoteFormInputs[v.key] ?? ''}
-                        onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                        className="mt-1"
-                      />
-                    )}
+              {typeof completionPercent === 'number' && completionPercent > 0 ? (
+                <div className="sm:mt-1">
+                  <p className="text-right text-xs font-medium text-muted-foreground">{completionPercent}%</p>
+                  <div className="mt-1 h-1.5 w-44 rounded-full bg-muted/40">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, completionPercent))}%`,
+                        backgroundColor: accentColor,
+                      }}
+                    />
                   </div>
-                ))}
-              </div>
-
-              {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
-
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  onClick={submitQuoteForm}
-                  disabled={quoteSubmitting}
-                  className="sm:min-w-[200px]"
-                >
-                  {quoteSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {t('submitAndGetPrice')}
-                </Button>
-              </div>
-              {config?.quoteCurrency ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t('currency')}: {config.quoteCurrency}
-                </p>
+                </div>
               ) : null}
+            </div>
+
+            <AnimatePresence>
+              {quoteSuccessFlash ? (
+                <motion.div
+                  key={quoteSuccessFlash}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-200"
+                >
+                  {quoteSuccessFlash}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <div className="mt-4 flex flex-col gap-3">
+              {aiMessages.map((msg, i) => {
+                const isUser = msg.sender === 'user';
+                return (
+                  <motion.div
+                    key={i}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    className={
+                      isUser
+                        ? 'ml-auto max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm shadow-sm sm:max-w-[70%]'
+                        : 'mr-auto max-w-[85%] whitespace-pre-wrap rounded-2xl border border-border-soft bg-card/70 px-4 py-2 text-sm text-foreground sm:max-w-[70%]'
+                    }
+                    style={
+                      isUser
+                        ? {
+                            backgroundColor: accentColor,
+                            color: accentTextColor,
+                          }
+                        : undefined
+                    }
+                  >
+                    {isUser ? (
+                      msg.text
+                    ) : (
+                      <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:my-0.5 [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2">
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mr-auto max-w-[85%] rounded-2xl border border-border-soft bg-card/70 px-4 py-2 text-sm text-muted-foreground sm:max-w-[70%]"
+                >
+                  {t('thinking')}
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="sticky bottom-0 w-full border-t bg-background/95 backdrop-blur">
+      <AnimatePresence>
+        {showQuoteForm && hasQuoteIntake ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2 }}
+            className="w-full border-t bg-background/95 backdrop-blur"
+          >
+            <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-6">
+              <div className="rounded-2xl border border-border-soft bg-card/70 p-4 shadow-sm supports-[backdrop-filter]:bg-card/60">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="text-base font-semibold">{t('quoteFormTitle')}</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowQuoteForm(false);
+                      setQuoteSubmitError(null);
+                    }}
+                  >
+                    {t('backToChat')}
+                  </Button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="contact_name">{t('name')} *</Label>
+                    <Input
+                      id="contact_name"
+                      className="mt-1"
+                      value={quoteContactName}
+                      onChange={(e) => setQuoteContactName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contact_email">{t('email')} *</Label>
+                    <Input
+                      id="contact_email"
+                      className="mt-1"
+                      value={quoteContactEmail}
+                      onChange={(e) => setQuoteContactEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="contact_phone">{t('phoneOptional')}</Label>
+                    <Input
+                      id="contact_phone"
+                      className="mt-1"
+                      value={quoteContactPhone}
+                      onChange={(e) => setQuoteContactPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {projectFields.map((field) => {
+                    const qv = quoteVarsByKey.get(field.key);
+                    return (
+                      <div key={field.key}>
+                        <Label htmlFor={`quote-${field.key}`}>
+                          {field.label}
+                          {field.required ? ' *' : ''}
+                        </Label>
+                        {qv ? (
+                          qv.variable_type === 'boolean' ? (
+                            <select
+                              id={`quote-${field.key}`}
+                              value={quoteFormInputs[field.key] ?? qv.default_value ?? 'false'}
+                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                              <option value="false">No</option>
+                              <option value="true">Yes</option>
+                            </select>
+                          ) : qv.variable_type === 'select' && Array.isArray(qv.options) ? (
+                            <select
+                              id={`quote-${field.key}`}
+                              value={quoteFormInputs[field.key] ?? qv.default_value ?? ''}
+                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                              {(qv.options as { value: string; label: string }[]).map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Input
+                              id={`quote-${field.key}`}
+                              type={
+                                qv.variable_type === 'number' || qv.variable_type === 'area' || qv.variable_type === 'quantity'
+                                  ? 'number'
+                                  : 'text'
+                              }
+                              placeholder={qv.unit_label ?? ''}
+                              value={quoteFormInputs[field.key] ?? ''}
+                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                              className="mt-1"
+                            />
+                          )
+                        ) : field.type === 'boolean' ? (
+                          <select
+                            id={`quote-${field.key}`}
+                            value={quoteFormInputs[field.key] ?? 'false'}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          >
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                          </select>
+                        ) : field.type === 'text' ? (
+                          <Textarea
+                            id={`quote-${field.key}`}
+                            className="mt-1 min-h-[80px]"
+                            value={quoteFormInputs[field.key] ?? ''}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                          />
+                        ) : (
+                          <Input
+                            id={`quote-${field.key}`}
+                            type={field.type === 'number' ? 'number' : 'text'}
+                            value={quoteFormInputs[field.key] ?? ''}
+                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            className="mt-1"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
+
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    onClick={submitQuoteForm}
+                    disabled={quoteSubmitting}
+                    className="sm:min-w-[200px]"
+                  >
+                    {quoteSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {t('submitAndGetPrice')}
+                  </Button>
+                </div>
+                {config?.quoteCurrency ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t('currency')}: {config.quoteCurrency}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <div
+        className="sticky bottom-0 w-full border-t border-border-soft/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        style={accentColor ? ({ ["--accent" as string]: accentColor } as CSSProperties) : undefined}
+      >
         <div className="mx-auto flex w-full max-w-3xl items-end gap-2 px-3 py-3 sm:px-6">
-          {!showQuoteForm && config?.page_type === 'quote' && quoteVars.length > 0 && (
+          {!showQuoteForm && hasQuoteIntake && (
             <div className="mb-2 flex w-full flex-wrap gap-2">
-              <Button type="button" variant="secondary" size="sm" onClick={openQuoteFormFromQuickAction}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={openQuoteFormFromQuickAction}
+                className="rounded-full border border-border-soft/70 bg-background/40 px-4 shadow-sm hover:bg-background/70"
+              >
                 {t('quickQuoteButton')}
               </Button>
             </div>
@@ -484,7 +714,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('placeholder')}
             rows={1}
-            className="min-h-[44px] max-h-[160px] flex-1 resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
+            className="min-h-[44px] max-h-[160px] flex-1 resize-none rounded-2xl border border-border-soft bg-background/50 px-4 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -500,7 +730,15 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
               if (text) sendMessage(text);
             }}
             disabled={loading || input.trim().length === 0}
-            className="h-[44px] rounded-xl bg-foreground px-4 text-sm font-medium text-background disabled:opacity-50"
+            className="h-[44px] rounded-2xl px-4 text-sm font-medium shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            style={
+              accentColor
+                ? {
+                    backgroundColor: accentColor,
+                    color: accentTextColor,
+                  }
+                : undefined
+            }
           >
             {t('send')}
           </button>

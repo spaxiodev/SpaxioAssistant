@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +12,10 @@ export type AIChatCardProps = {
   className?: string;
   primaryBrandColor?: string;
   chatbotName?: string;
+  assistantSubtitle?: string | null;
+  assistantAvatarUrl?: string | null;
   welcomeMessage?: string;
+  suggestions?: string[];
   messages?: AIChatMessage[];
   onSend?: (text: string) => void;
   isTyping?: boolean;
@@ -20,6 +24,7 @@ export type AIChatCardProps = {
   placeholder?: string;
   onClose?: () => void;
   showPoweredBy?: boolean;
+  typingIndicatorText?: string;
   ariaLabelSend?: string;
   ariaLabelClose?: string;
   poweredByText?: string;
@@ -59,8 +64,11 @@ function isControlled(props: AIChatCardProps): boolean {
 export default function AIChatCard({
   className,
   primaryBrandColor = "#404040",
-  chatbotName = "🤖 AI Assistant",
+  chatbotName = "AI Assistant",
+  assistantSubtitle = null,
+  assistantAvatarUrl = null,
   welcomeMessage = "👋 Hello! I'm your AI assistant.",
+  suggestions = [],
   messages: controlledMessages,
   onSend: controlledOnSend,
   isTyping: controlledIsTyping = false,
@@ -69,6 +77,7 @@ export default function AIChatCard({
   placeholder = "Type a message...",
   onClose,
   showPoweredBy = false,
+  typingIndicatorText = "Thinking…",
   ariaLabelSend = "Send",
   ariaLabelClose = "Close",
   poweredByText = "Powered by Spaxio Assistant",
@@ -128,7 +137,29 @@ export default function AIChatCard({
     }, 1200);
   };
 
-  const rgb = primaryBrandColor ? hexToRgb(primaryBrandColor) : null;
+  const hasUserMessages = messages.some((m) => m.sender === "user");
+  const showSuggestions = suggestions.length > 0 && !hasUserMessages;
+
+  function sendSuggestion(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    if (controlled && controlledOnSend) {
+      controlledOnSend(trimmed);
+      return;
+    }
+
+    setDemoMessages((prev) => [...prev, { sender: "user", text: trimmed }]);
+    setDemoTyping(true);
+    setTimeout(() => {
+      setDemoMessages((prev) => [
+        ...prev,
+        { sender: "ai", text: "Got it. Tell me a bit more and I’ll help you." },
+      ]);
+      setDemoTyping(false);
+    }, 800);
+  }
+
   const accentStyle = primaryBrandColor
     ? { ["--accent" as string]: primaryBrandColor }
     : undefined;
@@ -136,81 +167,165 @@ export default function AIChatCard({
   return (
     <div
       className={cn(
-        "flex h-[460px] w-[360px] max-w-full flex-col overflow-hidden rounded-2xl border border-white/20 bg-[#111827] opacity-100",
+        "flex h-full w-[360px] max-w-full flex-col overflow-hidden rounded-[24px] border border-border-soft bg-background/70 shadow-[0_18px_70px_rgba(2,6,23,0.18)] backdrop-blur supports-[backdrop-filter]:bg-background/60 opacity-100",
         className
       )}
       style={accentStyle}
     >
       {/* Header: title + close button */}
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-600 bg-gray-900 px-4 py-3">
-        <h2 className="min-w-0 truncate text-lg font-semibold text-white">
-          {chatbotName}
-        </h2>
+      <header className="relative flex shrink-0 items-center justify-between gap-2 border-b border-border-soft/70 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className="relative grid size-10 place-items-center overflow-hidden rounded-full border border-border-soft/80"
+            style={
+              primaryBrandColor
+                ? {
+                    backgroundColor: primaryBrandColor,
+                    color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                  }
+                : undefined
+            }
+            aria-hidden="true"
+          >
+            {assistantAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={assistantAvatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm font-semibold">AI</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold text-foreground">{chatbotName}</h2>
+            {assistantSubtitle ? (
+              <p className="truncate text-xs text-muted-foreground">{assistantSubtitle}</p>
+            ) : null}
+          </div>
+        </div>
+
         {onClose && (
           <button
             type="button"
             aria-label={ariaLabelClose}
             onClick={onClose}
-            className="shrink-0 rounded-full p-1.5 text-white/70 hover:bg-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring/50"
           >
             <X className="h-4 w-4" strokeWidth={2.5} />
           </button>
         )}
+
+        {primaryBrandColor ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+            style={{ background: `linear-gradient(90deg, ${primaryBrandColor}33 0%, transparent 65%)` }}
+          />
+        ) : null}
       </header>
 
       {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-gray-900 px-4 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <div className="flex flex-col gap-3 text-sm">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={cn(
-                "max-w-[80%] rounded-xl px-3 py-2 shadow-md",
-                msg.sender === "ai"
-                  ? "self-start bg-[#374151] text-white"
-                  : "self-end font-semibold"
-              )}
-              style={
-                msg.sender === "user" && primaryBrandColor
-                  ? {
-                      backgroundColor: primaryBrandColor,
-                      color: isLightColor(primaryBrandColor) ? "#111" : "#fff",
-                    }
-                  : undefined
-              }
-            >
-              {msg.sender === "ai" ? (
-                <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold">
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+          <AnimatePresence>
+            {showSuggestions ? (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="rounded-2xl border border-border-soft bg-muted/35 p-3"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((s) => (
+                    <motion.button
+                      key={s}
+                      type="button"
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => sendSuggestion(s)}
+                      className="rounded-full border border-border-soft bg-background/40 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-background/70 focus:outline-none focus:ring-2 focus:ring-ring/60"
+                      style={
+                        primaryBrandColor
+                          ? { boxShadow: `0 0 0 1px ${primaryBrandColor}20 inset` }
+                          : undefined
+                      }
+                    >
+                      {s}
+                    </motion.button>
+                  ))}
                 </div>
-              ) : (
-                msg.text
-              )}
-            </div>
-          ))}
-          {isTyping && (
-            <div className="flex max-w-[30%] items-center gap-1 self-start rounded-xl bg-[#374151] px-3 py-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-              <span
-                className="h-2 w-2 animate-pulse rounded-full bg-white"
-                style={{ animationDelay: "0.2s" }}
-              />
-              <span
-                className="h-2 w-2 animate-pulse rounded-full bg-white"
-                style={{ animationDelay: "0.4s" }}
-              />
-            </div>
-          )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          {messages.map((msg, i) => {
+            const isAi = msg.sender === "ai";
+            return (
+              <motion.div
+                key={i}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className={cn(
+                  "max-w-[82%] rounded-2xl px-3 py-2 shadow-sm",
+                  isAi
+                    ? "self-start border border-border-soft bg-card/70 text-foreground"
+                    : "self-end font-semibold"
+                )}
+                style={
+                  !isAi && primaryBrandColor
+                    ? {
+                        backgroundColor: primaryBrandColor,
+                        color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                      }
+                    : undefined
+                }
+              >
+                {isAi ? (
+                  <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2">
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.text
+                )}
+              </motion.div>
+            );
+          })}
+
+          <AnimatePresence>
+            {isTyping ? (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="flex max-w-[42%] items-center gap-1 self-start rounded-2xl border border-border-soft bg-card/70 px-3 py-2"
+              >
+                <span className="h-2 w-2 animate-pulse rounded-full bg-foreground/70" />
+                <span
+                  className="h-2 w-2 animate-pulse rounded-full bg-foreground/70"
+                  style={{ animationDelay: "0.15s" }}
+                />
+                <span
+                  className="h-2 w-2 animate-pulse rounded-full bg-foreground/70"
+                  style={{ animationDelay: "0.3s" }}
+                />
+                <span className="ml-1 text-xs font-medium text-muted-foreground">
+                  {typingIndicatorText}
+                </span>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
       </div>
 
       {/* Input row */}
-      <div className="flex shrink-0 items-end gap-2 border-t border-gray-600 bg-gray-900 p-3">
+      <div className="flex shrink-0 items-end gap-2 border-t border-border-soft/70 p-3">
         <textarea
           ref={textareaRef}
           rows={1}
-          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border border-white/20 bg-[#1f2937] px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+          className="min-h-[40px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
           style={
             primaryBrandColor
               ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
@@ -231,10 +346,16 @@ export default function AIChatCard({
           type="button"
           onClick={handleSend}
           aria-label={ariaLabelSend}
-          className="shrink-0 rounded-lg bg-[#374151] p-2 hover:bg-[#4b5563]"
+          className="shrink-0 rounded-xl p-2 shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           style={
-            primaryBrandColor ? { color: primaryBrandColor } : { color: "#fff" }
+            primaryBrandColor
+              ? {
+                  backgroundColor: primaryBrandColor,
+                  color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                }
+              : undefined
           }
+          disabled={isTyping || input.trim().length === 0}
         >
           <Send className="h-4 w-4" />
         </button>
@@ -242,8 +363,8 @@ export default function AIChatCard({
 
       {/* Footer: compact, no empty space */}
       {showPoweredBy && (
-        <footer className="shrink-0 border-t border-gray-600 bg-gray-900 px-3 py-1.5">
-          <span className="text-[10px] text-white/40">{poweredByText}</span>
+        <footer className="shrink-0 border-t border-border-soft/70 px-3 py-1.5">
+          <span className="text-[10px] text-muted-foreground/70">{poweredByText}</span>
         </footer>
       )}
     </div>

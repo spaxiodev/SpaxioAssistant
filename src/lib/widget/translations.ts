@@ -12,6 +12,9 @@ export type WidgetTranslationKey =
   | 'send'
   | 'typingIndicator'
   | 'restartChat'
+  | 'suggestionQuote'
+  | 'suggestionServices'
+  | 'suggestionHours'
   | 'leadFormName'
   | 'leadFormEmail'
   | 'leadFormPhone'
@@ -43,6 +46,9 @@ const en: Record<WidgetTranslationKey, string> = {
   send: 'Send',
   typingIndicator: 'Typing...',
   restartChat: 'Restart chat',
+  suggestionQuote: 'Get a quote',
+  suggestionServices: 'What services do you offer?',
+  suggestionHours: 'What are your hours?',
   leadFormName: 'Name',
   leadFormEmail: 'Email',
   leadFormPhone: 'Phone',
@@ -73,6 +79,9 @@ const fr: Record<WidgetTranslationKey, string> = {
   send: 'Envoyer',
   typingIndicator: 'Saisie en cours...',
   restartChat: 'Recommencer la conversation',
+  suggestionQuote: 'Obtenir un devis',
+  suggestionServices: 'Quels services proposez-vous ?',
+  suggestionHours: 'Quels sont vos horaires ?',
   leadFormName: 'Nom',
   leadFormEmail: 'E-mail',
   leadFormPhone: 'Téléphone',
@@ -103,6 +112,9 @@ const es: Record<WidgetTranslationKey, string> = {
   send: 'Enviar',
   typingIndicator: 'Escribiendo...',
   restartChat: 'Reiniciar chat',
+  suggestionQuote: 'Quiero un presupuesto',
+  suggestionServices: '¿Qué servicios ofrecen?',
+  suggestionHours: '¿Cuáles son sus horarios?',
   leadFormName: 'Nombre',
   leadFormEmail: 'Correo electrónico',
   leadFormPhone: 'Teléfono',
@@ -133,6 +145,9 @@ const de: Record<WidgetTranslationKey, string> = {
   send: 'Senden',
   typingIndicator: 'Tippen...',
   restartChat: 'Chat neu starten',
+  suggestionQuote: 'Angebot anfordern',
+  suggestionServices: 'Welche Leistungen bieten Sie an?',
+  suggestionHours: 'Welche Öffnungszeiten haben Sie?',
   leadFormName: 'Name',
   leadFormEmail: 'E-Mail',
   leadFormPhone: 'Telefon',
@@ -163,6 +178,9 @@ const pt: Record<WidgetTranslationKey, string> = {
   send: 'Enviar',
   typingIndicator: 'Digitando...',
   restartChat: 'Reiniciar conversa',
+  suggestionQuote: 'Solicitar orçamento',
+  suggestionServices: 'Quais serviços vocês oferecem?',
+  suggestionHours: 'Quais são os seus horários?',
   leadFormName: 'Nome',
   leadFormEmail: 'E-mail',
   leadFormPhone: 'Telefone',
@@ -193,6 +211,9 @@ const it: Record<WidgetTranslationKey, string> = {
   send: 'Invia',
   typingIndicator: 'Sta scrivendo...',
   restartChat: 'Ricomincia chat',
+  suggestionQuote: 'Richiedi preventivo',
+  suggestionServices: 'Che servizi offrite?',
+  suggestionHours: 'Quali sono i vostri orari?',
   leadFormName: 'Nome',
   leadFormEmail: 'Email',
   leadFormPhone: 'Telefono',

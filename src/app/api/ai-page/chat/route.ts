@@ -358,30 +358,26 @@ export async function POST(request: Request) {
   // Resolve open_quote_form action for quote pages (from parsed reply or classifier fallback)
   let resolvedAction: { type: string; payload?: Record<string, unknown> } | null =
     action ? { type: action.type, payload: action.payload as Record<string, unknown> | undefined } : null;
-  if (!resolvedAction && page.page_type === 'quote') {
+  if (!resolvedAction && page.page_type === 'quote' && process.env.OPENAI_API_KEY) {
     try {
-      const pricingContext = await getPricingContext(supabase, { organizationId: orgId, aiPageId: pageId });
-      const hasQuoteVars = pricingContext && pricingContext.variables.length > 0;
-      if (hasQuoteVars && process.env.OPENAI_API_KEY) {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-        const actionCompletion = await openai.chat.completions.create({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `If the user asked for a quote, price, or estimate (in any language), return { "action": { "type": "open_quote_form" } }. Otherwise return {}. Reply with only the JSON.`,
-            },
-            { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
-          ],
-          max_tokens: 60,
-          response_format: { type: 'json_object' },
-        });
-        const actionRaw = actionCompletion.choices[0]?.message?.content?.trim();
-        if (actionRaw) {
-          const parsed = JSON.parse(actionRaw) as { action?: unknown };
-          const sanitized = parseAndSanitizeAction(parsed.action);
-          if (sanitized?.type === 'open_quote_form') resolvedAction = { type: sanitized.type, payload: sanitized.payload };
-        }
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+      const actionCompletion = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `If the user asked for a quote, price, or estimate (in any language), return { "action": { "type": "open_quote_form" } }. Otherwise return {}. Reply with only the JSON.`,
+          },
+          { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
+        ],
+        max_tokens: 60,
+        response_format: { type: 'json_object' },
+      });
+      const actionRaw = actionCompletion.choices[0]?.message?.content?.trim();
+      if (actionRaw) {
+        const parsed = JSON.parse(actionRaw) as { action?: unknown };
+        const sanitized = parseAndSanitizeAction(parsed.action);
+        if (sanitized?.type === 'open_quote_form') resolvedAction = { type: sanitized.type, payload: sanitized.payload };
       }
     } catch {
       // non-fatal
@@ -395,7 +391,7 @@ export async function POST(request: Request) {
       run_id: runId,
       session_state: (updatedRun?.session_state as SessionState) ?? currentState,
       completion_percent: updatedRun?.completion_percent ?? runRow.completion_percent ?? 0,
-      ...(resolvedAction?.type === 'open_quote_form' && hasQuoteVariables && { action: resolvedAction }),
+      ...(resolvedAction?.type === 'open_quote_form' && { action: resolvedAction }),
     },
     { headers: corsHeaders }
   );

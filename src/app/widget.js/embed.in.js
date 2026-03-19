@@ -94,6 +94,67 @@
     if (!document.body) return;
     if (document.querySelector('[data-spaxio="1"]')) return;
     var langCallbacks = [];
+
+    // Theme resolution for the widget iframe (host page -> iframe).
+    // Priority: explicit host config -> host DOM hints -> prefers-color-scheme -> fallback.
+    var explicitThemeRaw = (userConfig && typeof userConfig.theme === 'string' ? userConfig.theme : null) ||
+      (userConfig && typeof userConfig.widgetTheme === 'string' ? userConfig.widgetTheme : null);
+    function normalizeThemeValue(v) {
+      if (!v) return null;
+      var s = String(v).trim().toLowerCase();
+      if (s === 'dark') return 'dark';
+      if (s === 'light') return 'light';
+      if (s === 'auto') return null;
+      return null;
+    }
+    var explicitTheme = normalizeThemeValue(explicitThemeRaw);
+
+    function detectThemeFromHostDom() {
+      try {
+        var el = document.documentElement;
+        if (!el) return null;
+        var dataTheme = el.getAttribute('data-theme') || el.getAttribute('data-color-scheme') || null;
+        if (dataTheme) {
+          var dt = String(dataTheme).toLowerCase();
+          if (dt.indexOf('dark') !== -1) return 'dark';
+          if (dt.indexOf('light') !== -1) return 'light';
+        }
+        if (el.classList && el.classList.contains('dark')) return 'dark';
+        if (el.classList && el.classList.contains('light')) return 'light';
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function resolveHostTheme() {
+      if (explicitTheme) return explicitTheme;
+      var fromDom = detectThemeFromHostDom();
+      if (fromDom) return fromDom;
+      try {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+      } catch (e) {}
+      return 'dark';
+    }
+
+    var resolvedTheme = resolveHostTheme();
+    function applyHostThemeUI(theme, iframeEl, teaserEl) {
+      var dark = theme === 'dark';
+      var iframeBg = dark ? '#0f172a' : '#ffffff';
+      if (iframeEl) {
+        iframeEl.style.backgroundColor = iframeBg;
+        iframeEl.style.background = iframeBg;
+      }
+      if (teaserEl) {
+        teaserEl.style.background = dark ? '#0f172a' : '#ffffff';
+        teaserEl.style.color = dark ? '#ffffff' : '#0f172a';
+        teaserEl.style.boxShadow = dark
+          ? '0 0 0 1px rgba(255,255,255,0.08), 0 12px 32px rgba(0,0,0,0.35)'
+          : '0 0 0 1px rgba(15,23,42,0.06), 0 12px 32px rgba(15,23,42,0.16)';
+      }
+    }
+
     function notifyLang(l) {
       if (!l) return;
       pageLanguage = l;
@@ -136,7 +197,8 @@
     iframe.className = 'spaxio-panel';
     iframe.id = 'spaxio-widget-iframe';
     iframe.title = 'Chat';
-    iframe.style.backgroundColor = '#0f172a';
+    iframe.style.backgroundColor = resolvedTheme === 'dark' ? '#0f172a' : '#ffffff';
+    iframe.style.background = resolvedTheme === 'dark' ? '#0f172a' : '#ffffff';
     iframe.style.border = 'none';
     var localeSegment = (pageLanguage && /^[a-z]{2}$/.test(pageLanguage)) ? pageLanguage : 'en';
     var effectiveWidgetId = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
@@ -157,6 +219,7 @@
     var teaser = document.createElement('div');
     teaser.className = 'spaxio-teaser';
     teaser.setAttribute('aria-hidden', 'true');
+    applyHostThemeUI(resolvedTheme, iframe, teaser);
 
     var panelWrap = document.createElement('div');
     panelWrap.className = 'spaxio-panel-wrap';
@@ -554,12 +617,85 @@
 
     bubble.addEventListener('click', function() { toggle(); });
 
+    function postThemeToSpaxioIframes(themeNow) {
+      try {
+        var frames = document.querySelectorAll('iframe');
+        for (var j = 0; j < frames.length; j++) {
+          var f = frames[j];
+          var src = f && f.src ? String(f.src) : '';
+          // Only target Spaxio iframes hosted on our origin.
+          if (src && baseOrigin && src.indexOf(baseOrigin) !== -1 && (src.indexOf('/widget') !== -1 || src.indexOf('/a/') !== -1)) {
+            try {
+              if (f.contentWindow) {
+                f.contentWindow.postMessage({ type: 'spaxio-theme-change', theme: themeNow }, baseOrigin || '*');
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (e2) {}
+    }
+
     var effectiveWidgetIdForPost = initialConfig && initialConfig._widgetId ? initialConfig._widgetId : widgetId;
     iframe.addEventListener('load', function() {
       try {
         iframe.contentWindow.postMessage({ type: 'spaxio-init', widgetId: effectiveWidgetIdForPost }, baseOrigin || '*');
+        postThemeToSpaxioIframes(resolvedTheme);
       } catch (e) {}
     });
+
+    // Theme changes: listen for host class/data-theme changes and prefers-color-scheme flips.
+    // If host explicitly set the theme (light/dark), skip listening.
+    if (!explicitTheme && typeof document.documentElement !== 'undefined') {
+      try {
+        var themeObserver = null;
+        if (window.MutationObserver) {
+          themeObserver = new MutationObserver(function() {
+            var next = resolveHostTheme();
+            if (next && next !== resolvedTheme) {
+              resolvedTheme = next;
+              applyHostThemeUI(resolvedTheme, iframe, teaser);
+              try {
+                if (iframe && iframe.contentWindow) {
+                  postThemeToSpaxioIframes(resolvedTheme);
+                }
+              } catch (e) {}
+            }
+          });
+          themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+        }
+
+        if (window.matchMedia) {
+          var mql = window.matchMedia('(prefers-color-scheme: dark)');
+          if (mql && mql.addEventListener) {
+            mql.addEventListener('change', function() {
+              var next = resolveHostTheme();
+              if (next && next !== resolvedTheme) {
+                resolvedTheme = next;
+                applyHostThemeUI(resolvedTheme, iframe, teaser);
+                try {
+                  if (iframe && iframe.contentWindow) {
+                    postThemeToSpaxioIframes(resolvedTheme);
+                  }
+                } catch (e2) {}
+              }
+            });
+          } else if (mql && mql.addListener) {
+            mql.addListener(function() {
+              var next2 = resolveHostTheme();
+              if (next2 && next2 !== resolvedTheme) {
+                resolvedTheme = next2;
+                applyHostThemeUI(resolvedTheme, iframe, teaser);
+                try {
+                  if (iframe && iframe.contentWindow) {
+                    postThemeToSpaxioIframes(resolvedTheme);
+                  }
+                } catch (e3) {}
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    }
 
     if (typeof document.documentElement !== 'undefined' && window.MutationObserver) {
       var langObserver = new MutationObserver(function(mutations) {

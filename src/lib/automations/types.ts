@@ -102,7 +102,7 @@ export interface AutomationRunInput {
   trigger_type: string;
   conversation_id?: string;
   visitor_id?: string;
-  lead?: { name?: string; email?: string; phone?: string; message?: string };
+  lead?: { name?: string; email?: string; phone?: string; message?: string; language?: string };
   [key: string]: unknown;
 }
 

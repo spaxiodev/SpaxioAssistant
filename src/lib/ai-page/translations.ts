@@ -16,7 +16,8 @@ export type AiPageTranslationKey =
   | 'email'
   | 'phoneOptional'
   | 'submitAndGetPrice'
-  | 'currency';
+  | 'currency'
+  | 'quoteFormSuccess';
 
 function normalizeLocale(locale: string): string {
   const v = String(locale || '').trim().toLowerCase();
@@ -44,6 +45,7 @@ const en: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Phone (optional)',
   submitAndGetPrice: 'Submit & get price',
   currency: 'Currency',
+  quoteFormSuccess: 'Quote request submitted — we’ll be in touch shortly.',
 };
 
 const fr: Record<AiPageTranslationKey, string> = {
@@ -60,6 +62,7 @@ const fr: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Téléphone (optionnel)',
   submitAndGetPrice: 'Envoyer et obtenir le prix',
   currency: 'Devise',
+  quoteFormSuccess: 'Demande de devis envoyée — nous vous contacterons bientôt.',
 };
 
 const frCA: Record<AiPageTranslationKey, string> = {
@@ -81,6 +84,7 @@ const es: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Teléfono (opcional)',
   submitAndGetPrice: 'Enviar y obtener precio',
   currency: 'Moneda',
+  quoteFormSuccess: 'Solicitud enviada — nos pondremos en contacto pronto.',
 };
 
 const de: Record<AiPageTranslationKey, string> = {
@@ -97,6 +101,7 @@ const de: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Telefon (optional)',
   submitAndGetPrice: 'Absenden und Preis erhalten',
   currency: 'Währung',
+  quoteFormSuccess: 'Anfrage gesendet — wir melden uns in Kürze.',
 };
 
 const pt: Record<AiPageTranslationKey, string> = {
@@ -113,6 +118,7 @@ const pt: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Telefone (opcional)',
   submitAndGetPrice: 'Enviar e obter preço',
   currency: 'Moeda',
+  quoteFormSuccess: 'Solicitação enviada — entraremos em contato em breve.',
 };
 
 const it: Record<AiPageTranslationKey, string> = {
@@ -129,6 +135,7 @@ const it: Record<AiPageTranslationKey, string> = {
   phoneOptional: 'Telefono (opzionale)',
   submitAndGetPrice: 'Invia e ottieni prezzo',
   currency: 'Valuta',
+  quoteFormSuccess: 'Richiesta inviata — ti contatteremo a breve.',
 };
 
 const DICT: Record<string, Record<AiPageTranslationKey, string>> = {
