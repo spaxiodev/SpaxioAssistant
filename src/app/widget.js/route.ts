@@ -17,7 +17,9 @@ export function GET(request: Request) {
   return new NextResponse(script, {
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': isDev ? 'no-store, no-cache' : 'public, max-age=60, must-revalidate',
+      // Ensure widget.js layout updates reach existing clients quickly.
+      // (Clients often embed this script without a cache-buster.)
+      'Cache-Control': isDev ? 'no-store, no-cache' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
     },
   });
 }
