@@ -7,7 +7,7 @@ import type { SessionState } from '@/lib/ai-pages/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTranslations } from 'next-intl';
+import { getAiPageTranslation } from '@/lib/ai-page/translations';
 
 const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -27,6 +27,8 @@ type Props = {
   /** Use for slug-based URLs (/a/[slug]). May collide across orgs. */
   slug?: string;
   locale: string;
+  /** Override locale from URL (?lang=) or parent (postMessage) for embedded pages on client websites. */
+  langOverride?: string;
   handoffToken?: string;
 };
 
@@ -87,9 +89,28 @@ function shouldOpenQuoteForm(text: string, locale: string): boolean {
   return patterns.some((re) => re.test(s));
 }
 
-export function AiPageClient({ pageId, slug, locale, handoffToken }: Props) {
-  const t = useTranslations('aiPage');
+export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken }: Props) {
   const resolvedLocale = normalizeLocale(locale);
+  const [activeLangOverride, setActiveLangOverride] = useState<string | null>(langOverride ?? null);
+  const effectiveDisplayLocale = activeLangOverride ?? resolvedLocale;
+
+  useEffect(() => {
+    if (langOverride) setActiveLangOverride(normalizeLocale(langOverride));
+  }, [langOverride]);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'spaxio-lang-change' && typeof e.data.language === 'string') {
+        const next = normalizeLocale(e.data.language);
+        if (next) setActiveLangOverride(next);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const t = (key: Parameters<typeof getAiPageTranslation>[1]) =>
+    getAiPageTranslation(effectiveDisplayLocale, key);
   const [config, setConfig] = useState<{
     title: string;
     description: string | null;
@@ -191,7 +212,7 @@ export function AiPageClient({ pageId, slug, locale, handoffToken }: Props) {
             run_id: runId,
             conversation_id: conversationId,
             message: trimmed,
-            language: resolvedLocale,
+            language: effectiveDisplayLocale,
           }),
         });
         const data = await res.json();
@@ -200,11 +221,25 @@ export function AiPageClient({ pageId, slug, locale, handoffToken }: Props) {
         }
         if (data.session_state) setSessionState(data.session_state);
         if (typeof data.completion_percent === 'number') setCompletionPercent(data.completion_percent);
+        // Show quote form when AI returns open_quote_form action (e.g. user asked for a quote)
+        if (
+          data.action?.type === 'open_quote_form' &&
+          Array.isArray(config?.quoteVariables) &&
+          config.quoteVariables.length > 0
+        ) {
+          setShowQuoteForm(true);
+          setQuoteSubmitError(null);
+          const defaults: Record<string, string> = {};
+          config.quoteVariables.forEach((v) => {
+            if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
+          });
+          setQuoteFormInputs(defaults);
+        }
       } finally {
         setLoading(false);
       }
     },
-    [runId, conversationId, loading, config, resolvedLocale, t]
+    [runId, conversationId, loading, config, effectiveDisplayLocale, t]
   );
 
   function openQuoteFormFromQuickAction() {

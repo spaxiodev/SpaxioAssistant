@@ -18,6 +18,8 @@ import type { SessionState, IntakeFieldSchema, SessionStateEstimate } from '@/li
 import { getPricingContext, runEstimate } from '@/lib/quote-pricing/estimate-quote-service';
 import type { Agent } from '@/lib/supabase/database.types';
 import { searchKnowledge } from '@/lib/knowledge/search';
+import { parseActionFromReply } from '@/lib/widget-actions/parse-action-from-reply';
+import { parseAndSanitizeAction } from '@/lib/widget-actions/types';
 
 const MAX_KNOWLEDGE_CONTEXT_CHARS = 4000;
 const corsHeaders = {
@@ -34,7 +36,8 @@ function buildPageTypeInstruction(pageType: string, goal?: string): string {
       return `You are on a dedicated Quote Assistant page. Your job is to gather enough information for an accurate quote or estimate.
 - Ask clear, conversational questions about project type, scope, dimensions, materials, urgency, location, budget, and contact details.
 - Collect: name, email, phone, project/service type, details, dimensions, location, budget, notes.
-- Summarize what you've collected before confirming. When you have enough information, tell the user their request will be submitted for a quote.${goalLine}`;
+- Summarize what you've collected before confirming. When you have enough information, tell the user their request will be submitted for a quote.
+- If the user asks for a quote, price, estimate, or devis (in any language), add at the very end of your reply a single line: ACTION: open_quote_form. We will show the quote form. Do not add ACTION: unless the user clearly wants to fill out the quote form.${goalLine}`;
     case 'support':
       return `You are on a dedicated Support Assistant page. Your job is to troubleshoot and capture support issues.
 - Ask diagnostic questions. Use any provided knowledge to attempt resolution.
@@ -177,10 +180,12 @@ export async function POST(request: Request) {
   });
 
   let pricingPromptBlock = '';
+  let hasQuoteVariables = false;
   if (page.page_type === 'quote') {
     try {
       const pricingContext = await getPricingContext(supabase, { organizationId: orgId, aiPageId: pageId });
-      if (pricingContext && pricingContext.variables.length > 0) {
+      hasQuoteVariables = !!(pricingContext && pricingContext.variables.length > 0);
+      if (hasQuoteVariables && pricingContext) {
         const varList = pricingContext.variables
           .map((v) => `- ${v.key}: ${v.label}${v.required ? ' (required)' : ''}${v.unit_label ? ` in ${v.unit_label}` : ''}`)
           .join('\n');
@@ -238,12 +243,14 @@ export async function POST(request: Request) {
     max_tokens: 600,
     temperature,
   });
-  const reply = result.content || 'Sorry, I could not generate a response.';
+  const rawReply = result.content || 'Sorry, I could not generate a response.';
+  const { cleanReply, action } = parseActionFromReply(rawReply);
+  const replyToStore = cleanReply || rawReply;
 
   await supabase.from('messages').insert({
     conversation_id: effectiveConvId,
     role: 'assistant',
-    content: reply,
+    content: replyToStore,
   });
 
   await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', effectiveConvId);
@@ -266,7 +273,7 @@ export async function POST(request: Request) {
           },
           {
             role: 'user',
-            content: [...(history ?? []).map((m) => `${m.role}: ${m.content}`), `user: ${message}`, `assistant: ${reply}`].join('\n'),
+            content: [...(history ?? []).map((m) => `${m.role}: ${m.content}`), `user: ${message}`, `assistant: ${replyToStore}`].join('\n'),
           },
         ],
         max_tokens: 400,
@@ -344,11 +351,48 @@ export async function POST(request: Request) {
     .eq('id', runId)
     .single();
 
-  return NextResponse.json({
-    reply,
-    conversation_id: effectiveConvId,
-    run_id: runId,
-    session_state: (updatedRun?.session_state as SessionState) ?? currentState,
-    completion_percent: updatedRun?.completion_percent ?? runRow.completion_percent ?? 0,
-  }, { headers: corsHeaders });
+  // Resolve open_quote_form action for quote pages (from parsed reply or classifier fallback)
+  let resolvedAction: { type: string; payload?: Record<string, unknown> } | null =
+    action ? { type: action.type, payload: action.payload as Record<string, unknown> | undefined } : null;
+  if (!resolvedAction && page.page_type === 'quote') {
+    try {
+      const pricingContext = await getPricingContext(supabase, { organizationId: orgId, aiPageId: pageId });
+      const hasQuoteVars = pricingContext && pricingContext.variables.length > 0;
+      if (hasQuoteVars && process.env.OPENAI_API_KEY) {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+        const actionCompletion = await openai.chat.completions.create({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `If the user asked for a quote, price, or estimate (in any language), return { "action": { "type": "open_quote_form" } }. Otherwise return {}. Reply with only the JSON.`,
+            },
+            { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
+          ],
+          max_tokens: 60,
+          response_format: { type: 'json_object' },
+        });
+        const actionRaw = actionCompletion.choices[0]?.message?.content?.trim();
+        if (actionRaw) {
+          const parsed = JSON.parse(actionRaw) as { action?: unknown };
+          const sanitized = parseAndSanitizeAction(parsed.action);
+          if (sanitized?.type === 'open_quote_form') resolvedAction = { type: sanitized.type, payload: sanitized.payload };
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+  }
+
+  return NextResponse.json(
+    {
+      reply: replyToStore,
+      conversation_id: effectiveConvId,
+      run_id: runId,
+      session_state: (updatedRun?.session_state as SessionState) ?? currentState,
+      completion_percent: updatedRun?.completion_percent ?? runRow.completion_percent ?? 0,
+      ...(resolvedAction?.type === 'open_quote_form' && hasQuoteVariables && { action: resolvedAction }),
+    },
+    { headers: corsHeaders }
+  );
 }
