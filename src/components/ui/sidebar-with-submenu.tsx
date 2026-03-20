@@ -19,6 +19,7 @@ import {
   Sparkles,
   Lock,
   HelpCircle,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from '@/components/intl-link';
@@ -191,6 +192,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
     { href: '/dashboard/leads', key: 'leads', icon: Users },
     { href: '/dashboard/quote-requests', key: 'quoteRequests', icon: FileText },
+    { href: '/dashboard/email-automation', key: 'emailAutomation', icon: Mail, featureKey: 'email_automation' as FeatureKey },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
     { href: '/dashboard/team', key: 'teamMembers', icon: UserPlus, featureKey: 'team_members' as FeatureKey },
   ];
@@ -342,6 +344,22 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                 >
                   <Code className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">Install</span>
+                </Link>
+                <Link
+                  href="/dashboard/email-automation"
+                  onClick={onNavClick}
+                  className={cn(
+                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
+                    pathname.startsWith('/dashboard/email-automation')
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
+                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <Mail className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">Email Auto Replies</span>
+                  {featureAccess.email_automation === false && (
+                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  )}
                 </Link>
                 <Link
                   href="/help"

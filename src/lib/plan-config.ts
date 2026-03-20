@@ -76,6 +76,7 @@ export const FEATURE_KEYS = [
   'followup_emails',
   'ai_followup',
   'followup_drafts',
+  'email_automation',
   // Intelligence & advanced features
   'ai_lead_scoring',
   'analytics_advanced',
@@ -103,6 +104,7 @@ export const FEATURE_MIN_PLAN: Record<FeatureKey, PlanSlug> = {
   followup_emails: 'starter',
   ai_followup: 'pro',
   followup_drafts: 'starter',
+  email_automation: 'starter',
   // Intelligence & advanced features
   ai_lead_scoring: 'starter',
   analytics_advanced: 'pro',
@@ -151,6 +153,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   followup_emails: 'Follow-up emails',
   ai_followup: 'AI follow-up generation',
   followup_drafts: 'Follow-up draft approvals',
+  email_automation: 'Email Auto Replies',
   // Intelligence & advanced features
   ai_lead_scoring: 'AI lead scoring & qualification',
   analytics_advanced: 'Advanced analytics',

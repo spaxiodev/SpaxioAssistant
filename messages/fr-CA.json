@@ -205,6 +205,8 @@
     "knowledgeDescription": "Enseignez à l’assistant à partir de vos pages web et fichiers pour des réponses fiables.",
     "automations": "Automatisations",
     "automationsDescription": "Automatisez les opérations avec des workflows IA. Déclencheurs, logique et actions.",
+    "emailAutomation": "Réponses automatiques par courriel",
+    "emailAutomationDescription": "Répondez automatiquement aux courriels entrants dans la langue détectée du client.",
     "automationsHero": "Les automatisations sont des recettes simples qui se déclenchent quand quelque chose arrive — par exemple un nouveau lead ou une demande de devis.",
     "createAutomation": "Créer une automatisation",
     "templatesToGetStarted": "Modèles pour commencer",

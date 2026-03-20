@@ -212,6 +212,8 @@
     "knowledgeDescription": "Teach your assistant using your website pages and files so answers stay accurate.",
     "automations": "Automations",
     "automationsDescription": "Set up simple follow-up rules—like notifying your team when a lead comes in.",
+    "emailAutomation": "Email Auto Replies",
+    "emailAutomationDescription": "Automatically reply to incoming customer emails in their detected language.",
     "automationsHero": "Automations are simple recipes that run when something happens—like a new lead, a quote request, or a message.",
     "createAutomation": "Create Automation",
     "templatesToGetStarted": "Start from a template",
