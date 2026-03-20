@@ -215,6 +215,7 @@ export async function POST(request: Request) {
 
   // Send confirmation email to customer
   const leadId = result.leadId ?? null;
+  const quoteRequestId = result.quoteRequestId ?? null;
   const contactName = typeof collected.contact_name === 'string' ? collected.contact_name : '';
   const contactEmail = typeof collected.contact_email === 'string' ? collected.contact_email : '';
   const contactPhone = typeof collected.phone === 'string' ? collected.phone : null;
