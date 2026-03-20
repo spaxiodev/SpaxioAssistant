@@ -17,6 +17,7 @@ import { canUseAutomation } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
 import { getPricingContext, runEstimate, persistEstimationRun } from '@/lib/quote-pricing/estimate-quote-service';
+import { sendQuoteRequestConfirmation } from '@/lib/email/send-quote-confirmation';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -230,7 +231,21 @@ export async function POST(request: Request) {
         .eq('id', estimationRunId);
     }
 
-    // 4. AI follow-up run
+    // 4. Send confirmation email to customer
+    sendQuoteRequestConfirmation({
+      supabase,
+      organizationId: orgId,
+      customerName: name,
+      customerEmail: email,
+      estimateTotal,
+      estimateLow,
+      estimateHigh,
+      currency,
+      formAnswers: formAnswers ?? null,
+      language: resolvedLanguage,
+    }).catch((err) => console.warn('[widget/quote] confirmation email failed', err));
+
+    // 5. AI follow-up run
     if (process.env.OPENAI_API_KEY) {
       triggerFollowUpRun(supabase, {
         organizationId: orgId,
@@ -253,7 +268,7 @@ export async function POST(request: Request) {
       }).catch((err) => console.warn('[widget/quote] follow-up trigger failed', err));
     }
 
-    // 5. Automation event
+    // 6. Automation event
     const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
     const automationsAllowed = await canUseAutomation(supabase, orgId, adminAllowed);
     if (automationsAllowed) {
@@ -297,7 +312,7 @@ export async function POST(request: Request) {
       }).catch((err) => console.error('[widget/quote] high intent emit failed', err));
     }
 
-    // 6. Format estimate string for response
+    // 7. Format estimate string for response
     let estimateStr = '';
     if (estimateLow != null && estimateHigh != null) {
       const prefix = currency === 'USD' ? '$' : `${currency} `;

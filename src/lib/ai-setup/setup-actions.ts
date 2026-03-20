@@ -40,11 +40,12 @@ export const SETUP_ACTION_SCHEMAS: Record<
   },
   update_business_settings: {
     description:
-      'Update business settings. Use for: business_name, company_description, services_offered, faq, tone_of_voice, contact_email, phone, chatbot_welcome_message, primary_brand_color, lead_notification_email. Safe to auto-apply unless replacing existing custom content.',
+      'Update business settings. Use for: business_name, chatbot_name, company_description, services_offered, faq, tone_of_voice, contact_email, phone, chatbot_welcome_message, primary_brand_color, lead_notification_email, widget_position_preset, widget_enabled. Safe to auto-apply unless replacing existing custom content.',
     parameters: {
       type: 'object',
       properties: {
         business_name: { type: 'string', description: 'Business name' },
+        chatbot_name: { type: 'string', description: 'Chatbot display name' },
         company_description: { type: 'string', description: '1-3 sentence company description' },
         services_offered: { type: 'array', items: { type: 'string' }, description: 'List of services' },
         faq: {
@@ -52,12 +53,14 @@ export const SETUP_ACTION_SCHEMAS: Record<
           items: { type: 'object', properties: { q: { type: 'string' }, a: { type: 'string' } }, required: ['q', 'a'] },
           description: 'FAQ items {q, a}',
         },
-        tone_of_voice: { type: 'string', description: 'e.g. professional, friendly' },
+        tone_of_voice: { type: 'string', description: 'e.g. professional, friendly, casual, empathetic' },
         contact_email: { type: 'string', description: 'Contact email' },
         phone: { type: 'string', description: 'Phone number' },
         chatbot_welcome_message: { type: 'string', description: 'Widget welcome message' },
         primary_brand_color: { type: 'string', description: 'Hex color e.g. #0f172a' },
         lead_notification_email: { type: 'string', description: 'Where to send lead notifications' },
+        widget_position_preset: { type: 'string', description: 'Widget position: bottom-right, bottom-left, top-right, top-left' },
+        widget_enabled: { type: 'boolean', description: 'Whether the widget is visible on the website' },
       },
       required: [],
     },
@@ -196,6 +199,7 @@ export async function executeSetupAction(
     case 'update_business_settings': {
       const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (args.business_name !== undefined) payload.business_name = sanitizeText(args.business_name, 500) || null;
+      if (args.chatbot_name !== undefined) payload.chatbot_name = sanitizeText(args.chatbot_name, 200) || null;
       if (args.company_description !== undefined) payload.company_description = sanitizeText(args.company_description, 4000) || null;
       if (args.services_offered !== undefined) {
         payload.services_offered = Array.isArray(args.services_offered)
@@ -209,6 +213,14 @@ export async function executeSetupAction(
       if (args.chatbot_welcome_message !== undefined) payload.chatbot_welcome_message = sanitizeText(args.chatbot_welcome_message, 500) || null;
       if (args.primary_brand_color !== undefined) payload.primary_brand_color = sanitizeText(args.primary_brand_color, 50) || null;
       if (args.lead_notification_email !== undefined) payload.lead_notification_email = sanitizeText(args.lead_notification_email, 320) || null;
+      if (args.widget_position_preset !== undefined) {
+        const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+        const pos = sanitizeText(args.widget_position_preset, 50);
+        if (pos && validPositions.includes(pos)) payload.widget_position_preset = pos;
+      }
+      if (args.widget_enabled !== undefined) payload.widget_enabled = args.widget_enabled === true;
+
+      if (Object.keys(payload).length === 1) return { ok: true, data: { updated: [] } };
 
       const { error } = await supabase
         .from('business_settings')
@@ -344,6 +356,8 @@ export async function executeSetupAction(
       const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (typeof draft.business_name === 'string' && draft.business_name.trim())
         payload.business_name = sanitizeText(draft.business_name, 500);
+      if (typeof draft.chatbot_name === 'string' && draft.chatbot_name.trim())
+        payload.chatbot_name = sanitizeText(draft.chatbot_name, 200);
       if (typeof draft.company_description === 'string' && draft.company_description.trim())
         payload.company_description = sanitizeText(draft.company_description, 4000);
       if (Array.isArray(draft.services_offered) && draft.services_offered.length > 0)
@@ -358,6 +372,12 @@ export async function executeSetupAction(
         payload.chatbot_welcome_message = sanitizeText(draft.chatbot_welcome_message, 500);
       if (typeof draft.primary_brand_color === 'string' && draft.primary_brand_color.trim())
         payload.primary_brand_color = sanitizeText(draft.primary_brand_color, 50);
+      if (typeof draft.widget_position_preset === 'string' && draft.widget_position_preset.trim()) {
+        const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+        const pos = sanitizeText(draft.widget_position_preset, 50);
+        if (pos && validPositions.includes(pos)) payload.widget_position_preset = pos;
+      }
+      if (typeof draft.widget_enabled === 'boolean') payload.widget_enabled = draft.widget_enabled;
       if (draft.quote_form_config && typeof draft.quote_form_config === 'object') {
         const qfc = draft.quote_form_config as Record<string, unknown>;
         const merged: Record<string, unknown> = {

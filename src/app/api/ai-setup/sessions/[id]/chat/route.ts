@@ -7,6 +7,7 @@ import { getChatCompletion } from '@/lib/ai/provider';
 import { buildAISetupSystemPrompt } from '@/lib/ai-setup/prompt';
 import { mergePlannerConfig } from '@/lib/ai-setup/planner';
 import { extractJsonBlock, stripJsonBlockFromMessage } from '@/lib/ai-setup/parse-json-block';
+import { executeSetupAction } from '@/lib/ai-setup/setup-actions';
 import type { AssistantPlannerConfig } from '@/lib/ai-setup/types';
 import { DEFAULT_PLANNER_CONFIG } from '@/lib/ai-setup/types';
 
@@ -107,7 +108,7 @@ export async function POST(request: Request, { params }: Params) {
     let assistantContent: string;
     try {
       const result = await getChatCompletion('openai', 'gpt-4o-mini', openAiMessages, {
-        max_tokens: 1024,
+        max_tokens: 2048,
         temperature: 0.5,
       });
       assistantContent = result.content || 'I’m sorry, I couldn’t generate a response. Please try again.';
@@ -121,6 +122,36 @@ export async function POST(request: Request, { params }: Params) {
     if (jsonUpdate) {
       const merged = mergePlannerConfig(currentConfig, jsonUpdate);
       if (merged) nextConfig = merged;
+
+      // Auto-apply business_settings changes immediately so the user sees instant results.
+      // Only write fields that are explicitly present in the AI's JSON update.
+      const bsArgs: Record<string, unknown> = {};
+
+      if (jsonUpdate.business_name !== undefined) bsArgs.business_name = jsonUpdate.business_name;
+      if (jsonUpdate.chatbot_name !== undefined) bsArgs.chatbot_name = jsonUpdate.chatbot_name;
+      if (jsonUpdate.services_offered !== undefined) bsArgs.services_offered = jsonUpdate.services_offered;
+      if (jsonUpdate.faq !== undefined) bsArgs.faq = jsonUpdate.faq;
+      if (jsonUpdate.tone_of_voice !== undefined) bsArgs.tone_of_voice = jsonUpdate.tone_of_voice;
+      if (jsonUpdate.contact_email !== undefined) bsArgs.contact_email = jsonUpdate.contact_email;
+      if (jsonUpdate.phone !== undefined) bsArgs.phone = jsonUpdate.phone;
+      if (jsonUpdate.notification_email !== undefined) bsArgs.lead_notification_email = jsonUpdate.notification_email;
+      if (jsonUpdate.widget_enabled !== undefined) bsArgs.widget_enabled = jsonUpdate.widget_enabled;
+
+      // Map widget_config sub-fields to business_settings columns
+      if (jsonUpdate.widget_config && typeof jsonUpdate.widget_config === 'object') {
+        const wc = jsonUpdate.widget_config as Record<string, unknown>;
+        if (wc.welcomeMessage !== undefined) bsArgs.chatbot_welcome_message = wc.welcomeMessage;
+        if (wc.primaryColor !== undefined) bsArgs.primary_brand_color = wc.primaryColor;
+        if (wc.position !== undefined) bsArgs.widget_position_preset = wc.position;
+      }
+
+      // Write to DB if there's anything to update
+      if (Object.keys(bsArgs).length > 0) {
+        const applyResult = await executeSetupAction(supabase, orgId, 'update_business_settings', bsArgs);
+        if (!applyResult.ok) {
+          console.warn('[API] ai-setup chat auto-apply business_settings failed:', applyResult.error);
+        }
+      }
     }
 
     const { error: insertAssistantError } = await supabase.from('ai_setup_messages').insert({

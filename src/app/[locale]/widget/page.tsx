@@ -386,7 +386,7 @@ function WidgetContent() {
   return (
     <div
       ref={contentRef}
-      className="flex min-h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a] transition-colors duration-300"
+      className="flex h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a] transition-colors duration-300 overflow-hidden"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
@@ -630,9 +630,10 @@ function WidgetContent() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.99 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="h-full w-full"
           >
             <AIChatCard
-              className="w-full max-w-[400px] h-full shrink-0"
+              className="w-full max-w-[420px] h-full shrink-0"
               primaryBrandColor={color}
               chatbotName={chatbotName}
               assistantSubtitle={config?.businessName ?? null}

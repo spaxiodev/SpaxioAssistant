@@ -34,6 +34,8 @@ export default async function QuoteRequestsPage() {
 
   const labels = {
     customer: t('customer'),
+    email: t('emailLabel'),
+    phone: t('phone'),
     service: t('service'),
     budget: t('budget'),
     worthIt: t('worthIt'),

@@ -19,6 +19,8 @@ export { renderLeadNotificationEmail, leadDataFromInput } from './templates/lead
 export { renderQuoteRequestNotificationEmail } from './templates/quote-request-notification';
 export { renderContactFormNotificationEmail } from './templates/contact-form-notification';
 export { renderGenericNotificationEmail } from './templates/generic-notification';
+export { renderQuoteRequestConfirmationEmail } from './templates/quote-request-confirmation';
+export type { QuoteRequestConfirmationData } from './templates/quote-request-confirmation';
 
 export type { LeadNotificationData, QuoteRequestNotificationData, ContactFormNotificationData };
 

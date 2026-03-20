@@ -182,14 +182,14 @@
     '.spaxio-bubble img{width:115%;height:115%;object-fit:cover;display:block;border-radius:50%}',
     '.spaxio-bubble:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.14),0 12px 32px rgba(0,0,0,0.22),0 0 0 1px rgba(0,0,0,0.08)}',
     '.spaxio-bubble:focus{outline:2px solid currentColor;outline-offset:2px}',
-    '.spaxio-panel-wrap{position:absolute;right:0;bottom:72px;width:400px;max-width:min(400px,calc(100vw - 16px));height:620px;max-height:90vh;border-radius:24px 24px 0 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.05),0 10px 22px rgba(0,0,0,0.1),0 18px 48px rgba(0,0,0,0.14);pointer-events:none}',
+    '.spaxio-panel-wrap{position:absolute;right:0;bottom:76px;width:420px;max-width:min(420px,calc(100vw - 16px));height:680px;max-height:90vh;border-radius:24px 24px 0 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.05),0 10px 22px rgba(0,0,0,0.1),0 18px 48px rgba(0,0,0,0.14);pointer-events:none}',
     '.spaxio-panel-wrap.open{pointer-events:auto}',
     '.spaxio-teaser{position:fixed;z-index:2147483647;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:18px;background:#ffffff;color:#0f172a;box-shadow:0 0 0 1px rgba(15,23,42,0.06),0 12px 32px rgba(15,23,42,0.16);font:500 14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:0;visibility:hidden;transform-origin:bottom right;transform:scale(0.4) translateY(12px);pointer-events:none;transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1),visibility 0s linear 0.35s;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box}',
     '.spaxio-teaser.visible{opacity:1;visibility:visible;transform:scale(1) translateY(0);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1)}',
     '.spaxio-panel{position:absolute;inset:0;width:100%;height:100%;border:none;border-radius:inherit;background:#0f172a;pointer-events:none;opacity:0;transform:translateY(12px) scale(0.98);transition:opacity 0.25s ease,transform 0.25s ease}',
     '.spaxio-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}',
     '.spaxio-bubble.hidden{display:none !important}',
-    '@media (max-width: 480px){.spaxio-wrap{left:0;right:0;bottom:0;top:auto;width:100%}.spaxio-panel-wrap{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:65vh;max-height:65vh;border-radius:24px 24px 0 0}.spaxio-panel{border-radius:inherit}.spaxio-bubble{position:fixed;width:56px;height:56px}.spaxio-teaser{position:fixed;max-width:min(280px,calc(100vw - 32px))}.spaxio-label{right:16px;bottom:88px}}'
+    '@media (max-width: 480px){.spaxio-wrap{left:0;right:0;bottom:0;top:auto;width:100%}.spaxio-panel-wrap{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:78vh;max-height:78vh;border-radius:24px 24px 0 0}.spaxio-panel{border-radius:inherit}.spaxio-bubble{position:fixed;width:56px;height:56px}.spaxio-teaser{position:fixed;max-width:min(280px,calc(100vw - 32px))}.spaxio-label{right:16px;bottom:88px}}'
     ].join('');
     shadow.appendChild(sheet);
 
@@ -719,10 +719,13 @@
       if (e.data && e.data.type === 'spaxio-close') toggle();
       if (e.data && e.data.type === 'spaxio-widget-height' && typeof e.data.height === 'number') {
         var isMobile = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
-        var maxVh = isMobile ? 0.65 : 0.86;
-        var cap = Math.floor((typeof window !== 'undefined' && window.innerHeight ? window.innerHeight : 600) * maxVh);
-        var h = Math.min(cap, Math.min(760, Math.max(320, e.data.height)));
-        panelWrap.style.height = h + 'px';
+        if (!isMobile) {
+          var maxVh = 0.90;
+          var cap = Math.floor((typeof window !== 'undefined' && window.innerHeight ? window.innerHeight : 700) * maxVh);
+          var h = Math.min(cap, Math.min(780, Math.max(560, e.data.height)));
+          var currentH = parseFloat(panelWrap.style.height) || 0;
+          if (!currentH || h > currentH) panelWrap.style.height = h + 'px';
+        }
       }
       if (e.data && e.data.type === 'spaxio-action' && e.data.action) {
         try { dispatchWebsiteAction(e.data.action); } catch (err) {}

@@ -167,21 +167,31 @@ export default function AIChatCard({
   return (
     <div
       className={cn(
-        "relative flex h-full w-[400px] max-w-full flex-col overflow-hidden rounded-[26px] border border-border-soft/50 bg-background/65 shadow-[0_18px_60px_rgba(2,6,23,0.18)] backdrop-blur supports-[backdrop-filter]:bg-background/55 opacity-100",
+        "relative flex h-full w-[420px] max-w-full flex-col overflow-hidden rounded-[20px] border border-border-soft/50 bg-background shadow-[0_24px_80px_rgba(2,6,23,0.22)] opacity-100",
         className
       )}
       style={accentStyle}
     >
-      {/* Header: title + close button */}
-      <header className="relative flex shrink-0 items-center justify-between gap-2 px-3 py-1.5">
-        <div className="flex min-w-0 items-center gap-3">
+      {/* Header */}
+      <header
+        className="relative flex shrink-0 items-center justify-between gap-3 px-5 py-4 border-b border-border-soft/20"
+        style={
+          primaryBrandColor
+            ? {
+                background: `linear-gradient(135deg, ${primaryBrandColor}18 0%, ${primaryBrandColor}08 100%)`,
+              }
+            : undefined
+        }
+      >
+        <div className="flex min-w-0 items-center gap-3.5">
           <div
-            className="relative grid size-10 place-items-center overflow-hidden rounded-full border border-border-soft/80"
+            className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-full shadow-sm"
             style={
               primaryBrandColor
                 ? {
                     backgroundColor: primaryBrandColor,
                     color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                    boxShadow: `0 0 0 3px ${primaryBrandColor}22`,
                   }
                 : undefined
             }
@@ -191,14 +201,22 @@ export default function AIChatCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={assistantAvatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-sm font-semibold">AI</span>
+              <span className="text-sm font-bold tracking-tight">AI</span>
             )}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-foreground">{chatbotName}</h2>
+            <h2 className="truncate text-[15px] font-semibold leading-tight text-foreground">{chatbotName}</h2>
             {assistantSubtitle ? (
-              <p className="truncate text-[11px] leading-tight text-muted-foreground">{assistantSubtitle}</p>
-            ) : null}
+              <p className="truncate text-xs leading-snug text-muted-foreground mt-0.5">{assistantSubtitle}</p>
+            ) : (
+              <p className="flex items-center gap-1 text-xs leading-snug text-muted-foreground mt-0.5">
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"
+                  aria-hidden="true"
+                />
+                Online
+              </p>
+            )}
           </div>
         </div>
 
@@ -207,35 +225,35 @@ export default function AIChatCard({
             type="button"
             aria-label={ariaLabelClose}
             onClick={onClose}
-            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring/50"
+            className="shrink-0 rounded-full p-2 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring/50"
           >
-            <X className="h-4 w-4" strokeWidth={2.5} />
+            <X className="h-4 w-4" strokeWidth={2} />
           </button>
         )}
       </header>
 
       {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <div className="flex flex-col gap-4 text-sm">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 scroll-smooth">
+        <div className="flex flex-col gap-3.5 text-[14px] leading-relaxed">
           <AnimatePresence>
             {showSuggestions ? (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="mb-1 flex flex-wrap gap-2"
+                className="mb-2 flex flex-wrap gap-2"
               >
                 {suggestions.map((s) => (
                   <motion.button
                     key={s}
                     type="button"
-                    whileHover={{ y: -1 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ y: -1, scale: 1.01 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => sendSuggestion(s)}
-                    className="rounded-full border border-border-soft bg-background/35 px-2.5 py-1 text-[12px] font-medium leading-none text-foreground shadow-sm transition-colors hover:bg-background/60 focus:outline-none focus:ring-2 focus:ring-ring/60"
+                    className="rounded-full border border-border-soft/70 bg-muted/40 px-3 py-1.5 text-[12.5px] font-medium leading-none text-foreground/80 shadow-sm transition-all hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
                     style={
                       primaryBrandColor
-                        ? { boxShadow: `0 0 0 1px ${primaryBrandColor}20 inset` }
+                        ? { borderColor: `${primaryBrandColor}35` }
                         : undefined
                     }
                   >
@@ -252,31 +270,35 @@ export default function AIChatCard({
               <motion.div
                 key={i}
                 layout
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
                 className={cn(
-                  "max-w-[90%] rounded-2xl px-4 py-3 shadow-sm",
+                  "max-w-[85%] rounded-2xl px-4 py-3 shadow-sm",
                   isAi
-                    ? "self-start border border-border-soft bg-card/70 text-foreground"
-                    : "self-end font-semibold bg-muted/25 border border-border-soft/35"
+                    ? "self-start rounded-tl-sm border border-border-soft/60 bg-muted/50 text-foreground"
+                    : "self-end rounded-tr-sm"
                 )}
                 style={
-                  !isAi && primaryBrandColor
+                  !isAi
                     ? {
-                        backgroundColor: primaryBrandColor,
-                        color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                        backgroundColor: primaryBrandColor || "#1e293b",
+                        color: primaryBrandColor
+                          ? isLightColor(primaryBrandColor)
+                            ? "#0b1220"
+                            : "#ffffff"
+                          : "#ffffff",
                       }
                     : undefined
                 }
               >
                 {isAi ? (
-                  <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2">
+                  <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1.5 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2">
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                   </div>
                 ) : (
-                  msg.text
+                  <span className="font-medium">{msg.text}</span>
                 )}
               </motion.div>
             );
@@ -288,18 +310,16 @@ export default function AIChatCard({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="flex max-w-[42%] items-center gap-1 self-start rounded-2xl border border-border-soft bg-card/70 px-4 py-2.5"
+                className="flex items-center gap-1.5 self-start rounded-2xl rounded-tl-sm border border-border-soft/60 bg-muted/50 px-4 py-3"
               >
-                <span className="h-2 w-2 animate-pulse rounded-full bg-foreground/70" />
-                <span
-                  className="h-2 w-2 animate-pulse rounded-full bg-foreground/70"
-                  style={{ animationDelay: "0.15s" }}
-                />
-                <span
-                  className="h-2 w-2 animate-pulse rounded-full bg-foreground/70"
-                  style={{ animationDelay: "0.3s" }}
-                />
-                <span className="ml-1 text-xs font-medium text-muted-foreground">
+                {[0, 0.15, 0.3].map((delay, idx) => (
+                  <span
+                    key={idx}
+                    className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
+                    style={{ animationDelay: `${delay}s`, animationDuration: "1.1s" }}
+                  />
+                ))}
+                <span className="ml-1.5 text-xs font-medium text-muted-foreground">
                   {typingIndicatorText}
                 </span>
               </motion.div>
@@ -310,21 +330,21 @@ export default function AIChatCard({
         </div>
       </div>
 
-      {/* Floating input bar */}
-      <div className="mx-3 mb-3 mt-2 shrink-0 rounded-2xl border border-border-soft/40 bg-background/55 px-3 py-2.5 shadow-[0_10px_30px_rgba(2,6,23,0.16)] backdrop-blur">
+      {/* Input bar */}
+      <div className="shrink-0 border-t border-border-soft/20 bg-background px-4 pb-4 pt-3">
         {showPoweredBy && (
-          <div className="mb-1 text-center text-[10px] text-muted-foreground/70">
+          <div className="mb-2 text-center text-[10px] text-muted-foreground/50 tracking-wide">
             {poweredByText}
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-2.5">
           <textarea
             ref={textareaRef}
             rows={1}
-            className="min-h-[48px] max-h-[128px] flex-1 resize-none overflow-y-auto rounded-xl border border-border-soft bg-background/45 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
+            className="min-h-[46px] max-h-[128px] flex-1 resize-none overflow-y-auto rounded-2xl border border-border-soft/60 bg-muted/30 px-4 py-3 text-[14px] leading-snug text-foreground placeholder:text-muted-foreground/60 outline-none transition-all focus-visible:border-[color:var(--accent)]/50 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/25"
             style={
               primaryBrandColor
-                ? ({ ["--tw-ring-color" as string]: primaryBrandColor } as React.CSSProperties)
+                ? ({ ["--accent" as string]: primaryBrandColor } as React.CSSProperties)
                 : undefined
             }
             placeholder={placeholder}
@@ -342,18 +362,18 @@ export default function AIChatCard({
             type="button"
             onClick={handleSend}
             aria-label={ariaLabelSend}
-            className="shrink-0 rounded-xl h-[48px] w-[48px] flex items-center justify-center shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 rounded-2xl h-[46px] w-[46px] flex items-center justify-center shadow-sm transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
             style={
               primaryBrandColor
                 ? {
                     backgroundColor: primaryBrandColor,
                     color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
                   }
-                : undefined
+                : { backgroundColor: "#1e293b", color: "#ffffff" }
             }
             disabled={isTyping || input.trim().length === 0}
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       </div>

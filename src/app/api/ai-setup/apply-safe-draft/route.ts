@@ -46,10 +46,13 @@ export async function POST(request: Request) {
     }
 
     const safeDraft: Record<string, unknown> = {};
+    if (draft.chatbot_name) safeDraft.chatbot_name = draft.chatbot_name;
     if (draft.primary_goal) safeDraft.company_description = draft.primary_goal;
     if (draft.widget_config?.welcomeMessage) safeDraft.chatbot_welcome_message = draft.widget_config.welcomeMessage;
     if (draft.widget_config?.primaryColor) safeDraft.primary_brand_color = draft.widget_config.primaryColor;
+    if (draft.widget_config?.position) safeDraft.widget_position_preset = draft.widget_config.position;
     if (draft.notification_email) safeDraft.lead_notification_email = draft.notification_email;
+    if (draft.widget_enabled !== undefined) safeDraft.widget_enabled = draft.widget_enabled;
     if (draft.quote_form_config && typeof draft.quote_form_config === 'object') safeDraft.quote_form_config = draft.quote_form_config;
 
     const result = await executeSetupAction(supabase, orgId, 'apply_safe_setup_draft', { draft: safeDraft });

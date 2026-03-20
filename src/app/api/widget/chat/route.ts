@@ -588,7 +588,14 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
             budget_amount?: number;
           };
           const name = typeof parsed.customer_name === 'string' ? parsed.customer_name.trim() : '';
-          if (name) {
+          const hasServiceContext =
+            (typeof parsed.service_type === 'string' && parsed.service_type.trim().length > 0) ||
+            (typeof parsed.project_details === 'string' && parsed.project_details.trim().length > 0) ||
+            (typeof parsed.dimensions_size === 'string' && parsed.dimensions_size.trim().length > 0) ||
+            (typeof parsed.location === 'string' && parsed.location.trim().length > 0) ||
+            (typeof parsed.budget_text === 'string' && parsed.budget_text.trim().length > 0) ||
+            (typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount));
+          if (name && hasServiceContext) {
             const { data: existing } = await supabase
               .from('quote_requests')
               .select('id')

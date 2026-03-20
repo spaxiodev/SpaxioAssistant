@@ -40,9 +40,12 @@ export function mergePlannerConfig(
   }
   if (update.widget_config !== undefined && update.widget_config !== null && typeof update.widget_config === 'object') {
     const wc = update.widget_config as Record<string, unknown>;
+    const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
     merged.widget_config = {
       ...merged.widget_config,
-      position: typeof wc.position === 'string' ? wc.position as AssistantPlannerConfig['widget_config'] extends { position?: infer P } ? P : never : merged.widget_config?.position,
+      position: typeof wc.position === 'string' && validPositions.includes(wc.position)
+        ? wc.position as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+        : merged.widget_config?.position,
       welcomeMessage: typeof wc.welcomeMessage === 'string' ? wc.welcomeMessage : merged.widget_config?.welcomeMessage,
       primaryColor: typeof wc.primaryColor === 'string' ? wc.primaryColor : merged.widget_config?.primaryColor,
       widgetLogoUrl: typeof wc.widgetLogoUrl === 'string' ? wc.widgetLogoUrl.trim().slice(0, 2000) : merged.widget_config?.widgetLogoUrl,

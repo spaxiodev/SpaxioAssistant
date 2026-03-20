@@ -20,6 +20,9 @@ type QuoteRequest = {
   notes?: string | null;
   budget_text?: string | null;
   budget_amount?: number | null;
+  estimate_total?: number | null;
+  estimate_low?: number | null;
+  estimate_high?: number | null;
   conversation_id?: string | null;
   created_at: string;
 };
@@ -27,6 +30,9 @@ type QuoteRequest = {
 function formatBudget(r: QuoteRequest): string {
   if (r.budget_text) return r.budget_text;
   if (r.budget_amount != null) return `$${Number(r.budget_amount).toLocaleString()}`;
+  if (r.estimate_low != null && r.estimate_high != null)
+    return `$${Number(r.estimate_low).toLocaleString()} – $${Number(r.estimate_high).toLocaleString()}`;
+  if (r.estimate_total != null) return `$${Number(r.estimate_total).toLocaleString()}`;
   return '—';
 }
 
@@ -45,6 +51,8 @@ type Props = {
   basePrices: Record<string, number> | null;
   labels: {
     customer: string;
+    email: string;
+    phone: string;
     service: string;
     budget: string;
     worthIt: string;
@@ -80,6 +88,8 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
               <TableHeader>
                 <TableRow>
                   <TableHead>{labels.customer}</TableHead>
+                  <TableHead>{labels.email}</TableHead>
+                  <TableHead>{labels.phone}</TableHead>
                   <TableHead>{labels.service}</TableHead>
                   <TableHead>{labels.budget}</TableHead>
                   <TableHead>{labels.worthIt}</TableHead>
@@ -99,6 +109,8 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                       onClick={() => setDetailId(r.id)}
                     >
                       <TableCell className="font-medium">{r.customer_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.customer_email ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.customer_phone ?? '—'}</TableCell>
                       <TableCell>{r.service_type ?? '—'}</TableCell>
                       <TableCell>{formatBudget(r)}</TableCell>
                       <TableCell>

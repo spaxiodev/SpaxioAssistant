@@ -20,6 +20,7 @@ import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
 import { emitAutomationEvent } from '@/lib/automations/engine';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { canUseAutomation } from '@/lib/entitlements';
+import { sendQuoteRequestConfirmation } from '@/lib/email/send-quote-confirmation';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -212,8 +213,7 @@ export async function POST(request: Request) {
     },
   });
 
-  // AI follow-ups and automations should use the visitor's resolved language.
-  const quoteRequestId = result.quoteRequestId ?? null;
+  // Send confirmation email to customer
   const leadId = result.leadId ?? null;
   const contactName = typeof collected.contact_name === 'string' ? collected.contact_name : '';
   const contactEmail = typeof collected.contact_email === 'string' ? collected.contact_email : '';
@@ -228,6 +228,21 @@ export async function POST(request: Request) {
   const projectDetails = typeof (collected as any).project_details === 'string' ? (collected as any).project_details : null;
   const location = typeof (collected as any).location === 'string' ? (collected as any).location : null;
 
+  if (contactEmail) {
+    sendQuoteRequestConfirmation({
+      supabase,
+      organizationId: run.organization_id,
+      customerName: contactName,
+      customerEmail: contactEmail,
+      estimateTotal,
+      estimateLow,
+      estimateHigh,
+      formAnswers,
+      language: customerLanguage,
+    }).catch((err) => console.warn('[ai-page/quote-submit] confirmation email failed', err));
+  }
+
+  // AI follow-ups and automations should use the visitor's resolved language.
   if (process.env.OPENAI_API_KEY && quoteRequestId) {
     triggerFollowUpRun(supabase, {
       organizationId: run.organization_id,
