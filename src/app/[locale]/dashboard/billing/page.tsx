@@ -2,13 +2,14 @@ import { getOrganizationId } from '@/lib/auth-server';
 import { Link } from '@/components/intl-link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
-import { getOrganizationSubscriptionAccess } from '@/lib/billing/subscription-access';
+import { getOrganizationAccessSnapshot } from '@/lib/billing/access';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckoutButton } from '@/app/dashboard/billing/checkout-button';
+import { UsageOverviewCard } from '@/components/dashboard/usage-overview-card';
 import { getTranslations } from 'next-intl/server';
-import { Progress } from '@/components/ui/progress';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default async function BillingPage() {
   const orgId = await getOrganizationId();
@@ -17,14 +18,13 @@ export default async function BillingPage() {
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const access = await getOrganizationSubscriptionAccess(supabase, orgId, adminAllowed);
+  const snapshot = await getOrganizationAccessSnapshot(supabase, orgId, adminAllowed);
 
-  const isActive = access.isActive;
-  const planName = access.planName;
-  const trialEnd = access.trialEndsAt ? new Date(access.trialEndsAt) : null;
-  const periodEnd = access.currentPeriodEnd ? new Date(access.currentPeriodEnd) : null;
-  const hasStripeSubscription = access.billingStatus === 'active' || access.billingStatus === 'trialing';
-  const subscription = { status: access.billingStatus, trial_ends_at: access.trialEndsAt, current_period_end: access.currentPeriodEnd };
+  const { isActive, isTrialing, planName, planSlug, billingStatus, trialEndsAt, currentPeriodEnd } = snapshot;
+  const trialEnd = trialEndsAt ? new Date(trialEndsAt) : null;
+  const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd) : null;
+  const hasStripeSubscription = billingStatus === 'active' || billingStatus === 'trialing';
+  const isPastDue = billingStatus === 'past_due';
 
   return (
     <div className="space-y-8">
@@ -33,158 +33,181 @@ export default async function BillingPage() {
         <p className="text-muted-foreground">{t('billingDescription')}</p>
       </div>
 
+      {/* Past-due warning */}
+      {isPastDue && (
+        <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+          <CardContent className="flex items-start gap-3 pt-4">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+            <div className="space-y-1">
+              <p className="font-medium text-red-900 dark:text-red-200">Your payment is past due</p>
+              <p className="text-sm text-red-700 dark:text-red-300">
+                Please update your payment method to keep your account active.
+              </p>
+              <form action="/api/billing/portal" method="POST" className="mt-2">
+                <input type="hidden" name="organizationId" value={orgId} />
+                <Button type="submit" size="sm" variant="destructive">
+                  Update payment method
+                </Button>
+              </form>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Prominent upgrade CTA when not subscribed */}
-      {!isActive && (
+      {!isActive && !isPastDue && (
         <Card className="border-2 border-primary bg-primary/5 shadow-md">
           <CardHeader>
             <CardTitle className="text-xl">{t('upgradeCtaTitle')}</CardTitle>
             <CardDescription className="text-base">{t('upgradeCtaDescription')}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <CheckoutButton
               organizationId={orgId}
               subscribeLabel={t('upgrade')}
               redirectingLabel={t('redirecting')}
               className="rounded-lg px-6 py-6 text-base font-semibold"
             />
+            <p className="text-xs text-muted-foreground">
+              Start with a 49-day free trial. No credit card required upfront.{' '}
+              <Link href="/pricing" className="underline hover:no-underline">
+                View all plans →
+              </Link>
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Assistant Pro plan option */}
-      <Card className="border-primary/50">
+      {/* Current plan card */}
+      <Card className="border-primary/30">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {t('assistantProPlanName')}
-            <Badge variant="secondary" className="font-normal">
-              {t('assistantProDescription')}
-            </Badge>
-          </CardTitle>
-          <CardDescription>{t('currentPlanDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!isActive ? (
-            <CheckoutButton
-              organizationId={orgId}
-              subscribeLabel={t('subscribeNow')}
-              redirectingLabel={t('redirecting')}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {adminAllowed && t('adminFree')}
-              {!adminAllowed && subscription?.status === 'trialing' && trialEnd && t('freeTrialEnds', { date: trialEnd.toLocaleDateString() })}
-              {!adminAllowed && subscription?.status === 'active' && periodEnd && t('currentPeriodEnds', { date: periodEnd.toLocaleDateString() })}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('currentPlan')}</CardTitle>
-          <CardDescription>
-            {planName} — {t('currentPlanDescription')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{planName}</span>
-            <Badge variant={isActive ? 'default' : 'secondary'}>
-              {adminAllowed ? t('adminFree') : (subscription?.status ?? t('none'))}
-            </Badge>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {planName}
+                <Badge variant={isActive ? 'default' : 'secondary'} className="font-normal capitalize">
+                  {adminAllowed ? 'Admin' : billingStatus === 'trialing' ? 'Trial' : billingStatus === 'active' ? 'Active' : billingStatus}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="mt-1">{t('currentPlanDescription')}</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link href="/pricing">
+                View all plans
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
-          {trialEnd && subscription?.status === 'trialing' && (
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {adminAllowed && (
+            <p className="text-sm text-muted-foreground">{t('adminFree')}</p>
+          )}
+          {!adminAllowed && billingStatus === 'trialing' && trialEnd && (
             <p className="text-sm text-muted-foreground">
               {t('freeTrialEnds', { date: trialEnd.toLocaleDateString() })}
             </p>
           )}
-          {periodEnd && subscription?.status === 'active' && (
+          {!adminAllowed && billingStatus === 'active' && periodEnd && (
             <p className="text-sm text-muted-foreground">
               {t('currentPeriodEnds', { date: periodEnd.toLocaleDateString() })}
             </p>
           )}
-          {!isActive && (
-            <CheckoutButton
-              organizationId={orgId}
-              subscribeLabel={t('subscribeNow')}
-              redirectingLabel={t('redirecting')}
-            />
-          )}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {!isActive && (
+              <CheckoutButton
+                organizationId={orgId}
+                subscribeLabel={t('subscribeNow')}
+                redirectingLabel={t('redirecting')}
+              />
+            )}
+            {hasStripeSubscription && (
+              <form action="/api/billing/portal" method="POST">
+                <input type="hidden" name="organizationId" value={orgId} />
+                <Button type="submit" variant="outline" size="sm" title={t('manageSubscriptionHint')}>
+                  {t('manageSubscription')}
+                </Button>
+              </form>
+            )}
+          </div>
           {hasStripeSubscription && (
-            <form action="/api/billing/portal" method="POST" className="space-y-1">
-              <input type="hidden" name="organizationId" value={orgId} />
-              <Button type="submit" variant="outline" className="rounded-lg" title={t('manageSubscriptionHint')}>
-                {t('manageSubscription')}
-              </Button>
-              <p className="text-xs text-muted-foreground">{t('manageSubscriptionHint')}</p>
-            </form>
+            <p className="text-xs text-muted-foreground">{t('manageSubscriptionHint')}</p>
           )}
-          <p className="text-sm text-muted-foreground">
-            <Link href="/pricing" className="underline hover:no-underline">
-              View all plans
-            </Link>
+        </CardContent>
+      </Card>
+
+      {/* Rich usage overview */}
+      <UsageOverviewCard
+        planName={planName}
+        planSlug={planSlug ?? 'free'}
+        billingStatus={billingStatus}
+        isActive={isActive}
+        richUsage={snapshot.richUsage}
+        usageWarnings={snapshot.usageWarnings}
+        periodStart={snapshot.usage.period_start}
+        periodEnd={snapshot.usage.period_end}
+        showUpgradeCta={!adminAllowed}
+      />
+
+      {/* What happens at limits — educational card */}
+      <Card className="border-dashed border-muted-foreground/20 bg-muted/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Good to know</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">AI reply limit reached?</strong>{' '}
+            Your widget stays live. Visitors can still submit lead forms and quote requests — AI replies are temporarily paused.
+          </p>
+          <p>
+            <strong className="text-foreground">Knowledge sources at limit?</strong>{' '}
+            Existing sources keep working. Upgrade to add more.
+          </p>
+          <p>
+            <strong className="text-foreground">Team member limit?</strong>{' '}
+            Current teammates stay active. Upgrade to invite more.
           </p>
         </CardContent>
       </Card>
 
-      {/* Usage this period */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('usageThisPeriod')}</CardTitle>
-          <CardDescription>
-            {t('usagePeriodDescription', {
-              start: new Date(access.usage.period_start).toLocaleDateString(),
-              end: new Date(access.usage.period_end).toLocaleDateString(),
-            })}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('messages')}</span>
-              <span>
-                {access.usage.message_count} / {access.usage.message_limit === 0 ? '∞' : access.usage.message_limit}
-              </span>
-            </div>
-            {access.usage.message_limit > 0 && (
-              <Progress
-                value={
-                  access.usage.message_limit > 0
-                    ? Math.min(100, (access.usage.message_count / access.usage.message_limit) * 100)
-                    : 0
-                }
-                className="h-2"
+      {/* Upgrade plan options — show when not on business or enterprise */}
+      {isActive && !adminAllowed && planSlug !== 'business' && planSlug !== 'enterprise' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Need more capacity?</CardTitle>
+            <CardDescription>
+              Upgrade anytime to get higher limits, more team members, and premium features.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {(planSlug === 'free' || planSlug === null) && (
+              <CheckoutButton
+                organizationId={orgId}
+                planId="starter"
+                subscribeLabel="Upgrade to Starter"
+                redirectingLabel={t('redirecting')}
+                variant="outline"
               />
             )}
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('aiActions')}</span>
-              <span>
-                {access.usage.ai_action_count} / {access.usage.ai_action_limit === 0 ? '∞' : access.usage.ai_action_limit}
-              </span>
-            </div>
-            {access.usage.ai_action_limit > 0 && (
-              <Progress
-                value={
-                  access.usage.ai_action_limit > 0
-                    ? Math.min(100, (access.usage.ai_action_count / access.usage.ai_action_limit) * 100)
-                    : 0
-                }
-                className="h-2"
+            {(planSlug === 'free' || planSlug === 'starter' || planSlug === null) && (
+              <CheckoutButton
+                organizationId={orgId}
+                planId="pro"
+                subscribeLabel="Upgrade to Pro"
+                redirectingLabel={t('redirecting')}
               />
             )}
-          </div>
-          {access.blockedReasons.length > 0 && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-medium">{access.blockedReasons[0].message}</p>
-              <Link href="/pricing" className="mt-2 inline-block font-medium underline">
-                {t('upgrade')}
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {(planSlug === 'pro' || planSlug === 'legacy_assistant_pro') && (
+              <CheckoutButton
+                organizationId={orgId}
+                planId="business"
+                subscribeLabel="Upgrade to Business"
+                redirectingLabel={t('redirecting')}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {adminAllowed && (
         <>
@@ -209,11 +232,9 @@ export default async function BillingPage() {
   );
 }
 
-/** Admin-only: subscription status, plan, entitlements snapshot, usage (for debugging webhook sync). */
 async function BillingDebugSection({ orgId }: { orgId: string }) {
   const supabase = createAdminClient();
-  const adminAllowed = true;
-  const access = await getOrganizationSubscriptionAccess(supabase, orgId, adminAllowed);
+  const snapshot = await getOrganizationAccessSnapshot(supabase, orgId, true);
   const { data: sub } = await supabase
     .from('subscriptions')
     .select('id, plan_id, stripe_price_id, status')
@@ -223,13 +244,20 @@ async function BillingDebugSection({ orgId }: { orgId: string }) {
     <Card className="border-dashed border-border bg-muted/50">
       <CardHeader>
         <CardTitle className="text-base font-medium text-muted-foreground">Billing debug (admin)</CardTitle>
-        <CardDescription>Subscription, plan, and usage for webhook/diagnostic use.</CardDescription>
+        <CardDescription>Subscription, plan, usage, and entitlements snapshot.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 font-mono text-xs">
         <p><span className="text-muted-foreground">Subscription:</span> {sub?.status ?? '—'} | plan_id: {sub?.plan_id ?? 'null'} | price_id: {sub?.stripe_price_id ?? 'null'}</p>
-        <p><span className="text-muted-foreground">Plan:</span> {access.planSlug} ({access.planName})</p>
-        <p><span className="text-muted-foreground">Usage this period:</span> messages={access.usage.message_count}, ai_actions={access.usage.ai_action_count}</p>
-        <p><span className="text-muted-foreground">Limits:</span> max_agents={access.entitlements.max_agents}, monthly_messages={access.entitlements.monthly_messages}, tool_calling={String(access.entitlements.tool_calling_enabled)}, ai_pages_enabled={String(access.entitlements.ai_pages_enabled)}</p>
+        <p><span className="text-muted-foreground">Plan:</span> {snapshot.planSlug} ({snapshot.planName})</p>
+        <p><span className="text-muted-foreground">Monthly:</span> messages={snapshot.richUsage.message_count}/{snapshot.richUsage.message_limit}, ai_actions={snapshot.richUsage.ai_action_count}/{snapshot.richUsage.ai_action_limit}</p>
+        <p><span className="text-muted-foreground">Resources:</span> agents={snapshot.richUsage.agents_count}/{snapshot.richUsage.agents_limit}, widgets={snapshot.richUsage.widgets_count}/{snapshot.richUsage.widgets_limit}, sources={snapshot.richUsage.knowledge_sources_count}/{snapshot.richUsage.knowledge_sources_limit}, team={snapshot.richUsage.team_members_count}/{snapshot.richUsage.team_members_limit}</p>
+        <p><span className="text-muted-foreground">Entitlements:</span> automations={String(snapshot.entitlements.automations_enabled)}, tools={String(snapshot.entitlements.tool_calling_enabled)}, voice={String(snapshot.entitlements.voice_enabled)}, api={String(snapshot.entitlements.api_access)}, ai_pages={String(snapshot.entitlements.ai_pages_enabled)}</p>
+        {snapshot.usageWarnings.length > 0 && (
+          <p className="text-amber-600 dark:text-amber-400">
+            <span className="text-muted-foreground">Warnings:</span>{' '}
+            {snapshot.usageWarnings.map((w) => `${w.metric}@${w.pct}%`).join(', ')}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

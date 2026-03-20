@@ -15,6 +15,7 @@ type PlanEntitlementRow = Database['public']['Tables']['plan_entitlements']['Row
 export type Entitlements = {
   max_agents: number;
   max_automations: number;
+  max_widgets: number;
   monthly_messages: number;
   monthly_ai_actions: number;
   max_knowledge_sources: number;
@@ -60,7 +61,8 @@ export type Entitlements = {
 const DEFAULT_ENTITLEMENTS: Entitlements = {
   max_agents: 1,
   max_automations: 0,
-  monthly_messages: 100,
+  max_widgets: 1,
+  monthly_messages: 200,
   monthly_ai_actions: 100,
   max_knowledge_sources: 1,
   max_document_uploads: 0,
@@ -187,23 +189,28 @@ export async function getCurrentUsage(
   team_members_count: number;
   document_uploads_count: number;
   ai_pages_count: number;
+  automations_count: number;
+  widgets_count: number;
 }> {
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 
-  const [usageRes, agentsRes, sourcesRes, membersRes, sourcesList, aiPagesRes] = await Promise.all([
-    supabase
-      .from('org_usage')
-      .select('message_count, ai_action_count')
-      .eq('organization_id', organizationId)
-      .eq('period_start', periodStart)
-      .maybeSingle(),
-    supabase.from('agents').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
-    supabase.from('knowledge_sources').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
-    supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
-    supabase.from('knowledge_sources').select('id').eq('organization_id', organizationId),
-    supabase.from('ai_pages').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
-  ]);
+  const [usageRes, agentsRes, sourcesRes, membersRes, sourcesList, aiPagesRes, automationsRes, widgetsRes] =
+    await Promise.all([
+      supabase
+        .from('org_usage')
+        .select('message_count, ai_action_count')
+        .eq('organization_id', organizationId)
+        .eq('period_start', periodStart)
+        .maybeSingle(),
+      supabase.from('agents').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      supabase.from('knowledge_sources').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      supabase.from('knowledge_sources').select('id').eq('organization_id', organizationId),
+      supabase.from('ai_pages').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      supabase.from('automations').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      supabase.from('widgets').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+    ]);
 
   const sourceIds = (sourcesList.data ?? []).map((s) => s.id);
   let document_uploads_count = 0;
@@ -224,6 +231,8 @@ export async function getCurrentUsage(
     team_members_count: membersRes.count ?? 0,
     document_uploads_count,
     ai_pages_count: aiPagesRes.count ?? 0,
+    automations_count: automationsRes.count ?? 0,
+    widgets_count: widgetsRes.count ?? 0,
   };
 }
 

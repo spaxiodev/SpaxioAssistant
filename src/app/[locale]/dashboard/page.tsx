@@ -3,8 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription } from '@/lib/entitlements';
 import { getPlanAccess } from '@/lib/plan-access';
+import { getOrganizationAccessSnapshot } from '@/lib/billing/access';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, MessageSquare, FileText, Home } from 'lucide-react';
+import { Users, MessageSquare, FileText, Home, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/components/intl-link';
@@ -21,7 +22,10 @@ export default async function DashboardOverviewPage() {
   const widgetIds = (widgets ?? []).map((w) => w.id);
 
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  await getPlanAccess(supabase, orgId, adminAllowed);
+  const [, snapshot] = await Promise.all([
+    getPlanAccess(supabase, orgId, adminAllowed),
+    getOrganizationAccessSnapshot(supabase, orgId, adminAllowed),
+  ]);
 
   const [
     { count: leadsCount },
@@ -82,6 +86,40 @@ export default async function DashboardOverviewPage() {
             </p>
             <Button asChild>
               <Link href="/dashboard/billing">{t('upgrade')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Usage warning banner — shown when approaching or at limits */}
+      {!adminAllowed && snapshot.usageWarnings.length > 0 && (
+        <Card className={
+          snapshot.usageWarnings.some((w) => w.level === 'limit_reached')
+            ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20'
+            : 'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20'
+        }>
+          <CardContent className="flex flex-wrap items-start gap-3 pt-4">
+            <AlertTriangle className={
+              snapshot.usageWarnings.some((w) => w.level === 'limit_reached')
+                ? 'mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400'
+                : 'mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-400'
+            } />
+            <div className="flex-1 space-y-1">
+              <p className={
+                snapshot.usageWarnings.some((w) => w.level === 'limit_reached')
+                  ? 'font-medium text-red-900 dark:text-red-200'
+                  : 'font-medium text-orange-900 dark:text-orange-200'
+              }>
+                {snapshot.usageWarnings[0].message}
+              </p>
+              {snapshot.usageWarnings.some((w) => w.level === 'limit_reached' && w.metric === 'monthly_messages') && (
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  Your widget can still collect leads and quote requests while AI replies are paused.
+                </p>
+              )}
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/dashboard/billing">View usage</Link>
             </Button>
           </CardContent>
         </Card>

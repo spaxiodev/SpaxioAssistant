@@ -8,6 +8,7 @@ import { getClientIp, isUuid, normalizeUuid, sanitizeText } from '@/lib/validati
 import { rateLimit } from '@/lib/rate-limit';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { recordMessageUsage, recordAiActionUsage } from '@/lib/billing/usage';
+import { widgetAiLimitResponse, widgetNoSubscriptionResponse } from '@/lib/billing/access';
 import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions, canUseAutomation, canUseToolCalling } from '@/lib/entitlements';
 import { searchKnowledge } from '@/lib/knowledge/search';
 import type { Agent } from '@/lib/supabase/database.types';
@@ -128,32 +129,19 @@ export async function POST(request: Request) {
   const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
   const allowed = await hasActiveSubscription(supabase, widget.organization_id, adminAllowed);
   if (!allowed) {
-    return NextResponse.json(
-      {
-        reply: "Chat is not available right now. Please contact the business directly.",
-        error: 'subscription_required',
-      },
-      { headers: corsHeaders }
-    );
+    // Soft fallback: widget still loads and lead capture remains available
+    return widgetNoSubscriptionResponse(corsHeaders);
   }
 
   const messageLimitExceeded = await hasExceededMonthlyMessages(supabase, widget.organization_id, adminAllowed);
   if (messageLimitExceeded) {
     const { getPlanForOrg } = await import('@/lib/entitlements');
-    const { getNextPlanSlug, normalizePlanSlug } = await import('@/lib/plan-config');
+    const { normalizePlanSlug } = await import('@/lib/plan-config');
     const plan = await getPlanForOrg(supabase, widget.organization_id);
     const currentSlug = normalizePlanSlug(plan?.slug ?? 'free') ?? 'free';
-    return NextResponse.json(
-      {
-        reply: "This month's message limit has been reached. Please upgrade your plan or try again next month.",
-        error: 'message_limit_reached',
-        code: 'PLAN_UPGRADE_REQUIRED',
-        currentPlan: currentSlug,
-        requiredPlan: getNextPlanSlug(currentSlug),
-        feature: 'messages',
-      },
-      { status: 403, headers: corsHeaders }
-    );
+    // Soft fallback: return 200 with ai_disabled flag so the widget shows a
+    // graceful message instead of an error. Lead capture remains available.
+    return widgetAiLimitResponse(currentSlug, corsHeaders);
   }
 
   const { data: settings } = await supabase

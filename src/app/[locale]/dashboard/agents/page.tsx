@@ -1,10 +1,13 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getOrganizationAccessSnapshot, canCreateResourceFromSnapshot } from '@/lib/billing/access';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/components/intl-link';
+import { UsageLimitBanner } from '@/components/dashboard/usage-limit-banner';
 import { Bot, Plus } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -28,6 +31,10 @@ export default async function AgentsPage() {
 
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const snapshot = await getOrganizationAccessSnapshot(supabase, orgId, adminAllowed);
+  const agentCreateStatus = canCreateResourceFromSnapshot(snapshot, 'agents');
+  const canCreateNewAgent = agentCreateStatus === 'allowed' || agentCreateStatus === 'warning';
 
   const { data: agents } = await supabase
     .from('agents')
@@ -85,8 +92,17 @@ export default async function AgentsPage() {
               ))}
             </ul>
           )}
-          <Button asChild>
-            <Link href="/dashboard/agents/new">
+          {(agentCreateStatus === 'limit_reached' || agentCreateStatus === 'requires_upgrade') && (
+            <UsageLimitBanner
+              resourceLabel="assistants"
+              used={snapshot.richUsage.agents_count}
+              limit={snapshot.richUsage.agents_limit}
+              status={agentCreateStatus}
+              className="mb-2"
+            />
+          )}
+          <Button asChild disabled={!canCreateNewAgent}>
+            <Link href={canCreateNewAgent ? '/dashboard/agents/new' : '#'}>
               <Plus className="mr-2 h-4 w-4" />
               Create assistant
             </Link>

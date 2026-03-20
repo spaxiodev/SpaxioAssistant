@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlanForOrg } from "@/lib/entitlements";
 import { Link } from '@/components/intl-link';
 import type { Metadata } from 'next';
+import { ShieldCheck } from 'lucide-react';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -46,6 +47,7 @@ export default async function PricingPage({ params }: Props) {
             {orgId ? tCommon("backToDashboard") : tCommon("backToHome")}
           </Link>
         </div>
+
         <div className="mb-12 space-y-3">
           <h2 className="text-center text-3xl font-semibold leading-tight sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight">
             {t("title")}
@@ -57,7 +59,18 @@ export default async function PricingPage({ params }: Props) {
             {t("trialNote")}
           </p>
         </div>
+
+        {/* Fair access note */}
+        <div className="mb-10 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300 max-w-2xl mx-auto">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>
+            <strong>Lead capture always stays live.</strong>{' '}
+            {t("fairAccessNote")}
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          {/* FREE */}
           <PricingCard
             tier={t("tiers.free.name")}
             price={t("tiers.free.price")}
@@ -70,11 +83,13 @@ export default async function PricingPage({ params }: Props) {
               { text: t("benefits.agentsFree"), checked: true },
               { text: t("benefits.messagesFree"), checked: true },
               { text: t("benefits.knowledgeFree"), checked: true },
-              { text: t("benefits.tools"), checked: false },
-              { text: t("benefits.automations"), checked: false },
-              { text: t("benefits.branding"), checked: false },
+              { text: t("benefits.teamMembersFree"), checked: true },
+              { text: t("benefits.toolsFree"), checked: false },
+              { text: t("benefits.brandingFree"), checked: false },
             ]}
           />
+
+          {/* STARTER */}
           <PricingCard
             tier={t("tiers.starter.name")}
             price={t("tiers.starter.price")}
@@ -88,11 +103,13 @@ export default async function PricingPage({ params }: Props) {
               { text: t("benefits.agentsStarter"), checked: true },
               { text: t("benefits.messagesStarter"), checked: true },
               { text: t("benefits.knowledgeStarter"), checked: true },
-              { text: t("benefits.tools"), checked: false },
-              { text: t("benefits.automations"), checked: false },
-              { text: t("benefits.branding"), checked: true },
+              { text: t("benefits.teamMembersStarter"), checked: true },
+              { text: t("benefits.toolsStarter"), checked: false },
+              { text: t("benefits.brandingStarter"), checked: true },
             ]}
           />
+
+          {/* PRO */}
           <PricingCard
             tier={t("tiers.pro.name")}
             price={t("tiers.pro.price")}
@@ -108,11 +125,15 @@ export default async function PricingPage({ params }: Props) {
               { text: t("benefits.agentsPro"), checked: true },
               { text: t("benefits.messagesPro"), checked: true },
               { text: t("benefits.knowledgePro"), checked: true },
-              { text: t("benefits.tools"), checked: true },
-              { text: t("benefits.automations"), checked: true },
-              { text: t("benefits.branding"), checked: true },
+              { text: t("benefits.teamMembersPro"), checked: true },
+              { text: t("benefits.toolsPro"), checked: true },
+              { text: t("benefits.voicePro"), checked: true },
+              { text: t("benefits.brandingPro"), checked: true },
+              { text: t("benefits.apiAccessPro"), checked: true },
             ]}
           />
+
+          {/* BUSINESS */}
           <PricingCard
             tier={t("tiers.business.name")}
             price={t("tiers.business.price")}
@@ -126,12 +147,15 @@ export default async function PricingPage({ params }: Props) {
               { text: t("benefits.agentsBusiness"), checked: true },
               { text: t("benefits.messagesBusiness"), checked: true },
               { text: t("benefits.knowledgeBusiness"), checked: true },
-              { text: t("benefits.tools"), checked: true },
-              { text: t("benefits.automations"), checked: true },
-              { text: t("benefits.branding"), checked: true },
-              { text: t("benefits.apiAccess"), checked: true },
+              { text: t("benefits.teamMembersBusiness"), checked: true },
+              { text: t("benefits.toolsBusiness"), checked: true },
+              { text: t("benefits.voiceBusiness"), checked: true },
+              { text: t("benefits.brandingBusiness"), checked: true },
+              { text: t("benefits.apiAccessBusiness"), checked: true },
             ]}
           />
+
+          {/* ENTERPRISE */}
           <PricingCard
             tier={t("tiers.enterprise.name")}
             price={t("tiers.enterprise.price")}
@@ -144,16 +168,27 @@ export default async function PricingPage({ params }: Props) {
               { text: t("benefits.agentsEnterprise"), checked: true },
               { text: t("benefits.messagesEnterprise"), checked: true },
               { text: t("benefits.knowledgeEnterprise"), checked: true },
-              { text: t("benefits.tools"), checked: true },
-              { text: t("benefits.automations"), checked: true },
-              { text: t("benefits.branding"), checked: true },
-              { text: t("benefits.apiAccess"), checked: true },
-              { text: t("benefits.support"), checked: true },
+              { text: t("benefits.teamMembersEnterprise"), checked: true },
+              { text: t("benefits.toolsEnterprise"), checked: true },
+              { text: t("benefits.voiceEnterprise"), checked: true },
+              { text: t("benefits.brandingEnterprise"), checked: true },
+              { text: t("benefits.apiAccessEnterprise"), checked: true },
+              { text: t("benefits.supportEnterprise"), checked: true },
             ]}
           />
         </div>
+
+        {/* Lead capture note */}
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            All plans include lead capture and quote forms —{' '}
+            <strong className="text-foreground">always available</strong>{' '}
+            even if AI reply limits are reached.
+          </p>
+        </div>
+
         {orgId && (
-          <p className="mt-8 text-center text-sm text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             <Link href="/dashboard/billing" className="underline hover:no-underline">
               {t('manageSubscription')}
             </Link>

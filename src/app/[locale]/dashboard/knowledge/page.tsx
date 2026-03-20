@@ -1,5 +1,7 @@
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getOrganizationAccessSnapshot, canCreateResourceFromSnapshot } from '@/lib/billing/access';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { BookOpen } from 'lucide-react';
@@ -10,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ViewModeClientGate } from '@/components/dashboard/view-mode-client-gate';
 import { SimpleKnowledgeContent } from '@/components/dashboard/simple-knowledge-content';
 import { WebsiteKnowledgeCard } from '@/components/dashboard/website-knowledge-card';
+import { UsageLimitBanner } from '@/components/dashboard/usage-limit-banner';
 
 export default async function KnowledgePage() {
   const orgId = await getOrganizationId();
@@ -17,6 +20,10 @@ export default async function KnowledgePage() {
 
   const supabase = createAdminClient();
   const t = await getTranslations('dashboard');
+  const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+  const snapshot = await getOrganizationAccessSnapshot(supabase, orgId, adminAllowed);
+  const knowledgeCreateStatus = canCreateResourceFromSnapshot(snapshot, 'knowledge_sources');
+  const canAddSource = knowledgeCreateStatus === 'allowed' || knowledgeCreateStatus === 'warning';
 
   const [
     { data: sources },
@@ -84,22 +91,33 @@ export default async function KnowledgePage() {
             </ul>
           )}
 
-          <Tabs defaultValue="source" className="w-full">
-            <TabsList>
-              <TabsTrigger value="source">New source</TabsTrigger>
-              <TabsTrigger value="url">Import from URL</TabsTrigger>
-              <TabsTrigger value="upload">Upload text</TabsTrigger>
-            </TabsList>
-            <TabsContent value="source" className="pt-4">
-              <AddSourceForm />
-            </TabsContent>
-            <TabsContent value="url" className="pt-4">
-              <IngestUrlForm sources={sourceList} />
-            </TabsContent>
-            <TabsContent value="upload" className="pt-4">
-              <UploadTextForm sources={sourceList} />
-            </TabsContent>
-          </Tabs>
+          {(knowledgeCreateStatus === 'limit_reached' || knowledgeCreateStatus === 'requires_upgrade') && (
+            <UsageLimitBanner
+              resourceLabel="knowledge sources"
+              used={snapshot.richUsage.knowledge_sources_count}
+              limit={snapshot.richUsage.knowledge_sources_limit}
+              status={knowledgeCreateStatus}
+            />
+          )}
+
+          {canAddSource && (
+            <Tabs defaultValue="source" className="w-full">
+              <TabsList>
+                <TabsTrigger value="source">New source</TabsTrigger>
+                <TabsTrigger value="url">Import from URL</TabsTrigger>
+                <TabsTrigger value="upload">Upload text</TabsTrigger>
+              </TabsList>
+              <TabsContent value="source" className="pt-4">
+                <AddSourceForm />
+              </TabsContent>
+              <TabsContent value="url" className="pt-4">
+                <IngestUrlForm sources={sourceList} />
+              </TabsContent>
+              <TabsContent value="upload" className="pt-4">
+                <UploadTextForm sources={sourceList} />
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>

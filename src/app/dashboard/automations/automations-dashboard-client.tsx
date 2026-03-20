@@ -23,9 +23,11 @@ type Props = {
   automations: Automation[];
   agents: AgentOption[];
   runs: RunWithName[];
+  canCreateAutomation?: boolean;
+  limitBanner?: React.ReactNode;
 };
 
-export function AutomationsDashboardClient({ automations, agents, runs }: Props) {
+export function AutomationsDashboardClient({ automations, agents, runs, canCreateAutomation = true, limitBanner }: Props) {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const { mode } = useViewMode();
@@ -145,11 +147,13 @@ export function AutomationsDashboardClient({ automations, agents, runs }: Props)
           <h1 className="text-2xl font-bold tracking-tight">{t('automations')}</h1>
           <p className="text-muted-foreground">{t('automationsHero')}</p>
         </div>
-        <Button onClick={() => openCreate()}>
+        <Button onClick={() => canCreateAutomation && openCreate()} disabled={!canCreateAutomation}>
           <Plus className="mr-2 h-4 w-4" />
           {t('createAutomation')}
         </Button>
       </div>
+
+      {limitBanner}
 
       <Card>
         <CardHeader>

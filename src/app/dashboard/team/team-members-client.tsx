@@ -62,7 +62,7 @@ type Invitation = {
   created_at: string;
 };
 
-export function TeamMembersClient() {
+export function TeamMembersClient({ canInvite = true }: { canInvite?: boolean }) {
   const t = useTranslations('dashboard');
   const locale = useLocale();
   const { toast } = useToast();
@@ -276,11 +276,13 @@ export function TeamMembersClient() {
             {t('inviteTeamMember')}
           </CardTitle>
           <CardDescription>
-            Enter an email and set permissions. They will receive an invite link (valid 7 days).
+            {canInvite
+              ? 'Enter an email and set permissions. They will receive an invite link (valid 7 days).'
+              : "You've reached the team member limit for your current plan. Upgrade to invite more teammates."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSendInvite} className="space-y-4">
+          <form onSubmit={handleSendInvite} className="space-y-4" aria-disabled={!canInvite}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="invite-email">{t('emailLabel')}</Label>
@@ -338,7 +340,7 @@ export function TeamMembersClient() {
                 ))}
               </div>
             </div>
-            <Button type="submit" disabled={sending}>
+            <Button type="submit" disabled={sending || !canInvite}>
               {sending ? t('sending') : t('sendInvite')}
             </Button>
           </form>

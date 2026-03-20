@@ -8,7 +8,9 @@ import type { RunWithName } from '@/app/dashboard/automations/recent-runs';
 import { ensureWebhookTokenForAutomations } from '@/lib/automations/webhook-url';
 import { getPlanAccess } from '@/lib/plan-access';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { getOrganizationAccessSnapshot, canCreateResourceFromSnapshot } from '@/lib/billing/access';
 import { UpgradeRequiredCard } from '@/components/upgrade-required-card';
+import { UsageLimitBanner } from '@/components/dashboard/usage-limit-banner';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +20,12 @@ export default async function AutomationsPage() {
 
   const supabase = createAdminClient();
   const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
-  const planAccess = await getPlanAccess(supabase, orgId, adminAllowed);
+  const [planAccess, snapshot] = await Promise.all([
+    getPlanAccess(supabase, orgId, adminAllowed),
+    getOrganizationAccessSnapshot(supabase, orgId, adminAllowed),
+  ]);
+  const automationCreateStatus = canCreateResourceFromSnapshot(snapshot, 'automations');
+
   if (!planAccess.featureAccess.automations) {
     return (
       <div className="space-y-8">
@@ -78,11 +85,28 @@ export default async function AutomationsPage() {
     }));
   }
 
+  const automationLimitBanner =
+    (automationCreateStatus === 'limit_reached' || automationCreateStatus === 'requires_upgrade') ? (
+      <UsageLimitBanner
+        resourceLabel="automations"
+        used={snapshot.richUsage.automations_count}
+        limit={snapshot.richUsage.automations_limit}
+        status={automationCreateStatus}
+        message={
+          automationCreateStatus === 'limit_reached'
+            ? "You've reached the automation limit for your plan. Existing automations continue running. Upgrade to create more."
+            : undefined
+        }
+      />
+    ) : null;
+
   return (
     <AutomationsDashboardClient
       automations={automations}
       agents={agents}
       runs={runs}
+      canCreateAutomation={automationCreateStatus === 'allowed' || automationCreateStatus === 'warning'}
+      limitBanner={automationLimitBanner}
     />
   );
 }

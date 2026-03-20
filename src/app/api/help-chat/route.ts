@@ -4,11 +4,24 @@ import { getClientIp } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { getUser, getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { getEntitlements } from '@/lib/entitlements';
 import type { Entitlements } from '@/lib/entitlements';
+import { getOrganizationAccessSnapshot } from '@/lib/billing/access';
 
 /** Build plain-English description of what this user can and cannot do (for the AI). Use very simple words. */
-function buildUserAccessBlock(planName: string, entitlements: Entitlements): string {
+function buildUserAccessBlock(
+  planName: string,
+  entitlements: Entitlements,
+  usageContext?: {
+    messagesUsed: number;
+    messagesLimit: number;
+    messagesExceeded: boolean;
+    aiActionsExceeded: boolean;
+    nearingLimit: boolean;
+    warningLabels: string[];
+  }
+): string {
   const have: string[] = [];
   const dontHave: string[] = [];
 
@@ -118,9 +131,29 @@ function buildUserAccessBlock(planName: string, entitlements: Entitlements): str
     dontHave.push('Advanced analytics (that\'s on a higher plan)');
   }
 
+  const usageLines: string[] = [];
+  if (usageContext) {
+    if (usageContext.messagesExceeded) {
+      usageLines.push(
+        `**IMPORTANT — AI reply limit reached this month:** The user has used all ${usageContext.messagesLimit} AI replies for this billing period. Their widget is still live and can collect leads and quote requests, but AI replies are paused until next month or until they upgrade. If they ask why the widget seems quiet or why AI stopped replying, explain this clearly and kindly. Tell them they can go to Billing to upgrade for more AI replies.`
+      );
+    } else if (usageContext.nearingLimit) {
+      usageLines.push(
+        `**Usage notice:** The user has used ${usageContext.messagesUsed} of ${usageContext.messagesLimit} AI replies this month (${Math.round((usageContext.messagesUsed / usageContext.messagesLimit) * 100)}%). They are getting close to their limit. If relevant, mention they can upgrade at Billing to avoid running out.`
+      );
+    }
+    if (usageContext.aiActionsExceeded) {
+      usageLines.push(`**AI actions limit reached this month.** Tell them to go to Billing to upgrade if they ask why AI actions stopped working.`);
+    }
+    if (usageContext.warningLabels.length > 0 && !usageContext.messagesExceeded) {
+      usageLines.push(`**Usage nearing limit for:** ${usageContext.warningLabels.join(', ')}.`);
+    }
+  }
+
   const lines: string[] = [
     `This user is on the **${planName}** plan.`,
     '',
+    ...(usageLines.length > 0 ? [...usageLines, ''] : []),
     '**What they CAN do (you may explain how):**',
     ...have.map((h) => `- ${h}`),
     '',
@@ -219,9 +252,24 @@ export async function POST(request: Request) {
     const orgId = user ? await getOrganizationId(user) : null;
     if (orgId) {
       const supabase = createAdminClient();
-      const { plan, entitlements } = await getEntitlements(supabase, orgId);
+      const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
+      const [{ plan, entitlements }, snapshot] = await Promise.all([
+        getEntitlements(supabase, orgId),
+        getOrganizationAccessSnapshot(supabase, orgId, adminAllowed),
+      ]);
       const planName = plan?.name ?? 'Free';
-      userAccessBlock = buildUserAccessBlock(planName, entitlements);
+      const msgLimit = snapshot.richUsage.message_limit;
+      const msgUsed = snapshot.richUsage.message_count;
+      const nearingLimit = msgLimit > 0 && msgUsed / msgLimit >= 0.7;
+      const usageContext = {
+        messagesUsed: msgUsed,
+        messagesLimit: msgLimit,
+        messagesExceeded: snapshot.richUsage.messages_status === 'limit_reached',
+        aiActionsExceeded: snapshot.richUsage.ai_actions_status === 'limit_reached',
+        nearingLimit,
+        warningLabels: snapshot.usageWarnings.map((w) => w.label),
+      };
+      userAccessBlock = buildUserAccessBlock(planName, entitlements, usageContext);
     } else {
       userAccessBlock =
         "You do not know this user's plan. Give general help only. If they ask about a paid feature (e.g. multiple agents, removing widget branding, automations, tools, integrations, advanced analytics), say they can go to Billing in the sidebar to see plans and upgrade.";
