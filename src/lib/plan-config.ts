@@ -76,6 +76,12 @@ export const FEATURE_KEYS = [
   'followup_emails',
   'ai_followup',
   'followup_drafts',
+  // Intelligence & advanced features
+  'ai_lead_scoring',
+  'analytics_advanced',
+  'ai_suggestions',
+  'advanced_branding',
+  'conversation_learning',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -97,6 +103,12 @@ export const FEATURE_MIN_PLAN: Record<FeatureKey, PlanSlug> = {
   followup_emails: 'starter',
   ai_followup: 'pro',
   followup_drafts: 'starter',
+  // Intelligence & advanced features
+  ai_lead_scoring: 'starter',
+  analytics_advanced: 'pro',
+  ai_suggestions: 'starter',
+  advanced_branding: 'pro',
+  conversation_learning: 'pro',
 };
 
 /** Whether the given plan has access to the feature. */
@@ -139,6 +151,12 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   followup_emails: 'Follow-up emails',
   ai_followup: 'AI follow-up generation',
   followup_drafts: 'Follow-up draft approvals',
+  // Intelligence & advanced features
+  ai_lead_scoring: 'AI lead scoring & qualification',
+  analytics_advanced: 'Advanced analytics',
+  ai_suggestions: 'AI setup suggestions',
+  advanced_branding: 'Advanced widget branding',
+  conversation_learning: 'Conversation learning & insights',
 };
 
 // -----------------------------------------------------------------------------

@@ -49,6 +49,12 @@ export type Entitlements = {
   followup_drafts_enabled: boolean;
   monthly_followup_email_limit: number;
   delayed_followups_enabled: boolean;
+  // Intelligence & advanced features
+  ai_lead_scoring_enabled: boolean;
+  analytics_advanced_enabled: boolean;
+  ai_suggestions_enabled: boolean;
+  advanced_branding_enabled: boolean;
+  conversation_learning_enabled: boolean;
 };
 
 const DEFAULT_ENTITLEMENTS: Entitlements = {
@@ -87,6 +93,12 @@ const DEFAULT_ENTITLEMENTS: Entitlements = {
   followup_drafts_enabled: false,
   monthly_followup_email_limit: 0,
   delayed_followups_enabled: false,
+  // Intelligence & advanced features
+  ai_lead_scoring_enabled: false,
+  analytics_advanced_enabled: false,
+  ai_suggestions_enabled: false,
+  advanced_branding_enabled: false,
+  conversation_learning_enabled: false,
 };
 
 function parseEntitlementValue(value: unknown): number | boolean | string {
@@ -656,4 +668,63 @@ export async function canCreateBusiness(
 ): Promise<boolean> {
   const { canCreate } = await getMaxBusinessesForUser(supabase, userId, adminAllowed);
   return canCreate;
+}
+
+// -----------------------------------------------------------------------------
+// Intelligence & advanced feature entitlements
+// -----------------------------------------------------------------------------
+
+/** Whether the org has AI lead scoring / qualification enabled. */
+export async function canUseAiLeadScoring(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.ai_lead_scoring_enabled;
+}
+
+/** Whether the org has advanced analytics enabled. */
+export async function hasAdvancedAnalytics(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.analytics_advanced_enabled;
+}
+
+/** Whether the org has proactive AI suggestions enabled. */
+export async function canUseAiSuggestions(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.ai_suggestions_enabled;
+}
+
+/** Whether the org has advanced branding controls enabled. */
+export async function hasAdvancedBranding(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.advanced_branding_enabled;
+}
+
+/** Whether the org has conversation learning / insights enabled. */
+export async function canUseConversationLearning(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminAllowed = false
+): Promise<boolean> {
+  if (adminAllowed) return true;
+  const { entitlements } = await getEntitlements(supabase, organizationId);
+  return entitlements.conversation_learning_enabled;
 }

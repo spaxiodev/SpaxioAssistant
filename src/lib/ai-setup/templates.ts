@@ -4,6 +4,7 @@
  */
 
 import type { AutomationTemplateKey } from './types';
+import { detectIndustryFromText, getIndustryPreset } from './industry-presets';
 
 export interface AISetupTemplate {
   key: AutomationTemplateKey;
@@ -124,6 +125,14 @@ export function getAISetupTemplateByKey(key: string): AISetupTemplate | undefine
 }
 
 export function getRecommendedTemplatesForBusinessType(businessType: string): AISetupTemplate[] {
+  // Use industry preset detection for better recommendations
+  const industryKey = detectIndustryFromText(businessType);
+  const preset = getIndustryPreset(industryKey);
+  const recommendedKeys = preset.recommendedTemplates as string[];
+  const byPreset = AI_SETUP_TEMPLATES.filter((t) => recommendedKeys.includes(t.key));
+  if (byPreset.length > 0) return byPreset;
+
+  // Legacy fallback
   const lower = businessType.toLowerCase();
   if (lower.includes('service') || lower.includes('agency') || lower.includes('consulting')) {
     return AI_SETUP_TEMPLATES.filter((t) =>
@@ -141,4 +150,23 @@ export function getRecommendedTemplatesForBusinessType(businessType: string): AI
     );
   }
   return AI_SETUP_TEMPLATES.slice(0, 5);
+}
+
+/** Get setup suggestions for a business type, including industry-aware sample FAQs. */
+export function getIndustrySetupHints(businessType: string): {
+  tone: string;
+  primaryGoal: string;
+  suggestedGreeting: string;
+  sampleFaqs: { q: string; a: string }[];
+  primaryCta: string;
+} {
+  const industryKey = detectIndustryFromText(businessType);
+  const preset = getIndustryPreset(industryKey);
+  return {
+    tone: preset.tone,
+    primaryGoal: preset.primaryGoal,
+    suggestedGreeting: preset.suggestedGreeting,
+    sampleFaqs: preset.sampleFaqs,
+    primaryCta: preset.primaryCta,
+  };
 }

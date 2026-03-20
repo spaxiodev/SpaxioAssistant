@@ -5,6 +5,7 @@
 
 import { PLATFORM_CAPABILITIES_FOR_AI_SETUP } from '@/lib/product-context';
 import { AI_SETUP_TEMPLATES, getRecommendedTemplatesForBusinessType } from './templates';
+import { detectIndustryFromText, getIndustryPreset } from './industry-presets';
 import type { AssistantPlannerConfig } from './types';
 
 const TEMPLATE_LIST = AI_SETUP_TEMPLATES.map(
@@ -15,8 +16,26 @@ export function buildAISetupSystemPrompt(
   currentConfig: AssistantPlannerConfig,
   options?: { quickSetupApplied?: boolean }
 ): string {
-  const businessHint = currentConfig.business_type
-    ? `Recommended for "${currentConfig.business_type}": ${getRecommendedTemplatesForBusinessType(currentConfig.business_type).map((t) => t.key).join(', ')}`
+  const businessType = currentConfig.business_type ?? '';
+  const recommendedTemplates = getRecommendedTemplatesForBusinessType(businessType);
+  const businessHint = businessType
+    ? `Recommended for "${businessType}": ${recommendedTemplates.map((t) => t.key).join(', ')}`
+    : '';
+
+  // Industry-aware context
+  const industryKey = detectIndustryFromText(businessType);
+  const industryPreset = getIndustryPreset(industryKey);
+  const industryContext = industryKey !== 'general'
+    ? `
+INDUSTRY CONTEXT (${industryPreset.displayName}):
+- Recommended tone: ${industryPreset.tone}
+- Primary goal: ${industryPreset.primaryGoal}
+- Suggested greeting: "${industryPreset.suggestedGreeting}"
+- Primary CTA type: ${industryPreset.primaryCta}
+- Lead capture: ${industryPreset.leadCaptureEnabled ? 'recommended' : 'optional'}
+- Quote requests: ${industryPreset.quoteRequestEnabled ? 'recommended' : 'not typical for this industry'}
+- Sample FAQs for this industry (use as suggestions, not verbatim): ${JSON.stringify(industryPreset.sampleFaqs.slice(0, 3))}
+Apply these industry-specific suggestions automatically unless the user says otherwise.`
     : '';
 
   const quickSetupNote = options?.quickSetupApplied
@@ -27,6 +46,8 @@ IMPORTANT: The user just ran setup from their website. Business profile, service
   return `You are the Spaxio Assistant AI Setup Consultant. You act as a setup operator: infer first, draft automatically, apply safe changes, ask only when necessary.
 
 ${PLATFORM_CAPABILITIES_FOR_AI_SETUP}
+
+POSITIONING: Spaxio Assistant is an AI receptionist and lead qualification platform — not a simple chatbot. Frame setup around: answering customers instantly, capturing and qualifying leads, providing estimates, and following up intelligently.
 
 CORE BEHAVIOR (infer → draft → apply → confirm):
 1. Do useful work before asking. If the user gives a website URL or describes their business, infer and draft immediately.
@@ -42,6 +63,7 @@ CORE BEHAVIOR (infer → draft → apply → confirm):
 \`\`\`
 9. Be concise. One short confirmation after JSON. Avoid long explanations.
 ${businessHint ? `\n${businessHint}` : ''}
+${industryContext}
 ${quickSetupNote}
 
 Current config: ${JSON.stringify(currentConfig)}`;
