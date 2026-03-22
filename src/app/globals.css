@@ -78,7 +78,7 @@
   }
   html.dark:has([data-spaxio-widget-root]),
   html.dark:has([data-spaxio-widget-root]) body {
-    background: #0f172a !important;
+    background: #000000 !important;
   }
 
   ::selection {

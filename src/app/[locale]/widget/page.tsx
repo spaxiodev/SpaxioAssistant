@@ -11,7 +11,7 @@ import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations
 import type { CustomTranslations } from '@/lib/widget/translations';
 import { getQuoteUiStrings, applyFrCaEmailLabel } from '@/lib/quote-ui/i18n';
 import { useTheme } from '@/components/theme-provider';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Moon, Sun } from 'lucide-react';
 
 type QuoteVariable = {
   key: string;
@@ -83,7 +83,7 @@ function WidgetContent() {
   const widgetId = searchParams.get('widgetId');
   const initialLang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   /** Active UI/API language: from URL, then postMessage, or manual override. */
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(initialLang));
@@ -143,9 +143,10 @@ function WidgetContent() {
     return () => window.removeEventListener('message', handler);
   }, [widgetId]);
 
-  // Theme fallback: if the host doesn't provide theme info, follow prefers-color-scheme.
+  // Theme fallback: follow OS only when the user has not chosen a theme in this app.
   useEffect(() => {
     try {
+      if (typeof window !== 'undefined' && localStorage.getItem('spaxio-theme')) return;
       const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
       setTheme(mql && mql.matches ? 'dark' : 'light');
     } catch {
@@ -384,11 +385,11 @@ function WidgetContent() {
   return (
     <div
       ref={contentRef}
-      className="flex h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-[#0f172a] transition-colors duration-300 overflow-hidden"
+      className="flex h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-black transition-colors duration-300 overflow-hidden"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
-      {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
-        <div className="mb-1.5 flex w-full max-w-[400px] items-center gap-2">
+      <div className="mb-1.5 flex w-full max-w-[400px] items-center justify-between gap-2">
+        {config?.showLanguageSwitcher && supportedLangs.length > 1 ? (
           <select
             aria-label={qs.languageAria}
             value={resolvedLocale}
@@ -401,8 +402,34 @@ function WidgetContent() {
               </option>
             ))}
           </select>
+        ) : (
+          <span className="min-w-0 flex-1" aria-hidden />
+        )}
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-md border border-slate-200 bg-white text-foreground shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+            aria-label="Light theme"
+            aria-pressed={theme === 'light'}
+            onClick={() => setTheme('light')}
+          >
+            <Sun className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-md border border-slate-200 bg-white text-foreground shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+            aria-label="Dark theme"
+            aria-pressed={theme === 'dark'}
+            onClick={() => setTheme('dark')}
+          >
+            <Moon className="h-4 w-4" />
+          </Button>
         </div>
-      )}
+      </div>
       {pageHandoff && (
         <a
           href={`${baseUrl}/${resolvedLocale}/a/${pageHandoff.target_page_slug}${pageHandoff.context_token ? `?handoff=${encodeURIComponent(pageHandoff.context_token)}` : ''}`}
@@ -424,12 +451,12 @@ function WidgetContent() {
             className="flex w-full max-w-[400px] flex-col gap-4"
           >
             <div
-              className="rounded-lg border bg-card/80 p-4 shadow-sm [&_input]:border-[var(--quote-brand-border)] [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-[var(--quote-brand-border)] [&_select]:focus-visible:ring-[var(--quote-brand)]"
+              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 [&_input]:border-slate-300 [&_input]:bg-white [&_input]:text-foreground dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-slate-300 [&_select]:bg-white dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 [&_select]:focus-visible:ring-2 [&_select]:focus-visible:ring-[var(--quote-brand)]"
               style={
                 {
                   ['--quote-brand' as string]: color,
                   ['--quote-brand-border' as string]: `${color}44`,
-                  borderColor: `${color}38`,
+                  borderColor: `${color}33`,
                 } as CSSProperties
               }
             >

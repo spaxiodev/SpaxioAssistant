@@ -580,7 +580,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                     className="mt-4 w-full"
                   >
                     <div
-                      className="rounded-2xl border border-border-soft bg-card/80 p-4 shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06] supports-[backdrop-filter]:bg-card/70"
+                      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:ring-white/[0.06] supports-[backdrop-filter]:bg-white/95 dark:supports-[backdrop-filter]:bg-zinc-950/95 [&_input]:border-slate-300 [&_input]:bg-white dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 [&_select]:border-slate-300 [&_select]:bg-white dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 [&_textarea]:border-slate-300 [&_textarea]:bg-white dark:[&_textarea]:border-zinc-600 dark:[&_textarea]:bg-zinc-900"
                       style={
                         accentColor
                           ? { boxShadow: `0 0 0 1px ${accentColor}22, 0 12px 40px -12px ${accentColor}44` }

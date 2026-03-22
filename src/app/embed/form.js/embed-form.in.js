@@ -30,9 +30,26 @@
 
   var containerId = scriptEl.getAttribute('data-container') || '#spaxio-form-' + formId;
   var theme = scriptEl.getAttribute('data-theme') || 'inherit';
+  var EMBED_THEME_STORE = 'spaxio-embed-form-theme:' + formId;
+
+  function getStoredEmbedUiTheme() {
+    try {
+      var v = localStorage.getItem(EMBED_THEME_STORE);
+      if (v === 'light' || v === 'dark') return v;
+    } catch (e) {}
+    return null;
+  }
+
+  function setStoredEmbedUiTheme(mode) {
+    try {
+      localStorage.setItem(EMBED_THEME_STORE, mode);
+    } catch (e) {}
+  }
 
   function resolveTheme() {
     if (theme === 'inherit') return 'inherit';
+    var stored = getStoredEmbedUiTheme();
+    if (stored) return stored;
     if (theme === 'dark') return 'dark';
     if (theme === 'light') return 'light';
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
@@ -58,8 +75,38 @@
   }
 
   var COLORS = {
-    light: { bg: '#ffffff', border: '#e2e8f0', text: '#1a202c', muted: '#718096', inputBg: '#f7fafc', btnBg: '#6366f1', btnText: '#ffffff', errorText: '#e53e3e', successBg: '#f0fff4', successText: '#276749' },
-    dark: { bg: '#1a1a2e', border: '#2d3748', text: '#f7fafc', muted: '#a0aec0', inputBg: '#2d3748', btnBg: '#6366f1', btnText: '#ffffff', errorText: '#fc8181', successBg: '#1c3829', successText: '#68d391' }
+    light: {
+      bg: '#ffffff',
+      border: '#cbd5e1',
+      text: '#0f172a',
+      muted: '#64748b',
+      inputBg: '#ffffff',
+      btnBg: '#6366f1',
+      btnText: '#ffffff',
+      errorText: '#dc2626',
+      successBg: '#f0fdf4',
+      successText: '#166534',
+      radioIdle: '#f1f5f9',
+      radioHover: '#e2e8f0',
+      errorPanelBg: '#fff5f5',
+      errorPanelBorder: '#fecaca'
+    },
+    dark: {
+      bg: '#000000',
+      border: '#3f3f46',
+      text: '#f4f4f5',
+      muted: '#a1a1aa',
+      inputBg: '#18181b',
+      btnBg: '#818cf8',
+      btnText: '#0a0a0a',
+      errorText: '#fca5a5',
+      successBg: '#052e16',
+      successText: '#86efac',
+      radioIdle: '#18181b',
+      radioHover: '#27272a',
+      errorPanelBg: '#1c0a0a',
+      errorPanelBorder: '#7f1d1d'
+    }
   };
 
   function hexToRgb(hex) {
@@ -149,14 +196,24 @@
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px ' + btn + '33; }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
       '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23718096\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }',
-      '.spx-radio-group, .spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
-      '.spx-radio-item, .spx-checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }',
-      '.spx-radio-item input, .spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
+      '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
+      '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 13px; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid ' + c.border + '; border-radius: ' + brSm + '; background: ' + c.radioIdle + '; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }',
+      '.spx-radio-item:hover { background: ' + c.radioHover + '; border-color: ' + btn + '66; }',
+      '.spx-radio-item:has(input:checked) { border-color: ' + btn + '; box-shadow: 0 0 0 1px ' + btn + '44; background: ' + c.bg + '; }',
+      '.spx-radio-item input { width: 18px; height: 18px; margin: 0; accent-color: ' + btn + '; cursor: pointer; flex-shrink: 0; }',
+      '.spx-radio-item span { display: block; max-width: 100%; word-break: break-word; }',
+      '.spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
+      '.spx-checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }',
+      '.spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
       '.spx-btn { width: 100%; padding: 11px 20px; background: ' + btn + '; color: ' + btnText + '; border: none; border-radius: ' + brSm + '; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.15s; }',
       '.spx-btn:hover { opacity: 0.88; }',
       '.spx-btn:disabled { opacity: 0.55; cursor: not-allowed; }',
       '.spx-error { font-size: 13px; color: ' + c.errorText + '; margin-top: 4px; }',
-      '.spx-global-error { padding: 10px 14px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: ' + brSm + '; color: ' + c.errorText + '; font-size: 14px; margin-bottom: 16px; }',
+      '.spx-theme-bar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }',
+      '.spx-theme-btn { appearance: none; border: 1px solid ' + c.border + '; background: ' + c.inputBg + '; color: ' + c.text + '; width: 38px; height: 38px; border-radius: ' + brSm + '; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
+      '.spx-theme-btn:hover { border-color: ' + btn + '99; }',
+      '.spx-theme-btn[aria-pressed="true"] { border-color: ' + btn + '; box-shadow: 0 0 0 2px ' + btn + '40; }',
+      '.spx-global-error { padding: 10px 14px; background: ' + c.errorPanelBg + '; border: 1px solid ' + c.errorPanelBorder + '; border-radius: ' + brSm + '; color: ' + c.errorText + '; font-size: 14px; margin-bottom: 16px; }',
       '.spx-success { text-align: center; padding: 32px 20px; }',
       '.spx-success-icon { font-size: 40px; margin-bottom: 12px; }',
       '.spx-success-title { font-size: 20px; font-weight: 700; color: ' + c.text + '; margin-bottom: 8px; }',
@@ -187,9 +244,15 @@
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px color-mix(in srgb, ' + btn + ' 35%, transparent); }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
       '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' opacity=\'0.55\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; color: inherit; }',
-      '.spx-radio-group, .spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
-      '.spx-radio-item, .spx-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }',
-      '.spx-radio-item input, .spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
+      '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
+      '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 0.92em; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid color-mix(in srgb, ' + text + ' 20%, transparent); border-radius: ' + brSm + '; background: color-mix(in srgb, ' + text + ' 5%, transparent); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
+      '.spx-radio-item:hover { border-color: color-mix(in srgb, ' + btn + ' 55%, transparent); background: color-mix(in srgb, ' + text + ' 8%, transparent); }',
+      '.spx-radio-item:has(input:checked) { border-color: ' + btn + '; box-shadow: 0 0 0 1px color-mix(in srgb, ' + btn + ' 40%, transparent); }',
+      '.spx-radio-item input { width: 18px; height: 18px; margin: 0; accent-color: ' + btn + '; cursor: pointer; flex-shrink: 0; }',
+      '.spx-radio-item span { display: block; max-width: 100%; word-break: break-word; }',
+      '.spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
+      '.spx-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }',
+      '.spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
       '.spx-btn { width: 100%; padding: 11px 20px; background: ' + btn + '; color: ' + btnText + '; border: none; border-radius: ' + brSm + '; font: inherit; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.15s; }',
       '.spx-btn:hover { opacity: 0.9; }',
       '.spx-btn:disabled { opacity: 0.55; cursor: not-allowed; }',
@@ -229,9 +292,15 @@
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px ' + btn + '40; }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
       '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23718096\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }',
-      '.spx-radio-group, .spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
-      '.spx-radio-item, .spx-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }',
-      '.spx-radio-item input, .spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
+      '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
+      '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 0.92em; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid ' + borderSoft + '; border-radius: ' + brSm + '; background: ' + inputBg + '; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
+      '.spx-radio-item:hover { border-color: ' + btn + '99; }',
+      '.spx-radio-item input:checked + span { font-weight: 600; }',
+      '.spx-radio-item input { width: 18px; height: 18px; margin: 0; accent-color: ' + btn + '; cursor: pointer; flex-shrink: 0; }',
+      '.spx-radio-item span { display: block; max-width: 100%; word-break: break-word; }',
+      '.spx-checkbox-group { display: flex; flex-direction: column; gap: 8px; }',
+      '.spx-checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }',
+      '.spx-checkbox-item input { width: 16px; height: 16px; accent-color: ' + btn + '; cursor: pointer; }',
       '.spx-btn { width: 100%; padding: 11px 20px; background: ' + btn + '; color: ' + btnText + '; border: none; border-radius: ' + brSm + '; font: inherit; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.15s; }',
       '.spx-btn:hover { opacity: 0.9; }',
       '.spx-btn:disabled { opacity: 0.55; cursor: not-allowed; }',
@@ -274,9 +343,18 @@
       });
       input = '<select class="spx-input spx-select" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + required + '>' + opts + '</select>';
     } else if (field.field_type === 'radio') {
-      var radios = '<div class="spx-radio-group">';
+      var radios = '<div class="spx-radio-group" role="radiogroup">';
       (field.options_json || []).forEach(function (o, idx) {
-        radios += '<label class="spx-radio-item"><input type="radio" name="' + escape(field.field_key) + '" value="' + escape(o) + '"' + (idx === 0 && field.required ? ' required' : '') + '> ' + escape(o) + '</label>';
+        radios +=
+          '<label class="spx-radio-item"><input type="radio" name="' +
+          escape(field.field_key) +
+          '" value="' +
+          escape(o) +
+          '"' +
+          (idx === 0 && field.required ? ' required' : '') +
+          '><span>' +
+          escape(o) +
+          '</span></label>';
       });
       radios += '</div>';
       input = radios;
@@ -342,7 +420,21 @@
       fieldsHtml += renderField(field);
     });
 
+    var themeBarHtml = '';
+    if (currentTheme === 'light' || currentTheme === 'dark') {
+      themeBarHtml =
+        '<div class="spx-theme-bar" role="group" aria-label="Color theme">' +
+        '<button type="button" class="spx-theme-btn" data-spx-theme="light" aria-pressed="' +
+        (currentTheme === 'light' ? 'true' : 'false') +
+        '" title="Light">☀️</button>' +
+        '<button type="button" class="spx-theme-btn" data-spx-theme="dark" aria-pressed="' +
+        (currentTheme === 'dark' ? 'true' : 'false') +
+        '" title="Dark">🌙</button>' +
+        '</div>';
+    }
+
     formEl.innerHTML = [
+      themeBarHtml,
       '<div class="spx-global-error" id="spx-global-error" style="display:none"></div>',
       fieldsHtml,
       '<div style="display:none" id="spx-submitting"><button class="spx-btn" disabled>Submitting…</button></div>',
@@ -351,6 +443,17 @@
     ].join('');
 
     container.appendChild(formEl);
+
+    if (currentTheme === 'light' || currentTheme === 'dark') {
+      formEl.querySelectorAll('[data-spx-theme]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var mode = btn.getAttribute('data-spx-theme');
+          if (mode !== 'light' && mode !== 'dark') return;
+          setStoredEmbedUiTheme(mode);
+          renderForm(config, container);
+        });
+      });
+    }
 
     var submitBtn = document.getElementById('spx-submit');
     var submittingEl = document.getElementById('spx-submitting');
