@@ -32,6 +32,7 @@ type QuoteRequestRow = {
   estimate_total?: number | null;
   estimate_low?: number | null;
   estimate_high?: number | null;
+  customer_language?: string | null;
   created_at: string;
 };
 
@@ -63,6 +64,7 @@ export function QuoteRequestDetailSheet({
     { label: 'Customer', value: request.customer_name },
     { label: 'Email', value: request.customer_email ?? null },
     { label: 'Phone', value: request.customer_phone ?? null },
+    { label: 'Visitor language', value: request.customer_language?.trim() || null },
     { label: 'Service', value: request.service_type ?? null },
     { label: 'Budget', value: formatBudget(request) },
     { label: 'Location', value: request.location ?? null },

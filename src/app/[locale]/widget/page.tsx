@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations';
 import type { CustomTranslations } from '@/lib/widget/translations';
+import { getQuoteUiStrings, applyFrCaEmailLabel } from '@/lib/quote-ui/i18n';
 import { useTheme } from '@/components/theme-provider';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -77,7 +78,8 @@ function WidgetContent() {
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
-  const [leadErrors, setLeadErrors] = useState<{ name?: string; email?: string }>({});
+  const [leadErrors, setLeadErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
+  const [quoteFieldErrors, setQuoteFieldErrors] = useState<Record<string, string>>({});
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
   const [quoteSubmitLoading, setQuoteSubmitLoading] = useState(false);
   const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
@@ -144,6 +146,19 @@ function WidgetContent() {
     (key: Parameters<typeof getWidgetTranslation>[1]) =>
       getWidgetTranslation(resolvedLocale, key, config?.customTranslations),
     [resolvedLocale, config?.customTranslations]
+  );
+
+  const rawLangForUi = manualLanguageOverride ?? activeLocale;
+  const qs = useMemo(
+    () =>
+      applyFrCaEmailLabel(
+        getQuoteUiStrings(resolvedLocale, {
+          widgetT: (key) => getWidgetTranslation(resolvedLocale, key, config?.customTranslations),
+          customTranslations: config?.customTranslations,
+        }),
+        String(rawLangForUi)
+      ),
+    [resolvedLocale, rawLangForUi, config?.customTranslations]
   );
 
   useEffect(() => {
@@ -222,6 +237,7 @@ function WidgetContent() {
           setQuoteSubmitted(false);
           setQuoteSubmitError(null);
           setQuoteSubmitResult(null);
+          setQuoteFieldErrors({});
           setLeadName('');
           setLeadEmail('');
           setLeadPhone('');
@@ -271,15 +287,24 @@ function WidgetContent() {
     const emailRequired = qfc?.email_required !== false;
     const phoneRequired = qfc?.phone_required === true;
     const errs: { name?: string; email?: string; phone?: string } = {};
-    if (nameRequired && !leadName.trim()) errs.name = t('quoteFormNameRequired');
-    if (emailRequired && !leadEmail.trim()) errs.email = t('quoteFormEmailRequired');
-    else if (emailRequired && leadEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) errs.email = t('quoteFormInvalidEmail');
-    if (phoneRequired && !leadPhone.trim()) errs.phone = t('quoteFormPhoneRequired') ?? 'Phone is required';
-    if (Object.keys(errs).length > 0) {
+    if (nameRequired && !leadName.trim()) errs.name = qs.nameRequired;
+    if (emailRequired && !leadEmail.trim()) errs.email = qs.emailRequired;
+    else if (emailRequired && leadEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) errs.email = qs.invalidEmail;
+    if (phoneRequired && !leadPhone.trim()) errs.phone = qs.phoneRequired;
+    const dynErrs: Record<string, string> = {};
+    for (const v of config?.quoteVariables ?? []) {
+      if (!v.required) continue;
+      const raw = quoteFormInputs[v.key] ?? '';
+      if (raw === '' || raw === undefined) dynErrs[v.key] = qs.fieldRequired;
+    }
+    if (Object.keys(errs).length > 0 || Object.keys(dynErrs).length > 0) {
       setLeadErrors(errs);
+      setQuoteFieldErrors(dynErrs);
+      setQuoteSubmitError(qs.fillRequiredFields);
       return;
     }
     setLeadErrors({});
+    setQuoteFieldErrors({});
     setQuoteSubmitError(null);
     setQuoteSubmitLoading(true);
     try {
@@ -321,7 +346,7 @@ function WidgetContent() {
         message: data.message ?? '',
       });
     } catch {
-      setQuoteSubmitError(t('errorMessage'));
+      setQuoteSubmitError(qs.genericError);
     } finally {
       setQuoteSubmitLoading(false);
     }
@@ -338,7 +363,7 @@ function WidgetContent() {
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
         <div className="mb-1.5 flex w-full max-w-[400px] items-center gap-2">
           <select
-            aria-label="Language"
+            aria-label={qs.languageAria}
             value={resolvedLocale}
             onChange={(e) => handleLanguageSelect(e.target.value)}
             className="rounded-md border border-border bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
@@ -374,7 +399,7 @@ function WidgetContent() {
             <div className="rounded-lg border bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold text-foreground">
-                  {(config?.quoteFormConfig?.intro_text as string)?.trim() || t('quoteFormTitle')}
+                  {(config?.quoteFormConfig?.intro_text as string)?.trim() || qs.quoteFormTitle}
                 </h2>
                 <Button
                   variant="ghost"
@@ -385,9 +410,10 @@ function WidgetContent() {
                     setQuoteSubmitResult(null);
                     setQuoteSubmitError(null);
                     setLeadErrors({});
+                    setQuoteFieldErrors({});
                   }}
                 >
-                  {t('quoteFormBackToChat')}
+                  {qs.backToChat}
                 </Button>
               </div>
 
@@ -395,22 +421,22 @@ function WidgetContent() {
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-200">{t('quoteFormSuccess')}</p>
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-200">{qs.successTitle}</p>
                   </div>
                   {quoteSubmitResult?.estimate && (
                     <p className="rounded-lg border bg-muted/30 p-3 text-sm">
-                      <span className="text-muted-foreground">{t('quoteFormYourEstimate')}: </span>
+                      <span className="text-muted-foreground">{qs.estimatedPricePrefix}: </span>
                       <span className="font-semibold">{quoteSubmitResult.estimate}</span>
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">{t('quoteFormSuccessSentToBusiness')}</p>
+                  <p className="text-xs text-muted-foreground">{qs.successSentToBusiness}</p>
                 </div>
               ) : (
                 <>
                   <div className="grid gap-3">
                     <div>
                       <Label htmlFor="quote-lead-name" className="text-sm text-foreground">
-                        {t('leadFormName')} *
+                        {qs.name} *
                       </Label>
                       <Input
                         id="quote-lead-name"
@@ -419,16 +445,17 @@ function WidgetContent() {
                         onChange={(e) => {
                           setLeadName(e.target.value);
                           setLeadErrors((prev) => ({ ...prev, name: undefined }));
+                          setQuoteSubmitError(null);
                         }}
                         className={`mt-1 ${leadErrors.name ? 'border-red-500' : ''}`}
-                        placeholder={t('leadFormName')}
+                        placeholder={qs.name}
                       />
                       {leadErrors.name && <p className="mt-1 text-xs text-red-600">{leadErrors.name}</p>}
                     </div>
 
                     <div>
                       <Label htmlFor="quote-lead-email" className="text-sm text-foreground">
-                        {t('leadFormEmail')} *
+                        {qs.email} *
                       </Label>
                       <Input
                         id="quote-lead-email"
@@ -437,25 +464,31 @@ function WidgetContent() {
                         onChange={(e) => {
                           setLeadEmail(e.target.value);
                           setLeadErrors((prev) => ({ ...prev, email: undefined }));
+                          setQuoteSubmitError(null);
                         }}
                         className={`mt-1 ${leadErrors.email ? 'border-red-500' : ''}`}
-                        placeholder={t('leadFormEmail')}
+                        placeholder={qs.email}
                       />
                       {leadErrors.email && <p className="mt-1 text-xs text-red-600">{leadErrors.email}</p>}
                     </div>
 
                     <div>
                       <Label htmlFor="quote-lead-phone" className="text-sm text-foreground">
-                        {t('leadFormPhone')} <span className="text-muted-foreground">(optional)</span>
+                        {qs.phoneOptionalFull}
                       </Label>
                       <Input
                         id="quote-lead-phone"
                         type="tel"
                         value={leadPhone}
-                        onChange={(e) => setLeadPhone(e.target.value)}
+                        onChange={(e) => {
+                          setLeadPhone(e.target.value);
+                          setLeadErrors((prev) => ({ ...prev, phone: undefined }));
+                          setQuoteSubmitError(null);
+                        }}
                         className="mt-1"
-                        placeholder={t('leadFormPhone')}
+                        placeholder={qs.phone}
                       />
+                      {leadErrors.phone && <p className="mt-1 text-xs text-red-600">{leadErrors.phone}</p>}
                     </div>
                   </div>
 
@@ -470,18 +503,34 @@ function WidgetContent() {
                           <select
                             id={`quote-${v.key}`}
                             value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            onChange={(e) => {
+                              setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }));
+                              setQuoteFieldErrors((prev) => {
+                                const next = { ...prev };
+                                delete next[v.key];
+                                return next;
+                              });
+                              setQuoteSubmitError(null);
+                            }}
+                            className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
                           >
-                            <option value="false">No</option>
-                            <option value="true">Yes</option>
+                            <option value="false">{qs.no}</option>
+                            <option value="true">{qs.yes}</option>
                           </select>
                         ) : v.variable_type === 'select' && Array.isArray(v.options) ? (
                           <select
                             id={`quote-${v.key}`}
                             value={quoteFormInputs[v.key] ?? v.default_value ?? ''}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            onChange={(e) => {
+                              setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }));
+                              setQuoteFieldErrors((prev) => {
+                                const next = { ...prev };
+                                delete next[v.key];
+                                return next;
+                              });
+                              setQuoteSubmitError(null);
+                            }}
+                            className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
                           >
                             {(v.options as { value: string; label: string }[]).map((opt) => (
                               <option key={opt.value} value={opt.value}>
@@ -495,24 +544,35 @@ function WidgetContent() {
                             type={v.variable_type === 'number' || v.variable_type === 'area' || v.variable_type === 'quantity' ? 'number' : 'text'}
                             placeholder={v.unit_label ?? ''}
                             value={quoteFormInputs[v.key] ?? ''}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }))}
-                            className="mt-1"
+                            onChange={(e) => {
+                              setQuoteFormInputs((prev) => ({ ...prev, [v.key]: e.target.value }));
+                              setQuoteFieldErrors((prev) => {
+                                const next = { ...prev };
+                                delete next[v.key];
+                                return next;
+                              });
+                              setQuoteSubmitError(null);
+                            }}
+                            className={`mt-1 ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
                           />
+                        )}
+                        {quoteFieldErrors[v.key] && (
+                          <p className="mt-1 text-xs text-red-600">{quoteFieldErrors[v.key]}</p>
                         )}
                       </div>
                     ))}
                   </div>
 
-                  <p className="text-xs text-muted-foreground">{t('quoteFormCalculateSubmitHint')}</p>
+                  <p className="text-xs text-muted-foreground">{qs.calculateSubmitHint}</p>
 
                   <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
                     {quoteSubmitLoading ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        {t('loading')}
+                        {qs.sending}
                       </span>
                     ) : (
-                      (config?.quoteFormConfig?.submit_button_label as string)?.trim() || t('quoteFormCalculate')
+                      (config?.quoteFormConfig?.submit_button_label as string)?.trim() || qs.calculateAndSubmit
                     )}
                   </Button>
 

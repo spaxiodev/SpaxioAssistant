@@ -767,7 +767,7 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
           messages: [
             {
               role: 'system',
-              content: `You decide if the assistant's reply should trigger a website action. Allowed types: open_contact_form, open_quote_form, open_booking_form, show_pricing, scroll_to_section, open_link. For open_link return payload: { url: "https://..." }. For scroll_to_section return payload: { section_id: "id" }. If the user asked for a quote and the assistant agreed to show the form, return { "action": { "type": "open_quote_form" } }. If no action, return {}. Reply with only the JSON.`,
+              content: `You decide if the assistant's reply should trigger a website action. Allowed types: open_contact_form, open_quote_form, open_booking_form, show_pricing, scroll_to_section, open_link. For open_link return payload: { url: "https://..." }. For scroll_to_section return payload: { section_id: "id" }. If the user asked for a quote, estimate, or price in any language (e.g. English: quote, estimate, pricing, how much; French: devis, prix, tarif, combien, estimation; similar intent in other languages) and the assistant agreed to show the form, return { "action": { "type": "open_quote_form" } }. If no action, return {}. Reply with only the JSON.`,
             },
             { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
           ],

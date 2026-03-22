@@ -28,6 +28,7 @@ type QuoteRequest = {
   estimate_high?: number | null;
   conversation_id?: string | null;
   form_answers?: Record<string, unknown> | null;
+  customer_language?: string | null;
   created_at: string;
 };
 
@@ -42,6 +43,7 @@ type Labels = {
   details: string;
   date: string;
   quoteRequestSource: string;
+  quoteVisitorLanguage: string;
   quoteSourceAiWidget: string;
   quoteSourceAiPageAssistant: string;
   quoteSourceEmbeddedForm: string;
@@ -133,6 +135,7 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                   <TableHead>{labels.location}</TableHead>
                   <TableHead>{labels.details}</TableHead>
                   <TableHead>{labels.quoteRequestSource}</TableHead>
+                  <TableHead>{labels.quoteVisitorLanguage}</TableHead>
                   <TableHead>{labels.date}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
@@ -171,6 +174,9 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                         <Badge variant="secondary" className="font-normal">
                           {formatSubmissionSource(r.submission_source, labels)}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">
+                        {r.customer_language?.trim() || '—'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(r.created_at)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>

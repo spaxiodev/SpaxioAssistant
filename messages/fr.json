@@ -374,6 +374,8 @@
     "quoteSourceAiWidget": "Widget IA",
     "quoteSourceAiPageAssistant": "Assistant page IA",
     "quoteSourceUnknown": "—",
+    "quoteSourceEmbeddedForm": "Formulaire intégré",
+    "quoteVisitorLanguage": "Langue du visiteur",
     "customer": "Client",
     "service": "Service",
     "budget": "Budget",

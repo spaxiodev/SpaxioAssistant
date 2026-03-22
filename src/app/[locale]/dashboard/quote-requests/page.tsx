@@ -52,6 +52,7 @@ export default async function QuoteRequestsPage() {
     quoteSourceAiPageAssistant: t('quoteSourceAiPageAssistant'),
     quoteSourceEmbeddedForm: t('quoteSourceEmbeddedForm'),
     quoteSourceUnknown: t('quoteSourceUnknown'),
+    quoteVisitorLanguage: t('quoteVisitorLanguage'),
   };
 
   return (

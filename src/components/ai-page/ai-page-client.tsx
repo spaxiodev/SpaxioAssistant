@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
 import type { AIChatMessage } from '@/components/ui/ai-chat';
 import { Loader2 } from 'lucide-react';
 import type { IntakeFieldSchema, SessionState } from '@/lib/ai-pages/types';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getAiPageTranslation } from '@/lib/ai-page/translations';
+import { getWidgetTranslation, normalizeLocale as normalizeWidgetLocale } from '@/lib/widget/translations';
+import { getQuoteUiStrings, applyFrCaEmailLabel } from '@/lib/quote-ui/i18n';
 import { useTheme } from '@/components/theme-provider';
 import ReactMarkdown from 'react-markdown';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -186,6 +188,17 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
   const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
   const [quoteSuccessFlash, setQuoteSuccessFlash] = useState<string | null>(null);
+  const [quoteFieldErrors, setQuoteFieldErrors] = useState<Record<string, string>>({});
+
+  const qs = useMemo(() => {
+    const wloc = normalizeWidgetLocale(effectiveDisplayLocale);
+    return applyFrCaEmailLabel(
+      getQuoteUiStrings(effectiveDisplayLocale, {
+        widgetT: (key) => getWidgetTranslation(wloc, key),
+      }),
+      effectiveDisplayLocale
+    );
+  }, [effectiveDisplayLocale]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -236,6 +249,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
       ) {
         setShowQuoteForm(true);
         setQuoteSubmitError(null);
+        setQuoteFieldErrors({});
         const defaults: Record<string, string> = {};
         (config.quoteVariables ?? []).forEach((v) => {
           if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
@@ -244,7 +258,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         setMessages((m) => [
           ...m,
           { role: 'user', content: trimmed },
-          { role: 'assistant', content: t('quoteFormIntro') },
+          { role: 'assistant', content: qs.quoteFormIntro },
         ]);
         setInput('');
         return;
@@ -278,6 +292,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         ) {
           setShowQuoteForm(true);
           setQuoteSubmitError(null);
+          setQuoteFieldErrors({});
           const defaults: Record<string, string> = {};
           (config.quoteVariables ?? []).forEach((v) => {
             if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
@@ -288,7 +303,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         setLoading(false);
       }
     },
-    [runId, conversationId, loading, config, effectiveDisplayLocale, resolvedLocale, t]
+    [runId, conversationId, loading, config, effectiveDisplayLocale, resolvedLocale, qs]
   );
 
   function openQuoteFormFromQuickAction() {
@@ -301,6 +316,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     }
     setShowQuoteForm(true);
     setQuoteSubmitError(null);
+    setQuoteFieldErrors({});
     const defaults: Record<string, string> = {};
     (config.quoteVariables ?? []).forEach((v) => {
       if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
@@ -309,13 +325,30 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     // Add a chat message for transcript continuity
     setMessages((m) => [
       ...m,
-      { role: 'user', content: t('quickQuoteUserMessage') },
-      { role: 'assistant', content: t('quoteFormIntro') },
+      { role: 'user', content: qs.quickQuoteUserMessage },
+      { role: 'assistant', content: qs.quoteFormIntro },
     ]);
   }
 
   async function submitQuoteForm() {
-    if (!runId || quoteSubmitting) return;
+    if (!runId || quoteSubmitting || !config) return;
+    const errs: Record<string, string> = {};
+    if (!quoteContactName.trim()) errs.contact_name = qs.nameRequired;
+    if (!quoteContactEmail.trim()) errs.contact_email = qs.emailRequired;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quoteContactEmail.trim())) errs.contact_email = qs.invalidEmail;
+    const dyn: Record<string, string> = {};
+    const proj = (config.intake_schema ?? []).filter((f) => !['contact_name', 'contact_email', 'phone'].includes(f.key));
+    for (const field of proj) {
+      if (!field.required) continue;
+      const raw = quoteFormInputs[field.key] ?? '';
+      if (raw === '') dyn[field.key] = qs.fieldRequired;
+    }
+    if (Object.keys(errs).length > 0 || Object.keys(dyn).length > 0) {
+      setQuoteFieldErrors({ ...dyn, ...errs });
+      setQuoteSubmitError(qs.fillRequiredFields);
+      return;
+    }
+    setQuoteFieldErrors({});
     setQuoteSubmitting(true);
     setQuoteSubmitError(null);
     try {
@@ -347,7 +380,13 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
       });
       const data = await res.json();
       if (!res.ok || data?.success === false) {
-        setQuoteSubmitError(data?.message || data?.error || 'Failed to submit quote');
+        setQuoteSubmitError(
+          typeof data?.message === 'string'
+            ? data.message
+            : typeof data?.error === 'string'
+              ? data.error
+              : qs.genericError
+        );
         return;
       }
 
@@ -356,12 +395,12 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
       }
       if (data.session_state) setSessionState(data.session_state);
       if (data?.success) {
-        setQuoteSuccessFlash(`${t('quoteFormSuccess')}\n${t('quoteFormSuccessSentToBusiness')}`);
+        setQuoteSuccessFlash(`${qs.successTitle}\n${qs.successSentToBusiness}`);
         window.setTimeout(() => setQuoteSuccessFlash(null), 5000);
       }
       setShowQuoteForm(false);
     } catch (e) {
-      setQuoteSubmitError(e instanceof Error ? e.message : 'Failed to submit quote');
+      setQuoteSubmitError(e instanceof Error ? e.message : qs.genericError);
     } finally {
       setQuoteSubmitting(false);
     }
@@ -549,45 +588,69 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                       }
                     >
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <h2 className="text-base font-semibold">{t('quoteFormTitle')}</h2>
+                        <h2 className="text-base font-semibold">{qs.quoteFormTitle}</h2>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
                             setShowQuoteForm(false);
                             setQuoteSubmitError(null);
+                            setQuoteFieldErrors({});
                           }}
                         >
-                          {t('backToChat')}
+                          {qs.backToChat}
                         </Button>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <Label htmlFor="contact_name">{t('name')} *</Label>
+                          <Label htmlFor="contact_name">{qs.name} *</Label>
                           <Input
                             id="contact_name"
-                            className="mt-1"
+                            className={`mt-1 ${quoteFieldErrors.contact_name ? 'border-red-500' : ''}`}
                             value={quoteContactName}
-                            onChange={(e) => setQuoteContactName(e.target.value)}
+                            onChange={(e) => {
+                              setQuoteContactName(e.target.value);
+                              setQuoteFieldErrors((p) => {
+                                const n = { ...p };
+                                delete n.contact_name;
+                                return n;
+                              });
+                              setQuoteSubmitError(null);
+                            }}
                           />
+                          {quoteFieldErrors.contact_name && (
+                            <p className="mt-1 text-xs text-red-600">{quoteFieldErrors.contact_name}</p>
+                          )}
                         </div>
                         <div>
-                          <Label htmlFor="contact_email">{t('email')} *</Label>
+                          <Label htmlFor="contact_email">{qs.email} *</Label>
                           <Input
                             id="contact_email"
-                            className="mt-1"
+                            className={`mt-1 ${quoteFieldErrors.contact_email ? 'border-red-500' : ''}`}
                             value={quoteContactEmail}
-                            onChange={(e) => setQuoteContactEmail(e.target.value)}
+                            onChange={(e) => {
+                              setQuoteContactEmail(e.target.value);
+                              setQuoteFieldErrors((p) => {
+                                const n = { ...p };
+                                delete n.contact_email;
+                                return n;
+                              });
+                              setQuoteSubmitError(null);
+                            }}
                           />
+                          {quoteFieldErrors.contact_email && (
+                            <p className="mt-1 text-xs text-red-600">{quoteFieldErrors.contact_email}</p>
+                          )}
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="contact_phone">{t('phoneOptional')}</Label>
+                          <Label htmlFor="contact_phone">{qs.phoneOptionalFull}</Label>
                           <Input
                             id="contact_phone"
                             className="mt-1"
                             value={quoteContactPhone}
                             onChange={(e) => setQuoteContactPhone(e.target.value)}
+                            placeholder={qs.phone}
                           />
                         </div>
                       </div>
@@ -606,18 +669,34 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                   <select
                                     id={`quote-${field.key}`}
                                     value={quoteFormInputs[field.key] ?? qv.default_value ?? 'false'}
-                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    onChange={(e) => {
+                                      setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                      setQuoteFieldErrors((p) => {
+                                        const n = { ...p };
+                                        delete n[field.key];
+                                        return n;
+                                      });
+                                      setQuoteSubmitError(null);
+                                    }}
+                                    className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   >
-                                    <option value="false">No</option>
-                                    <option value="true">Yes</option>
+                                    <option value="false">{qs.no}</option>
+                                    <option value="true">{qs.yes}</option>
                                   </select>
                                 ) : qv.variable_type === 'select' && Array.isArray(qv.options) ? (
                                   <select
                                     id={`quote-${field.key}`}
                                     value={quoteFormInputs[field.key] ?? qv.default_value ?? ''}
-                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    onChange={(e) => {
+                                      setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                      setQuoteFieldErrors((p) => {
+                                        const n = { ...p };
+                                        delete n[field.key];
+                                        return n;
+                                      });
+                                      setQuoteSubmitError(null);
+                                    }}
+                                    className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   >
                                     {(qv.options as { value: string; label: string }[]).map((opt) => (
                                       <option key={opt.value} value={opt.value}>
@@ -635,35 +714,70 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                     }
                                     placeholder={qv.unit_label ?? ''}
                                     value={quoteFormInputs[field.key] ?? ''}
-                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                    className="mt-1"
+                                    onChange={(e) => {
+                                      setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                      setQuoteFieldErrors((p) => {
+                                        const n = { ...p };
+                                        delete n[field.key];
+                                        return n;
+                                      });
+                                      setQuoteSubmitError(null);
+                                    }}
+                                    className={`mt-1 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   />
                                 )
                               ) : field.type === 'boolean' ? (
                                 <select
                                   id={`quote-${field.key}`}
                                   value={quoteFormInputs[field.key] ?? 'false'}
-                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  onChange={(e) => {
+                                    setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                    setQuoteFieldErrors((p) => {
+                                      const n = { ...p };
+                                      delete n[field.key];
+                                      return n;
+                                    });
+                                    setQuoteSubmitError(null);
+                                  }}
+                                  className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                 >
-                                  <option value="false">No</option>
-                                  <option value="true">Yes</option>
+                                  <option value="false">{qs.no}</option>
+                                  <option value="true">{qs.yes}</option>
                                 </select>
                               ) : field.type === 'text' ? (
                                 <Textarea
                                   id={`quote-${field.key}`}
-                                  className="mt-1 min-h-[80px]"
+                                  className={`mt-1 min-h-[80px] ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   value={quoteFormInputs[field.key] ?? ''}
-                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                  onChange={(e) => {
+                                    setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                    setQuoteFieldErrors((p) => {
+                                      const n = { ...p };
+                                      delete n[field.key];
+                                      return n;
+                                    });
+                                    setQuoteSubmitError(null);
+                                  }}
                                 />
                               ) : (
                                 <Input
                                   id={`quote-${field.key}`}
                                   type={field.type === 'number' ? 'number' : 'text'}
                                   value={quoteFormInputs[field.key] ?? ''}
-                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                  className="mt-1"
+                                  onChange={(e) => {
+                                    setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                    setQuoteFieldErrors((p) => {
+                                      const n = { ...p };
+                                      delete n[field.key];
+                                      return n;
+                                    });
+                                    setQuoteSubmitError(null);
+                                  }}
+                                  className={`mt-1 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                 />
+                              )}
+                              {quoteFieldErrors[field.key] && (
+                                <p className="mt-1 text-xs text-red-600">{quoteFieldErrors[field.key]}</p>
                               )}
                             </div>
                           );
@@ -672,7 +786,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
 
                       {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
 
-                      <p className="mt-4 text-xs text-muted-foreground">{t('quoteFormCalculateSubmitHint')}</p>
+                      <p className="mt-4 text-xs text-muted-foreground">{qs.calculateSubmitHint}</p>
 
                       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <Button
@@ -688,13 +802,19 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                               : undefined
                           }
                         >
-                          {quoteSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          {t('submitAndGetPrice')}
+                          {quoteSubmitting ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {qs.sending}
+                            </span>
+                          ) : (
+                            qs.calculateAndSubmit
+                          )}
                         </Button>
                       </div>
                       {config?.quoteCurrency ? (
                         <p className="mt-2 text-xs text-muted-foreground">
-                          {t('currency')}: {config.quoteCurrency}
+                          {qs.currency}: {config.quoteCurrency}
                         </p>
                       ) : null}
                     </div>
@@ -721,7 +841,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                   onClick={openQuoteFormFromQuickAction}
                   className="rounded-full border border-border-soft/70 bg-background/40 px-4 shadow-sm hover:bg-background/70"
                 >
-                  {t('quickQuoteButton')}
+                  {qs.quickQuoteButton}
                 </Button>
               </div>
             )}
