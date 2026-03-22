@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
 import { Input } from '@/components/ui/input';

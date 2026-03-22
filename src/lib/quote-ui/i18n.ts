@@ -138,7 +138,6 @@ function widgetQuoteCore(t: (key: WidgetTranslationKey) => string): Omit<
   | 'fieldRequired'
   | 'selectService'
   | 'projectDetails'
-  | 'estimatedPricePrefix'
   | 'currency'
   | 'languageAria'
 > {
