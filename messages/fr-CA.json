@@ -17,6 +17,8 @@
     "backToDashboard": "Retour au tableau de bord",
     "contact": "Contact",
     "help": "Aide",
+    "getStarted": "Commencer",
+    "logIn": "Se connecter",
     "tryAgain": "Réessayer",
     "email": "E-mail",
     "password": "Mot de passe",
@@ -670,7 +672,9 @@
     "about": "À propos",
     "pricing": "Tarifs",
     "privacy": "Politique de confidentialité",
-    "terms": "Conditions d'utilisation"
+    "terms": "Conditions d'utilisation",
+    "demo": "Démo",
+    "help": "Aide"
   },
   "help": {
     "pageTitle": "Aide et documentation",
@@ -766,5 +770,16 @@
     "phoneOptional": "Téléphone (optionnel)",
     "submitAndGetPrice": "Envoyer et obtenir le prix",
     "currency": "Devise"
+  },
+  "demo": {
+    "chatbotName": "Assistant de site web",
+    "poweredBy": "Propulsé par Spaxio Assistant",
+    "placeholder": "Tapez un message…",
+    "msg1": "Bonjour ! Je suis votre assistant de site web. Je peux répondre aux questions sur votre entreprise, aider les visiteurs à obtenir des devis et capturer des leads. Essayez de me poser une question — par exemple « Quels sont vos horaires ? » ou « J'ai besoin d'un devis. »",
+    "msg2": "Quels sont vos horaires ?",
+    "msg3": "Nous sommes ouverts du lundi au vendredi de 9h à 17h, et le samedi de 10h à 14h. Besoin d'un devis ou que nous vous rappelions ? Demandez-moi !",
+    "msg4": "Je voudrais un devis pour l'aménagement paysager.",
+    "msg5": "Je serais ravi de vous aider. Pourriez-vous partager votre courriel et quelques détails sur le projet ? Nous vous enverrons un devis dans les 24 heures.",
+    "reply": "Bien reçu ! Dans le vrai widget, je capturerais vos informations et notifierais l'entreprise immédiatement. Inscrivez-vous gratuitement pour l'ajouter à votre site."
   }
 }

@@ -1,22 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from '@/components/intl-link';
 import { useTranslations } from 'next-intl';
 import AIChatCard from '@/components/ui/ai-chat';
 
-const DEMO_MESSAGES = [
-  { sender: 'ai' as const, text: "Hi! I'm a sample website assistant. I answer questions about the business, help visitors get quotes, and capture leads. Try asking me something—like \"What are your hours?\" or \"I need a quote.\"" },
-  { sender: 'user' as const, text: "What are your hours?" },
-  { sender: 'ai' as const, text: "We're open Monday–Friday, 9am–5pm, and Saturdays 10am–2pm. Need a quote or want us to call you back? Just ask!" },
-  { sender: 'user' as const, text: "I'd like a quote for landscaping." },
-  { sender: 'ai' as const, text: "I'd be happy to help. Could you share your email and a bit about the project? We'll send you a quote within 24 hours." },
-];
-
 export default function DemoAIChatPage() {
   const t = useTranslations('metadata');
   const tCommon = useTranslations('common');
-  const [messages, setMessages] = useState(DEMO_MESSAGES);
+  const tDemo = useTranslations('demo');
+
+  const initialMessages = useMemo(() => [
+    { sender: 'ai' as const, text: tDemo('msg1') },
+    { sender: 'user' as const, text: tDemo('msg2') },
+    { sender: 'ai' as const, text: tDemo('msg3') },
+    { sender: 'user' as const, text: tDemo('msg4') },
+    { sender: 'ai' as const, text: tDemo('msg5') },
+  ], [tDemo]);
+
+  const [messages, setMessages] = useState(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
 
   const handleSend = (text: string) => {
@@ -25,10 +27,7 @@ export default function DemoAIChatPage() {
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        {
-          sender: 'ai' as const,
-          text: "Got it! In the real widget, I'd capture your details and notify the business right away. Sign up free to add this to your website.",
-        },
+        { sender: 'ai' as const, text: tDemo('reply') },
       ]);
       setIsTyping(false);
     }, 800);
@@ -56,11 +55,11 @@ export default function DemoAIChatPage() {
           messages={messages}
           onSend={handleSend}
           isTyping={isTyping}
-          chatbotName="Website Assistant"
+          chatbotName={tDemo('chatbotName')}
           primaryBrandColor="#0ea5e9"
           showPoweredBy={true}
-          poweredByText="Powered by Spaxio Assistant"
-          placeholder="Type a message..."
+          poweredByText={tDemo('poweredBy')}
+          placeholder={tDemo('placeholder')}
           className="h-[460px] w-[360px] max-w-full shadow-xl"
         />
       </div>

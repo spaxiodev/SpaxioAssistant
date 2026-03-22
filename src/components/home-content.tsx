@@ -5,6 +5,7 @@ import { HomeDemoSection } from '@/components/home-demo-section';
 
 export async function HomeContent() {
   const t = await getTranslations('home');
+  const tFooter = await getTranslations('footer');
   return (
     <div className="relative isolate overflow-hidden px-4 pb-24 pt-12 sm:pt-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[28rem] bg-[radial-gradient(circle_at_top,hsl(var(--muted)),transparent_50%)]" />
@@ -241,25 +242,25 @@ export async function HomeContent() {
               href="/pricing"
               className="hover:text-foreground underline-offset-4 hover:underline"
             >
-              Pricing
+              {tFooter('pricing')}
             </Link>
             <Link
               href="/contact"
               className="hover:text-foreground underline-offset-4 hover:underline"
             >
-              Contact
+              {tFooter('contact')}
             </Link>
             <Link
               href="/demo/ai-chat"
               className="hover:text-foreground underline-offset-4 hover:underline"
             >
-              Demo
+              {tFooter('demo')}
             </Link>
             <Link
               href="/help"
               className="hover:text-foreground underline-offset-4 hover:underline"
             >
-              Help
+              {tFooter('help')}
             </Link>
           </div>
         </nav>

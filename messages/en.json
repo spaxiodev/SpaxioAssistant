@@ -759,7 +759,9 @@
     "about": "About",
     "pricing": "Pricing",
     "privacy": "Privacy policy",
-    "terms": "Terms & conditions"
+    "terms": "Terms & conditions",
+    "demo": "Demo",
+    "help": "Help"
   },
   "help": {
     "pageTitle": "Help & documentation",
@@ -903,5 +905,16 @@
     "phoneOptional": "Phone (optional)",
     "submitAndGetPrice": "Submit & get price",
     "currency": "Currency"
+  },
+  "demo": {
+    "chatbotName": "Website Assistant",
+    "poweredBy": "Powered by Spaxio Assistant",
+    "placeholder": "Type a message...",
+    "msg1": "Hi! I'm your website assistant. I can answer questions about your business, help visitors get quotes, and capture leads. Try asking me something—like \"What are your hours?\" or \"I need a quote.\"",
+    "msg2": "What are your hours?",
+    "msg3": "We're open Monday–Friday, 9am–5pm, and Saturdays 10am–2pm. Need a quote or want us to call you back? Just ask!",
+    "msg4": "I'd like a quote for landscaping.",
+    "msg5": "I'd be happy to help. Could you share your email and a bit about the project? We'll send you a quote within 24 hours.",
+    "reply": "Got it! In the real widget, I'd capture your details and notify the business right away. Sign up free to add this to your website."
   }
 }
