@@ -52,12 +52,16 @@ export interface FormFieldInput {
   pricing_mapping_json?: Record<string, unknown>;
 }
 
+export type QuoteFormFieldSource = 'custom' | 'widget_ai';
+
 export interface EmbeddedForm {
   id: string;
   organization_id: string;
   name: string;
   slug: string | null;
   form_type: FormType;
+  /** For quote_form: custom builder vs mirror AI widget quote form. */
+  quote_form_field_source?: QuoteFormFieldSource;
   is_active: boolean;
   success_message: string | null;
   theme_settings: {
@@ -99,6 +103,12 @@ export interface PublicFormConfig {
     primary_color?: string;
     border_radius?: string;
   };
+  /** When quote_form uses the same fields as the AI widget (server-resolved). */
+  quote_form_field_source?: 'custom' | 'widget_ai';
+  /** Shown above fields (e.g. AI widget intro text). */
+  heading_text?: string | null;
+  /** Primary submit button label. */
+  submit_button_label?: string | null;
   fields: Array<{
     field_key: string;
     label: string;
@@ -107,5 +117,7 @@ export interface PublicFormConfig {
     required: boolean;
     options_json: string[];
     sort_order: number;
+    select_options?: { value: string; label: string }[];
+    default_value?: string | null;
   }>;
 }

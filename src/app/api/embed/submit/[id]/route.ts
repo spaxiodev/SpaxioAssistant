@@ -20,6 +20,7 @@ import { canUseAutomation } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
 import { sendQuoteRequestConfirmation } from '@/lib/email/send-quote-confirmation';
+import { loadWidgetQuoteEmbedBundle } from '@/lib/embedded-forms/widget-quote-embed';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,7 +74,9 @@ export async function POST(request: Request, { params }: RouteContext) {
     // Load form + fields
     const { data: form } = await supabase
       .from('embedded_forms')
-      .select('id, name, form_type, organization_id, is_active, success_message, pricing_profile_id')
+      .select(
+        'id, name, form_type, organization_id, is_active, success_message, pricing_profile_id, quote_form_field_source'
+      )
       .eq('id', formId)
       .single();
 
@@ -82,10 +85,28 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const orgId: string = form.organization_id;
 
-    const { data: fields } = await supabase
-      .from('form_fields')
-      .select('field_key, label, field_type, required, options_json')
-      .eq('form_id', formId);
+    const useWidgetAiQuote =
+      form.form_type === 'quote_form' && form.quote_form_field_source === 'widget_ai';
+
+    type FieldRow = { field_key: string; label: string; field_type: string; required: boolean; options_json: unknown };
+    let fields: FieldRow[];
+
+    if (useWidgetAiQuote) {
+      const bundle = await loadWidgetQuoteEmbedBundle(supabase, orgId);
+      fields = bundle.fields.map((f) => ({
+        field_key: f.field_key,
+        label: f.label,
+        field_type: f.field_type,
+        required: f.required,
+        options_json: f.options_json,
+      }));
+    } else {
+      const { data: ff } = await supabase
+        .from('form_fields')
+        .select('field_key, label, field_type, required, options_json')
+        .eq('form_id', formId);
+      fields = ff ?? [];
+    }
 
     // Extract & sanitize answers
     const rawAnswers = typeof body.answers === 'object' && body.answers !== null
@@ -135,7 +156,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       const inputs = toInputs(answers);
       const context = await getPricingContext(supabase, {
         organizationId: orgId,
-        pricingProfileId: form.pricing_profile_id ?? undefined,
+        pricingProfileId: useWidgetAiQuote ? undefined : form.pricing_profile_id ?? undefined,
       });
 
       if (context && context.rules.length > 0) {
@@ -176,7 +197,11 @@ export async function POST(request: Request, { params }: RouteContext) {
             estimate_high: estimateHigh,
             estimation_run_id: estimationRunId,
             submission_source: QUOTE_SUBMISSION_SOURCE.EMBEDDED_FORM,
-            submission_metadata: { embedded_form_id: formId, form_name: form.name },
+            submission_metadata: {
+              embedded_form_id: formId,
+              form_name: form.name,
+              ...(useWidgetAiQuote ? { mirror_ai_widget_quote: true } : {}),
+            },
           })
           .select('id')
           .single();

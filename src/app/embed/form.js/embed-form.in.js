@@ -1,4 +1,4 @@
-/* Spaxio Embedded Form Loader v1.1
+/* Spaxio Embedded Form Loader v1.2
  * Fetches form config from the Spaxio API and renders it inline.
  * Usage:
  *   <div id="spaxio-form-FORM_ID"></div>
@@ -172,6 +172,7 @@
     return [
       '.spx-form { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: ' + c.text + '; background: ' + c.bg + '; padding: 24px; border-radius: ' + br + '; border: 1px solid ' + c.border + '; max-width: 560px; box-sizing: border-box; }',
       '.spx-form * { box-sizing: border-box; }',
+      '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + c.text + '; }',
       '.spx-field { margin-bottom: 16px; }',
       '.spx-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: ' + c.text + '; }',
       '.spx-req { color: #e53e3e; margin-left: 2px; }',
@@ -216,6 +217,7 @@
     return [
       '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; }',
       '.spx-form * { box-sizing: border-box; }',
+      '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + text + '; }',
       '.spx-field { margin-bottom: 16px; }',
       '.spx-label { display: block; font-weight: 500; margin-bottom: 6px; color: ' + text + '; }',
       '.spx-req { opacity: 0.85; margin-left: 2px; }',
@@ -264,6 +266,7 @@
     return [
       '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; }',
       '.spx-form * { box-sizing: border-box; }',
+      '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + text + '; }',
       '.spx-field { margin-bottom: 16px; }',
       '.spx-label { display: block; font-weight: 500; margin-bottom: 6px; color: ' + text + '; }',
       '.spx-req { opacity: 0.85; margin-left: 2px; }',
@@ -308,18 +311,33 @@
 
   function renderField(field) {
     var req = field.required ? '<span class="spx-req" aria-hidden="true">*</span>' : '';
-    var label = '<label class="spx-label" for="spx-' + escape(field.field_key) + '">' + escape(field.label) + req + '</label>';
+    var labelFor = field.field_type === 'radio' ? '' : ' for="spx-' + escape(field.field_key) + '"';
+    var label = '<label class="spx-label"' + labelFor + '>' + escape(field.label) + req + '</label>';
     var placeholder = field.placeholder ? ' placeholder="' + escape(field.placeholder) + '"' : '';
     var required = field.required ? ' required' : '';
+    var defVal = field.default_value != null && field.default_value !== '' ? String(field.default_value) : '';
+    var defAttr = '';
+    if (defVal && field.field_type !== 'checkbox' && field.field_type !== 'radio') {
+      defAttr = ' value="' + escape(defVal) + '"';
+    }
     var input = '';
 
     if (field.field_type === 'textarea') {
-      input = '<textarea class="spx-input spx-textarea" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '></textarea>';
+      var taBody = defVal ? escape(defVal) : '';
+      input = '<textarea class="spx-input spx-textarea" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '>' + taBody + '</textarea>';
     } else if (field.field_type === 'select') {
       var opts = '<option value="">— Select —</option>';
-      (field.options_json || []).forEach(function (o) {
-        opts += '<option value="' + escape(o) + '">' + escape(o) + '</option>';
-      });
+      if (field.select_options && field.select_options.length > 0) {
+        field.select_options.forEach(function (o) {
+          var sel = defVal !== '' && String(o.value) === defVal ? ' selected' : '';
+          opts += '<option value="' + escape(String(o.value)) + '"' + sel + '>' + escape(String(o.label || o.value)) + '</option>';
+        });
+      } else {
+        (field.options_json || []).forEach(function (o) {
+          var sel = defVal !== '' && String(o) === defVal ? ' selected' : '';
+          opts += '<option value="' + escape(o) + '"' + sel + '>' + escape(o) + '</option>';
+        });
+      }
       input = '<select class="spx-input spx-select" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + required + '>' + opts + '</select>';
     } else if (field.field_type === 'radio') {
       var radios = '<div class="spx-radio-group" role="radiogroup">';
@@ -340,15 +358,15 @@
     } else if (field.field_type === 'checkbox') {
       input = '<div class="spx-checkbox-group"><label class="spx-checkbox-item"><input type="checkbox" name="' + escape(field.field_key) + '" value="true"' + required + '> ' + escape(field.label) + '</label></div>';
     } else if (field.field_type === 'number') {
-      input = '<input class="spx-input" type="number" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '>';
+      input = '<input class="spx-input" type="number" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + defAttr + required + '>';
     } else if (field.field_type === 'date') {
-      input = '<input class="spx-input" type="date" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + required + '>';
+      input = '<input class="spx-input" type="date" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + defAttr + required + '>';
     } else if (field.field_type === 'email') {
-      input = '<input class="spx-input" type="email" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '>';
+      input = '<input class="spx-input" type="email" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + defAttr + required + '>';
     } else if (field.field_type === 'phone') {
-      input = '<input class="spx-input" type="tel" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '>';
+      input = '<input class="spx-input" type="tel" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + defAttr + required + '>';
     } else {
-      input = '<input class="spx-input" type="text" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + required + '>';
+      input = '<input class="spx-input" type="text" id="spx-' + escape(field.field_key) + '" name="' + escape(field.field_key) + '"' + placeholder + defAttr + required + '>';
     }
 
     return '<div class="spx-field" data-key="' + escape(field.field_key) + '">' + label + input + '<div class="spx-error" style="display:none" data-error="' + escape(field.field_key) + '"></div></div>';
@@ -399,11 +417,21 @@
       fieldsHtml += renderField(field);
     });
 
+    var headingHtml = '';
+    if (config.heading_text && String(config.heading_text).trim()) {
+      headingHtml = '<h2 class="spx-form-heading">' + escape(String(config.heading_text).trim()) + '</h2>';
+    }
+    var submitLabel =
+      config.submit_button_label && String(config.submit_button_label).trim()
+        ? String(config.submit_button_label).trim()
+        : 'Submit';
+
     formEl.innerHTML = [
       '<div class="spx-global-error" id="spx-global-error" style="display:none"></div>',
+      headingHtml,
       fieldsHtml,
       '<div style="display:none" id="spx-submitting"><button class="spx-btn" disabled>Submitting…</button></div>',
-      '<div id="spx-submit-btn"><button class="spx-btn" type="button" id="spx-submit">Submit</button></div>',
+      '<div id="spx-submit-btn"><button class="spx-btn" type="button" id="spx-submit">' + escape(submitLabel) + '</button></div>',
       '<p class="spx-powered">Powered by <a href="https://spaxioassistant.com" target="_blank" rel="noopener">Spaxio</a></p>'
     ].join('');
 

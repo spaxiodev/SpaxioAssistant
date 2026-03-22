@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,14 @@ import {
   MoreHorizontal,
   Loader2,
 } from 'lucide-react';
-import type { EmbeddedForm, FormField, FormFieldInput, FieldType, FormType } from '@/lib/embedded-forms/types';
+import type {
+  EmbeddedForm,
+  FormField,
+  FormFieldInput,
+  FieldType,
+  FormType,
+  QuoteFormFieldSource,
+} from '@/lib/embedded-forms/types';
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -109,8 +117,21 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
     is_active: form.is_active,
     success_message: form.success_message ?? '',
     pricing_profile_id: form.pricing_profile_id ?? '',
+    quote_form_field_source: (form.quote_form_field_source as QuoteFormFieldSource | undefined) ?? 'custom',
   });
   const [fields, setFields] = useState<FormFieldInput[]>((form.fields ?? []).map(toFieldInput));
+
+  useEffect(() => {
+    setSettings({
+      name: form.name,
+      form_type: form.form_type,
+      is_active: form.is_active,
+      success_message: form.success_message ?? '',
+      pricing_profile_id: form.pricing_profile_id ?? '',
+      quote_form_field_source: (form.quote_form_field_source as QuoteFormFieldSource | undefined) ?? 'custom',
+    });
+    setFields((form.fields ?? []).map(toFieldInput));
+  }, [form.id, form.updated_at]);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
@@ -163,23 +184,33 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
     setSaving(true);
     setSaveStatus('idle');
     try {
+      const useWidgetAiQuote =
+        settings.form_type === 'quote_form' && settings.quote_form_field_source === 'widget_ai';
+
+      const payload: Record<string, unknown> = {
+        name: settings.name,
+        form_type: settings.form_type,
+        is_active: settings.is_active,
+        success_message: settings.success_message || null,
+        pricing_profile_id: settings.pricing_profile_id || null,
+      };
+      if (settings.form_type === 'quote_form') {
+        payload.quote_form_field_source = settings.quote_form_field_source;
+      }
+      if (!useWidgetAiQuote) {
+        payload.fields = fields.map((f, i) => ({
+          ...f,
+          sort_order: i,
+          ...(f.field_type === 'select' || f.field_type === 'radio'
+            ? { options_json: normalizeChoiceOptions(f.options_json ?? []) }
+            : {}),
+        }));
+      }
+
       const res = await fetch(`/api/dashboard/embedded-forms/${form.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: settings.name,
-          form_type: settings.form_type,
-          is_active: settings.is_active,
-          success_message: settings.success_message || null,
-          pricing_profile_id: settings.pricing_profile_id || null,
-          fields: fields.map((f, i) => ({
-            ...f,
-            sort_order: i,
-            ...(f.field_type === 'select' || f.field_type === 'radio'
-              ? { options_json: normalizeChoiceOptions(f.options_json ?? []) }
-              : {}),
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to save');
@@ -216,7 +247,17 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
               <Label htmlFor="form-type">Form type</Label>
               <Select
                 value={settings.form_type}
-                onValueChange={(v) => setSettings((s) => ({ ...s, form_type: v as FormType }))}
+                onValueChange={(v) =>
+                  setSettings((s) => {
+                    const next = v as FormType;
+                    return {
+                      ...s,
+                      form_type: next,
+                      quote_form_field_source:
+                        next === 'quote_form' ? s.quote_form_field_source : 'custom',
+                    };
+                  })
+                }
               >
                 <SelectTrigger id="form-type" className="mt-1">
                   <SelectValue />
@@ -231,25 +272,64 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
           </div>
 
           {settings.form_type === 'quote_form' && (
-            <div>
-              <Label htmlFor="pricing-profile">Pricing profile (optional)</Label>
-              <Select
-                value={settings.pricing_profile_id || '_none'}
-                onValueChange={(v) => setSettings((s) => ({ ...s, pricing_profile_id: v === '_none' ? '' : v }))}
-              >
-                <SelectTrigger id="pricing-profile" className="mt-1">
-                  <SelectValue placeholder="None — no estimate" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">None — collect without estimate</SelectItem>
-                  {pricingProfiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Link a pricing profile to calculate estimates when the form is submitted.
-              </p>
+            <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-4">
+              <div>
+                <Label htmlFor="quote-field-source">Quote fields</Label>
+                <Select
+                  value={settings.quote_form_field_source}
+                  onValueChange={(v) =>
+                    setSettings((s) => ({ ...s, quote_form_field_source: v as QuoteFormFieldSource }))
+                  }
+                >
+                  <SelectTrigger id="quote-field-source" className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Custom fields (build below)</SelectItem>
+                    <SelectItem value="widget_ai">Same as AI chat widget</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use the same quote form as your website widget: intro text, submit label, contact
+                  requirements, and pricing variables from your default profile.
+                </p>
+              </div>
+              {settings.quote_form_field_source === 'widget_ai' ? (
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    Edit the widget quote form under{' '}
+                    <Link href="/dashboard/quote-requests/form-setup" className="text-primary underline">
+                      Quote requests → Form setup
+                    </Link>
+                    . Pricing questions come from your{' '}
+                    <Link href="/dashboard/quote-requests/pricing" className="text-primary underline">
+                      default pricing profile
+                    </Link>{' '}
+                    (same as the widget). Estimates use that profile automatically.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="pricing-profile">Pricing profile (optional)</Label>
+                  <Select
+                    value={settings.pricing_profile_id || '_none'}
+                    onValueChange={(v) => setSettings((s) => ({ ...s, pricing_profile_id: v === '_none' ? '' : v }))}
+                  >
+                    <SelectTrigger id="pricing-profile" className="mt-1">
+                      <SelectValue placeholder="None — no estimate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">None — collect without estimate</SelectItem>
+                      {pricingProfiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Link a pricing profile to calculate estimates when the form is submitted.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -286,18 +366,26 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
           <div>
             <CardTitle className="text-base">Form Fields</CardTitle>
             <CardDescription>
-              {fields.length === 0
-                ? 'No fields yet. Add fields to build your form.'
-                : `${fields.length} field${fields.length === 1 ? '' : 's'}. Click to edit.`}
+              {settings.form_type === 'quote_form' && settings.quote_form_field_source === 'widget_ai'
+                ? 'Fields are loaded from your AI widget quote form when visitors view the embed.'
+                : fields.length === 0
+                  ? 'No fields yet. Add fields to build your form.'
+                  : `${fields.length} field${fields.length === 1 ? '' : 's'}. Click to edit.`}
             </CardDescription>
           </div>
-          <Button size="sm" onClick={() => setAddFieldOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add field
-          </Button>
+          {!(settings.form_type === 'quote_form' && settings.quote_form_field_source === 'widget_ai') && (
+            <Button size="sm" onClick={() => setAddFieldOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add field
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
-          {fields.length === 0 ? (
+          {settings.form_type === 'quote_form' && settings.quote_form_field_source === 'widget_ai' ? (
+            <div className="rounded-lg border border-dashed border-muted-foreground/25 p-8 text-center text-sm text-muted-foreground">
+              No manual fields for this mode. The embedded form matches the widget automatically.
+            </div>
+          ) : fields.length === 0 ? (
             <div className="rounded-lg border border-dashed border-muted-foreground/25 p-8 text-center">
               <p className="text-sm text-muted-foreground">No fields yet.</p>
               <Button variant="outline" size="sm" className="mt-3" onClick={() => setAddFieldOpen(true)}>

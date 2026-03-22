@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimit } from '@/lib/rate-limit';
 import { getClientIp } from '@/lib/validation';
 import type { PublicFormConfig } from '@/lib/embedded-forms/types';
+import { loadWidgetQuoteEmbedBundle } from '@/lib/embedded-forms/widget-quote-embed';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,7 @@ export async function GET(request: Request, { params }: RouteContext) {
   const supabase = createAdminClient();
   const { data: form, error } = await supabase
     .from('embedded_forms')
-    .select('id, name, form_type, success_message, theme_settings, is_active')
+    .select('id, name, form_type, success_message, theme_settings, is_active, organization_id, quote_form_field_source')
     .eq('id', id)
     .single();
 
@@ -49,19 +50,38 @@ export async function GET(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: 'Form is not active' }, { status: 410, headers: corsHeaders });
   }
 
-  const { data: fields } = await supabase
-    .from('form_fields')
-    .select('field_key, label, field_type, placeholder, required, options_json, sort_order')
-    .eq('form_id', id)
-    .order('sort_order');
+  const source =
+    form.form_type === 'quote_form' && form.quote_form_field_source === 'widget_ai'
+      ? 'widget_ai'
+      : 'custom';
 
-  const config: PublicFormConfig = {
-    id: form.id,
-    name: form.name,
-    form_type: form.form_type,
-    success_message: form.success_message,
-    theme_settings: typeof form.theme_settings === 'object' ? form.theme_settings : {},
-    fields: (fields ?? []).map((f) => ({
+  let publicFields: PublicFormConfig['fields'];
+  let heading_text: string | null = null;
+  let submit_button_label: string | null = null;
+
+  if (source === 'widget_ai') {
+    const bundle = await loadWidgetQuoteEmbedBundle(supabase, form.organization_id);
+    publicFields = bundle.fields.map((f) => ({
+      field_key: f.field_key,
+      label: f.label,
+      field_type: f.field_type,
+      placeholder: f.placeholder,
+      required: f.required,
+      options_json: f.options_json,
+      sort_order: f.sort_order,
+      ...(f.select_options?.length ? { select_options: f.select_options } : {}),
+      ...(f.default_value != null && f.default_value !== '' ? { default_value: f.default_value } : {}),
+    }));
+    heading_text = bundle.heading_text;
+    submit_button_label = bundle.submit_button_label;
+  } else {
+    const { data: fields } = await supabase
+      .from('form_fields')
+      .select('field_key, label, field_type, placeholder, required, options_json, sort_order')
+      .eq('form_id', id)
+      .order('sort_order');
+
+    publicFields = (fields ?? []).map((f) => ({
       field_key: f.field_key,
       label: f.label,
       field_type: f.field_type,
@@ -69,7 +89,19 @@ export async function GET(request: Request, { params }: RouteContext) {
       required: f.required,
       options_json: Array.isArray(f.options_json) ? f.options_json : [],
       sort_order: f.sort_order,
-    })),
+    }));
+  }
+
+  const config: PublicFormConfig = {
+    id: form.id,
+    name: form.name,
+    form_type: form.form_type,
+    success_message: form.success_message,
+    theme_settings: typeof form.theme_settings === 'object' ? form.theme_settings : {},
+    quote_form_field_source: form.form_type === 'quote_form' ? source : undefined,
+    heading_text,
+    submit_button_label,
+    fields: publicFields,
   };
 
   return NextResponse.json(config, { headers: corsHeaders });

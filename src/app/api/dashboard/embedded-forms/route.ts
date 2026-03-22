@@ -56,6 +56,12 @@ export async function POST(request: Request) {
 
     const VALID_FORM_TYPES = ['lead_form', 'quote_form', 'custom_request_form'];
     const formType = VALID_FORM_TYPES.includes(body.form_type) ? body.form_type : 'lead_form';
+    const quoteFormFieldSource =
+      formType === 'quote_form' &&
+      typeof body.quote_form_field_source === 'string' &&
+      body.quote_form_field_source === 'widget_ai'
+        ? 'widget_ai'
+        : 'custom';
     const successMessage = typeof body.success_message === 'string' ? body.success_message.trim().slice(0, 1000) : null;
     const themeSettings = typeof body.theme_settings === 'object' && body.theme_settings !== null ? body.theme_settings : {};
     const pricingProfileId = typeof body.pricing_profile_id === 'string' && body.pricing_profile_id ? body.pricing_profile_id : null;
@@ -79,6 +85,7 @@ export async function POST(request: Request) {
         organization_id: orgId,
         name,
         form_type: formType,
+        quote_form_field_source: quoteFormFieldSource,
         is_active: true,
         success_message: successMessage,
         theme_settings: themeSettings,

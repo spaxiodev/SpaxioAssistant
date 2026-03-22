@@ -50,7 +50,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
     // Verify ownership
     const { data: existing } = await supabase
       .from('embedded_forms')
-      .select('id')
+      .select('id, form_type, quote_form_field_source')
       .eq('id', id)
       .eq('organization_id', orgId)
       .single();
@@ -68,6 +68,26 @@ export async function PUT(request: Request, { params }: RouteContext) {
       updates.pricing_profile_id = body.pricing_profile_id || null;
     }
 
+    const nextFormType =
+      typeof updates.form_type === 'string'
+        ? updates.form_type
+        : (existing as { form_type: string }).form_type;
+    if (nextFormType !== 'quote_form') {
+      updates.quote_form_field_source = 'custom';
+    } else if (
+      typeof body.quote_form_field_source === 'string' &&
+      (body.quote_form_field_source === 'custom' || body.quote_form_field_source === 'widget_ai')
+    ) {
+      updates.quote_form_field_source = body.quote_form_field_source;
+    }
+
+    const resolvedQuoteSource =
+      typeof updates.quote_form_field_source === 'string'
+        ? updates.quote_form_field_source
+        : String(
+            (existing as { quote_form_field_source?: string }).quote_form_field_source ?? 'custom'
+          );
+
     const { data: form, error } = await supabase
       .from('embedded_forms')
       .update(updates)
@@ -77,8 +97,9 @@ export async function PUT(request: Request, { params }: RouteContext) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Replace fields if provided
-    if (Array.isArray(body.fields)) {
+    // Replace fields if provided (skip when mirroring AI widget — fields are resolved at embed time)
+    const skipFieldReplace = nextFormType === 'quote_form' && resolvedQuoteSource === 'widget_ai';
+    if (Array.isArray(body.fields) && !skipFieldReplace) {
       await supabase.from('form_fields').delete().eq('form_id', id);
 
       if (body.fields.length > 0) {
