@@ -21,6 +21,9 @@ export { renderContactFormNotificationEmail } from './templates/contact-form-not
 export { renderGenericNotificationEmail } from './templates/generic-notification';
 export { renderQuoteRequestConfirmationEmail } from './templates/quote-request-confirmation';
 export type { QuoteRequestConfirmationData } from './templates/quote-request-confirmation';
+export { renderContactFormConfirmationEmail } from './templates/contact-form-confirmation';
+export type { ContactFormConfirmationData } from './templates/contact-form-confirmation';
+export { resolveContactConfirmationLanguage } from './resolve-contact-language';
 
 export type { LeadNotificationData, QuoteRequestNotificationData, ContactFormNotificationData };
 

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { renderContactFormNotificationEmail } from '@/lib/email';
+import { sendContactFormConfirmation } from '@/lib/email/send-contact-confirmation';
+import { resolveContactConfirmationLanguage } from '@/lib/email/resolve-contact-language';
 import { getClientIp } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
     const email = sanitize(body.email, 255).trim();
     const subject = sanitize(body.subject, 200).trim();
     const message = sanitize(body.message).trim();
+    const confirmationLanguage = resolveContactConfirmationLanguage(body, message);
 
     if (!name || !email || !message) {
       console.log('[contact] Blocked: validation (400) name/email/message');
@@ -95,6 +98,13 @@ export async function POST(request: Request) {
       );
     }
     console.log('[contact] Email sent to', CONTACT_EMAIL, 'id:', data?.id);
+
+    try {
+      await sendContactFormConfirmation({ name, email, language: confirmationLanguage });
+    } catch (confirmErr) {
+      console.warn('[contact] Confirmation email to visitor failed:', (confirmErr as Error)?.message);
+    }
+
     return NextResponse.json({ success: true, id: data?.id });
   } catch {
     return NextResponse.json(

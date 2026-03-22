@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 export function ContactForm() {
+  const locale = useLocale();
   const t = useTranslations('home');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,7 +25,14 @@ export function ContactForm() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          subject,
+          message,
+          locale,
+          browserLocale: typeof navigator !== 'undefined' ? navigator.language : undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
