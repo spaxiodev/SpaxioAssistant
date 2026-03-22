@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Send, X } from "lucide-react";
@@ -103,6 +103,19 @@ export default function AIChatCard({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 20 }, (_, i) => ({
+        id: i,
+        left: `${((i * 47 + 13) % 100)}%`,
+        duration: 5 + (i % 4) * 0.75,
+        delay: i * 0.5,
+        x0: ((i * 17) % 200) - 100,
+        x1: ((i * 31) % 200) - 100,
+      })),
+    []
+  );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
@@ -164,217 +177,257 @@ export default function AIChatCard({
     ? { ["--accent" as string]: primaryBrandColor }
     : undefined;
 
+  const ringBorderStyle = primaryBrandColor
+    ? { borderColor: `${primaryBrandColor}55` }
+    : undefined;
+
   return (
     <div
       className={cn(
-        "relative flex h-full w-[420px] max-w-full flex-col overflow-hidden rounded-[20px] border border-border-soft/50 bg-background shadow-[0_24px_80px_rgba(2,6,23,0.22)] opacity-100",
+        "relative h-[460px] w-[360px] max-w-full overflow-hidden rounded-2xl p-[2px]",
         className
       )}
       style={accentStyle}
     >
-      {/* Header */}
-      <header
-        className="relative flex shrink-0 items-center justify-between gap-3 px-5 py-4 border-b border-border-soft/20"
-        style={
-          primaryBrandColor
-            ? {
-                background: `linear-gradient(135deg, ${primaryBrandColor}18 0%, ${primaryBrandColor}08 100%)`,
-              }
-            : undefined
-        }
-      >
-        <div className="flex min-w-0 items-center gap-3.5">
-          <div
-            className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-full shadow-sm"
-            style={
-              primaryBrandColor
-                ? {
-                    backgroundColor: primaryBrandColor,
-                    color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
-                    boxShadow: `0 0 0 3px ${primaryBrandColor}22`,
-                  }
-                : undefined
-            }
-            aria-hidden="true"
-          >
-            {assistantAvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={assistantAvatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-sm font-bold tracking-tight">AI</span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <h2 className="truncate text-[15px] font-semibold leading-tight text-foreground">{chatbotName}</h2>
-            {assistantSubtitle ? (
-              <p className="truncate text-xs leading-snug text-muted-foreground mt-0.5">{assistantSubtitle}</p>
-            ) : (
-              <p className="flex items-center gap-1 text-xs leading-snug text-muted-foreground mt-0.5">
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"
-                  aria-hidden="true"
-                />
-                Online
-              </p>
-            )}
-          </div>
-        </div>
+      <motion.div
+        className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-white/20"
+        style={ringBorderStyle}
+        animate={{ rotate: [0, 360] }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+      />
 
-        {onClose && (
-          <button
-            type="button"
-            aria-label={ariaLabelClose}
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring/50"
-          >
-            <X className="h-4 w-4" strokeWidth={2} />
-          </button>
-        )}
-      </header>
+      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl">
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-gray-800 via-black to-gray-900"
+          animate={{ backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          style={{ backgroundSize: "200% 200%" }}
+        />
 
-      {/* Messages: scrollable, fills remaining space */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 scroll-smooth">
-        <div className="flex flex-col gap-3.5 text-[14px] leading-relaxed">
-          <AnimatePresence>
-            {showSuggestions ? (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                className="mb-2 flex flex-wrap gap-2"
-              >
-                {suggestions.map((s) => (
-                  <motion.button
-                    key={s}
-                    type="button"
-                    whileHover={{ y: -1, scale: 1.01 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => sendSuggestion(s)}
-                    className="rounded-full border border-border-soft/70 bg-muted/40 px-3 py-1.5 text-[12.5px] font-medium leading-none text-foreground/80 shadow-sm transition-all hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
-                    style={
-                      primaryBrandColor
-                        ? { borderColor: `${primaryBrandColor}35` }
-                        : undefined
-                    }
-                  >
-                    {s}
-                  </motion.button>
-                ))}
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
-          {messages.map((msg, i) => {
-            const isAi = msg.sender === "ai";
-            return (
-              <motion.div
-                key={i}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className={cn(
-                  "max-w-[85%] rounded-2xl px-4 py-3 shadow-sm",
-                  isAi
-                    ? "self-start rounded-tl-sm border border-border-soft/60 bg-muted/50 text-foreground"
-                    : "self-end rounded-tr-sm"
-                )}
-                style={
-                  !isAi
-                    ? {
-                        backgroundColor: primaryBrandColor || "#1e293b",
-                        color: primaryBrandColor
-                          ? isLightColor(primaryBrandColor)
-                            ? "#0b1220"
-                            : "#ffffff"
-                          : "#ffffff",
-                      }
-                    : undefined
-                }
-              >
-                {isAi ? (
-                  <div className="chat-markdown [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1.5 [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_a]:underline [&_a]:underline-offset-2">
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <span className="font-medium">{msg.text}</span>
-                )}
-              </motion.div>
-            );
-          })}
-
-          <AnimatePresence>
-            {isTyping ? (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                className="flex items-center gap-1.5 self-start rounded-2xl rounded-tl-sm border border-border-soft/60 bg-muted/50 px-4 py-3"
-              >
-                {[0, 0.15, 0.3].map((delay, idx) => (
-                  <span
-                    key={idx}
-                    className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
-                    style={{ animationDelay: `${delay}s`, animationDuration: "1.1s" }}
-                  />
-                ))}
-                <span className="ml-1.5 text-xs font-medium text-muted-foreground">
-                  {typingIndicatorText}
-                </span>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
-          <div ref={messagesEndRef} aria-hidden="true" />
-        </div>
-      </div>
-
-      {/* Input bar */}
-      <div className="shrink-0 border-t border-border-soft/20 bg-background px-4 pb-4 pt-3">
-        {showPoweredBy && (
-          <div className="mb-2 text-center text-[10px] text-muted-foreground/50 tracking-wide">
-            {poweredByText}
-          </div>
-        )}
-        <div className="flex items-end gap-2.5">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className="min-h-[46px] max-h-[128px] flex-1 resize-none overflow-y-auto rounded-2xl border border-border-soft/60 bg-muted/30 px-4 py-3 text-[14px] leading-snug text-foreground placeholder:text-muted-foreground/60 outline-none transition-all focus-visible:border-[color:var(--accent)]/50 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/25"
-            style={
-              primaryBrandColor
-                ? ({ ["--accent" as string]: primaryBrandColor } as React.CSSProperties)
-                : undefined
-            }
-            placeholder={placeholder}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
+        {particles.map((p) => (
+          <motion.div
+            key={p.id}
+            className="absolute h-1 w-1 rounded-full bg-white/10"
+            animate={{
+              y: ["0%", "-140%"],
+              x: [p.x0, p.x1],
+              opacity: [0, 1, 0],
             }}
-            aria-label={placeholder}
+            transition={{
+              duration: p.duration,
+              repeat: Infinity,
+              delay: p.delay,
+              ease: "easeInOut",
+            }}
+            style={{ left: p.left, bottom: "-10%" }}
           />
-          <button
-            type="button"
-            onClick={handleSend}
-            aria-label={ariaLabelSend}
-            className="shrink-0 rounded-2xl h-[46px] w-[46px] flex items-center justify-center shadow-sm transition-all hover:brightness-110 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-            style={
-              primaryBrandColor
-                ? {
-                    backgroundColor: primaryBrandColor,
-                    color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+        ))}
+
+        <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/15 shadow-md"
+              style={
+                primaryBrandColor
+                  ? {
+                      backgroundColor: primaryBrandColor,
+                      color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                      boxShadow: `0 0 0 2px ${primaryBrandColor}44`,
+                    }
+                  : { backgroundColor: "rgba(255,255,255,0.12)", color: "#fff" }
+              }
+              aria-hidden="true"
+            >
+              {assistantAvatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={assistantAvatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold tracking-tight">AI</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold text-white">{chatbotName}</h2>
+              {assistantSubtitle ? (
+                <p className="truncate text-xs leading-snug text-white/55">{assistantSubtitle}</p>
+              ) : (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-white/55">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+                  Online
+                </p>
+              )}
+            </div>
+          </div>
+
+          {onClose && (
+            <button
+              type="button"
+              aria-label={ariaLabelClose}
+              onClick={onClose}
+              className="shrink-0 rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-1 focus:ring-white/40"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          )}
+        </header>
+
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+          <div className="flex flex-col space-y-3 text-sm">
+            <AnimatePresence>
+              {showSuggestions ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="mb-1 flex flex-wrap gap-2"
+                >
+                  {suggestions.map((s) => (
+                    <motion.button
+                      key={s}
+                      type="button"
+                      whileHover={{ y: -1, scale: 1.01 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => sendSuggestion(s)}
+                      className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[12.5px] font-medium leading-none text-white/90 shadow-sm backdrop-blur-md transition-all hover:bg-white/15 focus:outline-none focus:ring-1 focus:ring-white/35"
+                      style={
+                        primaryBrandColor
+                          ? { borderColor: `${primaryBrandColor}44` }
+                          : undefined
+                      }
+                    >
+                      {s}
+                    </motion.button>
+                  ))}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            {messages.map((msg, i) => {
+              const isAi = msg.sender === "ai";
+              return (
+                <motion.div
+                  key={i}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className={cn(
+                    "max-w-[85%] rounded-xl px-3 py-2 shadow-md backdrop-blur-md",
+                    isAi
+                      ? "self-start border border-white/10 bg-white/10 text-white"
+                      : "self-end font-semibold"
+                  )}
+                  style={
+                    !isAi
+                      ? {
+                          backgroundColor: primaryBrandColor
+                            ? `${primaryBrandColor}e6`
+                            : "rgba(255,255,255,0.3)",
+                          color: primaryBrandColor
+                            ? isLightColor(primaryBrandColor)
+                              ? "#0b1220"
+                              : "#ffffff"
+                            : "#0a0a0a",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                        }
+                      : undefined
                   }
-                : { backgroundColor: "#1e293b", color: "#ffffff" }
-            }
-            disabled={isTyping || input.trim().length === 0}
-          >
-            <Send className="h-4 w-4" strokeWidth={2} />
-          </button>
+                >
+                  {isAi ? (
+                    <div className="chat-markdown text-white [&_a]:text-sky-300 [&_a]:underline [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_p]:my-1.5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:my-1.5 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:my-1.5 [&_li]:my-0.5">
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <span>{msg.text}</span>
+                  )}
+                </motion.div>
+              );
+            })}
+
+            <AnimatePresence>
+              {isTyping ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex max-w-[75%] flex-col gap-1 self-start rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md"
+                >
+                  <div className="flex items-center gap-1">
+                    <motion.span
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2 }}
+                    />
+                    <motion.span
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2, delay: 0.15 }}
+                    />
+                    <motion.span
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-medium text-white/60">{typingIndicatorText}</span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <div ref={messagesEndRef} aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className="relative z-10 shrink-0 border-t border-white/10 p-3">
+          {showPoweredBy && (
+            <div className="mb-2 text-center text-[10px] tracking-wide text-white/40">
+              {poweredByText}
+            </div>
+          )}
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              className="min-h-[42px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm leading-snug text-white placeholder:text-white/40 outline-none transition-all focus:border-white/25 focus:ring-1 focus:ring-white/35"
+              style={
+                primaryBrandColor
+                  ? ({
+                      ["--accent" as string]: primaryBrandColor,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+              placeholder={placeholder}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              aria-label={placeholder}
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              aria-label={ariaLabelSend}
+              disabled={isTyping || input.trim().length === 0}
+              className={cn(
+                "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-white/40",
+                !primaryBrandColor && "text-white"
+              )}
+              style={
+                primaryBrandColor
+                  ? {
+                      backgroundColor: `${primaryBrandColor}cc`,
+                      color: isLightColor(primaryBrandColor) ? "#0b1220" : "#ffffff",
+                    }
+                  : undefined
+              }
+            >
+              <Send className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
