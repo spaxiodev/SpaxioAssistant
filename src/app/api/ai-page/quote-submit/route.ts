@@ -179,6 +179,10 @@ export async function POST(request: Request) {
     // Non-fatal: continue without estimate
   }
 
+  reply += isFrench
+    ? " Votre demande a été transmise à l’équipe pour examen."
+    : ' Your request has been sent to the team for review.';
+
   // Persist state, log messages, then complete run (creates quote_request + estimate run linkage).
   await supabase.from('ai_page_runs').update({ session_state: nextState }).eq('id', runId);
   if (conversationId) {

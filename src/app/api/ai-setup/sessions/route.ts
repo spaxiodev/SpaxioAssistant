@@ -4,6 +4,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
 import { getEntitlements } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 
 /** GET /api/ai-setup/sessions – list sessions for the org + entitlements (e.g. custom_branding for logo upload) */
 export async function GET() {
@@ -11,6 +12,8 @@ export async function GET() {
     const access = await requireAiSetupAccess();
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const [sessionsResult, adminAllowed] = await Promise.all([
       supabase
@@ -46,6 +49,8 @@ export async function POST() {
     const access = await requireAiSetupAccess();
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const rl = rateLimit({ key: `ai-setup-create:${orgId}`, limit: 10, windowMs: 60_000 });
     if (!rl.allowed) {

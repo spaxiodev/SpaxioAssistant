@@ -16,8 +16,10 @@ export type AiPageTranslationKey =
   | 'email'
   | 'phoneOptional'
   | 'submitAndGetPrice'
+  | 'quoteFormCalculateSubmitHint'
   | 'currency'
-  | 'quoteFormSuccess';
+  | 'quoteFormSuccess'
+  | 'quoteFormSuccessSentToBusiness';
 
 function normalizeLocale(locale: string): string {
   const v = String(locale || '').trim().toLowerCase();
@@ -43,9 +45,12 @@ const en: Record<AiPageTranslationKey, string> = {
   name: 'Name',
   email: 'Email',
   phoneOptional: 'Phone (optional)',
-  submitAndGetPrice: 'Submit & get price',
+  submitAndGetPrice: 'Calculate and Submit',
+  quoteFormCalculateSubmitHint:
+    'Submitting calculates your estimate and sends the request to the business in one step.',
   currency: 'Currency',
-  quoteFormSuccess: 'Quote request submitted — we’ll be in touch shortly.',
+  quoteFormSuccess: 'Your quote request was submitted.',
+  quoteFormSuccessSentToBusiness: 'Your estimate was calculated and the request was sent to the business for review.',
 };
 
 const fr: Record<AiPageTranslationKey, string> = {
@@ -60,9 +65,13 @@ const fr: Record<AiPageTranslationKey, string> = {
   name: 'Nom',
   email: 'E-mail',
   phoneOptional: 'Téléphone (optionnel)',
-  submitAndGetPrice: 'Envoyer et obtenir le prix',
+  submitAndGetPrice: 'Calculer et envoyer',
+  quoteFormCalculateSubmitHint:
+    'En envoyant, vous calculez l’estimation et transmettez la demande à l’entreprise en une seule étape.',
   currency: 'Devise',
-  quoteFormSuccess: 'Demande de devis envoyée — nous vous contacterons bientôt.',
+  quoteFormSuccess: 'Votre demande de devis a été envoyée.',
+  quoteFormSuccessSentToBusiness:
+    'Votre estimation a été calculée et la demande a été transmise à l’entreprise pour examen.',
 };
 
 const frCA: Record<AiPageTranslationKey, string> = {
@@ -82,9 +91,13 @@ const es: Record<AiPageTranslationKey, string> = {
   name: 'Nombre',
   email: 'Correo electrónico',
   phoneOptional: 'Teléfono (opcional)',
-  submitAndGetPrice: 'Enviar y obtener precio',
+  submitAndGetPrice: 'Calcular y enviar',
+  quoteFormCalculateSubmitHint:
+    'Al enviar, se calcula tu estimación y se envía la solicitud al negocio en un solo paso.',
   currency: 'Moneda',
-  quoteFormSuccess: 'Solicitud enviada — nos pondremos en contacto pronto.',
+  quoteFormSuccess: 'Tu solicitud de presupuesto fue enviada.',
+  quoteFormSuccessSentToBusiness:
+    'Se calculó tu estimación y la solicitud se envió al negocio para su revisión.',
 };
 
 const de: Record<AiPageTranslationKey, string> = {
@@ -99,9 +112,13 @@ const de: Record<AiPageTranslationKey, string> = {
   name: 'Name',
   email: 'E-Mail',
   phoneOptional: 'Telefon (optional)',
-  submitAndGetPrice: 'Absenden und Preis erhalten',
+  submitAndGetPrice: 'Berechnen und senden',
+  quoteFormCalculateSubmitHint:
+    'Mit dem Senden wird Ihre Schätzung berechnet und die Anfrage in einem Schritt übermittelt.',
   currency: 'Währung',
-  quoteFormSuccess: 'Anfrage gesendet — wir melden uns in Kürze.',
+  quoteFormSuccess: 'Ihre Angebotsanfrage wurde gesendet.',
+  quoteFormSuccessSentToBusiness:
+    'Ihre Schätzung wurde berechnet und die Anfrage zur Prüfung an das Unternehmen gesendet.',
 };
 
 const pt: Record<AiPageTranslationKey, string> = {
@@ -116,9 +133,13 @@ const pt: Record<AiPageTranslationKey, string> = {
   name: 'Nome',
   email: 'E-mail',
   phoneOptional: 'Telefone (opcional)',
-  submitAndGetPrice: 'Enviar e obter preço',
+  submitAndGetPrice: 'Calcular e enviar',
+  quoteFormCalculateSubmitHint:
+    'Ao enviar, a sua estimativa é calculada e o pedido é enviado ao negócio num único passo.',
   currency: 'Moeda',
-  quoteFormSuccess: 'Solicitação enviada — entraremos em contato em breve.',
+  quoteFormSuccess: 'O seu pedido de orçamento foi enviado.',
+  quoteFormSuccessSentToBusiness:
+    'A sua estimativa foi calculada e o pedido foi enviado ao negócio para revisão.',
 };
 
 const it: Record<AiPageTranslationKey, string> = {
@@ -133,9 +154,13 @@ const it: Record<AiPageTranslationKey, string> = {
   name: 'Nome',
   email: 'Email',
   phoneOptional: 'Telefono (opzionale)',
-  submitAndGetPrice: 'Invia e ottieni prezzo',
+  submitAndGetPrice: 'Calcola e invia',
+  quoteFormCalculateSubmitHint:
+    'Inviando, calcoli il preventivo e invii la richiesta all’attività in un solo passaggio.',
   currency: 'Valuta',
-  quoteFormSuccess: 'Richiesta inviata — ti contatteremo a breve.',
+  quoteFormSuccess: 'La tua richiesta di preventivo è stata inviata.',
+  quoteFormSuccessSentToBusiness:
+    'La tua stima è stata calcolata e la richiesta è stata inviata all’attività per la revisione.',
 };
 
 const DICT: Record<string, Record<AiPageTranslationKey, string>> = {

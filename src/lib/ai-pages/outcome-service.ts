@@ -5,6 +5,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SessionState } from './types';
 import { getPricingContext, runEstimate, persistEstimationRun } from '@/lib/quote-pricing/estimate-quote-service';
+import { extractQuoteFieldsFromFormAnswers } from '@/lib/quote-requests/form-answers-fields';
+import { QUOTE_SUBMISSION_SOURCE } from '@/lib/quote-requests/submission-source';
 
 function str(v: unknown, max = 500): string | null {
   if (v == null) return null;
@@ -25,6 +27,7 @@ export async function createQuoteRequestFromSession(
     conversationId: string | null;
     collected: Record<string, unknown>;
     customerLanguage?: string | null;
+    submissionMetadata?: Record<string, unknown> | null;
   }
 ): Promise<string | null> {
   const customerLanguage =
@@ -42,6 +45,7 @@ export async function createQuoteRequestFromSession(
 
   const email = str(params.collected.contact_email ?? params.collected.email, 255);
   const phone = str(params.collected.phone, 100);
+  const extracted = extractQuoteFieldsFromFormAnswers(params.collected);
 
   const { data: row } = await supabase
     .from('quote_requests')
@@ -52,13 +56,18 @@ export async function createQuoteRequestFromSession(
       customer_name: name,
       customer_email: email,
       customer_phone: phone,
-      service_type: str(params.collected.service_type ?? params.collected.service_category),
-      project_details: str(params.collected.project_details ?? params.collected.notes, 2000),
-      dimensions_size: str(params.collected.dimensions ?? params.collected.dimensions_size),
-      location: str(params.collected.location),
-      notes: str(params.collected.notes, 2000),
-      budget_text: str(params.collected.budget),
-      budget_amount: num(params.collected.budget_amount),
+      service_type: extracted.service_type ?? str(params.collected.service_type ?? params.collected.service_category),
+      project_details: extracted.project_details ?? str(params.collected.project_details ?? params.collected.notes, 2000),
+      dimensions_size: extracted.dimensions_size ?? str(params.collected.dimensions ?? params.collected.dimensions_size),
+      location: extracted.location ?? str(params.collected.location),
+      notes: extracted.notes ?? str(params.collected.notes, 2000),
+      budget_text: extracted.budget_text ?? str(params.collected.budget),
+      budget_amount: extracted.budget_amount ?? num(params.collected.budget_amount),
+      form_answers: params.collected,
+      submission_source: QUOTE_SUBMISSION_SOURCE.AI_PAGE_ASSISTANT,
+      submission_metadata: {
+        ...(params.submissionMetadata ?? {}),
+      },
     })
     .select('id')
     .single();
@@ -73,6 +82,8 @@ export async function createLeadFromSession(
     conversationId: string | null;
     collected: Record<string, unknown>;
     customerLanguage?: string | null;
+    /** e.g. ai_page_quote — matches widget_quote pattern */
+    source?: string | null;
   }
 ): Promise<string | null> {
   const customerLanguage =
@@ -98,6 +109,7 @@ export async function createLeadFromSession(
       organization_id: params.organizationId,
       conversation_id: params.conversationId,
       customer_language: customerLanguage,
+      source: params.source ?? 'ai_page',
       name,
       email,
       phone: str(params.collected.phone, 100),
@@ -172,7 +184,11 @@ export async function createOutcomesForRun(
   };
 
   if (params.outcomeConfig.create_quote_request && (params.pageType === 'quote' || params.pageType === 'general')) {
-    out.quoteRequestId = await createQuoteRequestFromSession(supabase, { ...base, customerLanguage: params.customerLanguage ?? null });
+    out.quoteRequestId = await createQuoteRequestFromSession(supabase, {
+      ...base,
+      customerLanguage: params.customerLanguage ?? null,
+      submissionMetadata: { ai_page_run_id: params.runId, ai_page_id: params.aiPageId },
+    });
 
     // If quote page has pricing estimate, persist estimation run and link to quote_request
     if (out.quoteRequestId && (params.pageType === 'quote') && Object.keys(collected).length > 0) {
@@ -219,7 +235,11 @@ export async function createOutcomesForRun(
     }
   }
   if (params.outcomeConfig.create_lead) {
-    out.leadId = await createLeadFromSession(supabase, { ...base, customerLanguage: params.customerLanguage ?? null });
+    out.leadId = await createLeadFromSession(supabase, {
+      ...base,
+      customerLanguage: params.customerLanguage ?? null,
+      source: 'ai_page_quote',
+    });
   }
   if (params.outcomeConfig.create_ticket && (params.pageType === 'support' || params.pageType === 'general')) {
     out.supportTicketId = await createSupportTicketFromSession(supabase, base);

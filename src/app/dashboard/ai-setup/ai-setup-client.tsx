@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { AssistantPlannerConfig } from '@/lib/ai-setup/types';
 import { stripAllCodeBlocksFromMessage } from '@/lib/ai-setup/parse-json-block';
+import { AI_SETUP_SESSION_STORAGE_KEY, AI_SETUP_SESSION_TTL_HOURS } from '@/lib/ai-setup/session-ttl-constants';
 import { cn } from '@/lib/utils';
 
 type Message = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string };
@@ -159,12 +160,65 @@ export function AISetupClient() {
     setAccessAllowed(true);
     const data = await res.json().catch(() => ({}));
     setCustomBranding(data.entitlements?.custom_branding === true);
-    // Do not restore previous session: chat resets every time the user enters the page
+
+    let storedId: string | null = null;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(AI_SETUP_SESSION_STORAGE_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { sessionId?: string };
+        storedId = typeof parsed.sessionId === 'string' ? parsed.sessionId : null;
+      }
+    } catch {
+      storedId = null;
+    }
+
+    if (storedId) {
+      const sessionRes = await fetch(`/api/ai-setup/sessions/${storedId}`);
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        const planner =
+          typeof sessionData.planner_config === 'object' && sessionData.planner_config !== null
+            ? (sessionData.planner_config as AssistantPlannerConfig)
+            : {};
+        setSessionId(sessionData.id as string);
+        setPlannerConfig(planner);
+        const rows = (sessionData.messages ?? []).filter(
+          (m: { role: string }) => m.role === 'user' || m.role === 'assistant'
+        );
+        setMessages(
+          rows.map((m: { id?: string; role: string; content: string; created_at?: string }) => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content ?? '',
+            created_at: m.created_at,
+          }))
+        );
+        return;
+      }
+      try {
+        localStorage.removeItem(AI_SETUP_SESSION_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
   }, []);
 
   useEffect(() => {
     checkAccessAndLoad();
   }, [checkAccessAndLoad]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (sessionId) {
+        localStorage.setItem(AI_SETUP_SESSION_STORAGE_KEY, JSON.stringify({ sessionId }));
+      } else {
+        localStorage.removeItem(AI_SETUP_SESSION_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -390,16 +444,9 @@ export function AISetupClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('aiSetupAssistant')}</h1>
-          <p className="text-muted-foreground">{t('aiSetupDescription')}</p>
-        </div>
-        {sessionId && (
-          <Button variant="outline" size="sm" onClick={createSession}>
-            New session
-          </Button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{t('aiSetupAssistant')}</h1>
+        <p className="text-muted-foreground">{t('aiSetupDescription')}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -407,18 +454,32 @@ export function AISetupClient() {
         <div className="lg:col-span-2">
           <Card className="flex min-h-[640px] flex-col border-white/10 bg-card/80 backdrop-blur">
             <CardHeader className="border-b border-border/50 px-6 py-5">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Chat
-              </CardTitle>
-              <CardDescription>Describe what you want your assistant to do. The AI will configure it and suggest follow-up options.</CardDescription>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+                    {t('aiSetupChatTitle')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('aiSetupChatDescription')}
+                    <span className="mt-2 block text-xs text-muted-foreground/90">
+                      {t('aiSetupChatRetentionHint', { hours: AI_SETUP_SESSION_TTL_HOURS })}
+                    </span>
+                  </CardDescription>
+                </div>
+                {sessionId && (
+                  <Button variant="outline" size="sm" className="shrink-0 self-start" onClick={createSession}>
+                    {t('aiSetupNewChat')}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
               {!sessionId ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12">
                   <Button onClick={createSession} className="gap-2">
                     <Sparkles className="h-4 w-4" />
-                    Start new setup
+                    {t('aiSetupStartChat')}
                   </Button>
                 </div>
               ) : (
@@ -431,7 +492,7 @@ export function AISetupClient() {
                           className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
                           onClick={() => setStarterPromptsOpen((open) => !open)}
                         >
-                          <span>Starter prompts</span>
+                          <span>{t('aiSetupStarterPrompts')}</span>
                           {starterPromptsOpen ? (
                             <ChevronDown className="h-4 w-4 shrink-0" />
                           ) : (
@@ -478,7 +539,7 @@ export function AISetupClient() {
                       {loading && (
                         <div className="flex gap-3 rounded-xl bg-muted/30 px-4 py-3">
                           <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary mt-0.5" />
-                          <p className="text-sm text-muted-foreground">Thinking…</p>
+                          <p className="text-sm text-muted-foreground">{t('aiSetupThinking')}</p>
                         </div>
                       )}
                       <div ref={messagesEndRef} aria-hidden />
@@ -494,7 +555,7 @@ export function AISetupClient() {
                             type="button"
                             className="rounded p-1 hover:bg-black/10 dark:hover:bg-white/10"
                             onClick={() => setPendingLogoUrl(null)}
-                            aria-label="Remove logo"
+                            aria-label={t('aiSetupRemoveLogo')}
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -561,7 +622,7 @@ export function AISetupClient() {
                             className="rounded-lg gap-1.5"
                           >
                             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            <span className="sr-only">Send</span>
+                            <span className="sr-only">{t('aiSetupSend')}</span>
                           </Button>
                         </div>
                       </div>

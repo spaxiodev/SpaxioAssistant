@@ -18,6 +18,8 @@ import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { triggerFollowUpRun } from '@/lib/follow-up/trigger-follow-up';
 import { getPricingContext, runEstimate, persistEstimationRun } from '@/lib/quote-pricing/estimate-quote-service';
 import { sendQuoteRequestConfirmation } from '@/lib/email/send-quote-confirmation';
+import { extractQuoteFieldsFromFormAnswers } from '@/lib/quote-requests/form-answers-fields';
+import { QUOTE_SUBMISSION_SOURCE } from '@/lib/quote-requests/submission-source';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -200,6 +202,7 @@ export async function POST(request: Request) {
 
     // 3. Create quote_request
     const formAnswers = Object.keys(answers).length > 0 ? answers : null;
+    const extracted = extractQuoteFieldsFromFormAnswers(answers as Record<string, unknown>);
     const { data: quote, error: quoteError } = await supabase
       .from('quote_requests')
       .insert({
@@ -210,11 +213,22 @@ export async function POST(request: Request) {
         customer_email: email,
         customer_phone: phone || null,
         customer_language: resolvedLanguage,
+        service_type: extracted.service_type,
+        project_details: extracted.project_details,
+        location: extracted.location,
+        budget_text: extracted.budget_text,
+        budget_amount: extracted.budget_amount,
+        dimensions_size: extracted.dimensions_size,
+        notes: extracted.notes,
         form_answers: formAnswers,
         estimate_total: estimateTotal,
         estimate_low: estimateLow,
         estimate_high: estimateHigh,
         estimation_run_id: estimationRunId,
+        submission_source: QUOTE_SUBMISSION_SOURCE.AI_WIDGET,
+        submission_metadata: {
+          conversation_id: conversationId ?? undefined,
+        },
       })
       .select('id')
       .single();

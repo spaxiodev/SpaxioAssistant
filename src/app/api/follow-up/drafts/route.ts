@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const supabase = createAdminClient();
   const allowed = await canUseFollowUpDrafts(supabase, orgId, false);
-  if (!allowed) return NextResponse.json({ error: 'Follow-up drafts are not available on your plan.' }, { status: 403 });
+  if (!allowed) return NextResponse.json({ drafts: [] });
 
   const url = new URL(request.url);
   const status = url.searchParams.get('status');

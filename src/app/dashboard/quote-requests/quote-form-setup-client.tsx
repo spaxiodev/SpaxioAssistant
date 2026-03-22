@@ -24,7 +24,7 @@ export function QuoteFormSetupClient() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<QuoteFormConfig>({
     intro_text: '',
-    submit_button_label: 'Submit quote request',
+    submit_button_label: 'Calculate and Submit',
     name_required: true,
     email_required: true,
     phone_required: false,

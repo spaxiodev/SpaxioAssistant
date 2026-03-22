@@ -47,6 +47,10 @@ export default async function QuoteRequestsPage() {
     allQuoteRequests: t('allQuoteRequests'),
     quoteRequestsCardDescription: t('quoteRequestsCardDescription'),
     noQuoteRequests: t('noQuoteRequests'),
+    quoteRequestSource: t('quoteRequestSource'),
+    quoteSourceAiWidget: t('quoteSourceAiWidget'),
+    quoteSourceAiPageAssistant: t('quoteSourceAiPageAssistant'),
+    quoteSourceUnknown: t('quoteSourceUnknown'),
   };
 
   return (

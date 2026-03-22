@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { canUseFollowUpDrafts } from '@/lib/entitlements';
+import { canUseAiFollowUp, canUseFollowUpDrafts } from '@/lib/entitlements';
 import { executeFollowUpAction } from '@/lib/follow-up/email';
 
 export async function POST(request: Request) {
@@ -36,12 +36,12 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const draftsAllowed = await canUseFollowUpDrafts(supabase, orgId, false);
-  if (!draftsAllowed) {
-    return NextResponse.json({ error: 'Follow-up drafts are not available on your plan.' }, { status: 403 });
-  }
 
   if (action === 'reject_draft') {
+    const draftsAllowed = await canUseFollowUpDrafts(supabase, orgId, false);
+    if (!draftsAllowed) {
+      return NextResponse.json({ error: 'Follow-up drafts are not available on your plan.' }, { status: 403 });
+    }
     if (!body.draftId) return NextResponse.json({ error: 'Missing draftId' }, { status: 400 });
     const { error } = await supabase
       .from('follow_up_drafts')
@@ -53,6 +53,10 @@ export async function POST(request: Request) {
   }
 
   if (action === 'approve_send_draft') {
+    const draftsAllowed = await canUseFollowUpDrafts(supabase, orgId, false);
+    if (!draftsAllowed) {
+      return NextResponse.json({ error: 'Follow-up drafts are not available on your plan.' }, { status: 403 });
+    }
     if (!body.draftId) return NextResponse.json({ error: 'Missing draftId' }, { status: 400 });
     const { data: draft, error: fetchErr } = await supabase
       .from('follow_up_drafts')
@@ -97,6 +101,11 @@ export async function POST(request: Request) {
       .eq('id', body.draftId)
       .eq('organization_id', orgId);
     return NextResponse.json({ success: true, logId: result.logId ?? null });
+  }
+
+  const aiFollowUpAllowed = await canUseAiFollowUp(supabase, orgId, false);
+  if (!aiFollowUpAllowed) {
+    return NextResponse.json({ error: 'AI follow-up is not available on your plan.' }, { status: 403 });
   }
 
   const { data: run, error: fetchErr } = await supabase

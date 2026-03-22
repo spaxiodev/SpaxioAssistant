@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAiSetupAccess } from '@/app/api/ai-setup/guard';
 import { handleApiError } from '@/lib/api-error';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,6 +12,8 @@ export async function GET(_request: Request, { params }: Params) {
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
     const { id } = await params;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const { data: session, error: sessionError } = await supabase
       .from('ai_setup_sessions')

@@ -37,7 +37,8 @@ function buildPageTypeInstruction(pageType: string, goal?: string): string {
 - Ask clear, conversational questions about project type, scope, dimensions, materials, urgency, location, budget, and contact details.
 - Collect: name, email, phone, project/service type, details, dimensions, location, budget, notes.
 - Summarize what you've collected before confirming. When you have enough information, tell the user their request will be submitted for a quote.
-- If the user asks for a quote, price, estimate, or devis (in any language), add at the very end of your reply a single line: ACTION: open_quote_form. We will show the quote form. Do not add ACTION: unless the user clearly wants to fill out the quote form.${goalLine}`;
+- If the user asks for a quote, price, estimate, or devis (in any language), add at the very end of your reply a single line: ACTION: open_quote_form. We will show the quote form. Do not add ACTION: unless the user clearly wants to fill out the quote form.
+- If automated pricing is not available or you cannot compute a price in chat, still invite them to use the quote form when it appears, or ask for contact details and a short project summary so the business can follow up.${goalLine}`;
     case 'support':
       return `You are on a dedicated Support Assistant page. Your job is to troubleshoot and capture support issues.
 - Ask diagnostic questions. Use any provided knowledge to attempt resolution.

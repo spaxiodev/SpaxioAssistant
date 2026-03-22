@@ -288,7 +288,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
         setLoading(false);
       }
     },
-    [runId, conversationId, loading, config, effectiveDisplayLocale, t]
+    [runId, conversationId, loading, config, effectiveDisplayLocale, resolvedLocale, t]
   );
 
   function openQuoteFormFromQuickAction() {
@@ -356,8 +356,8 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
       }
       if (data.session_state) setSessionState(data.session_state);
       if (data?.success) {
-        setQuoteSuccessFlash(t('quoteFormSuccess'));
-        window.setTimeout(() => setQuoteSuccessFlash(null), 3500);
+        setQuoteSuccessFlash(`${t('quoteFormSuccess')}\n${t('quoteFormSuccessSentToBusiness')}`);
+        window.setTimeout(() => setQuoteSuccessFlash(null), 5000);
       }
       setShowQuoteForm(false);
     } catch (e) {
@@ -480,7 +480,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.2 }}
-                  className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-200"
+                  className="mt-4 whitespace-pre-line rounded-2xl border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-200"
                 >
                   {quoteSuccessFlash}
                 </motion.div>
@@ -530,220 +530,239 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                   {t('thinking')}
                 </motion.div>
               )}
+
+              <AnimatePresence>
+                {showQuoteForm && hasQuoteIntake ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 12 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-4 w-full"
+                  >
+                    <div
+                      className="rounded-2xl border border-border-soft bg-card/80 p-4 shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06] supports-[backdrop-filter]:bg-card/70"
+                      style={
+                        accentColor
+                          ? { boxShadow: `0 0 0 1px ${accentColor}22, 0 12px 40px -12px ${accentColor}44` }
+                          : undefined
+                      }
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <h2 className="text-base font-semibold">{t('quoteFormTitle')}</h2>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowQuoteForm(false);
+                            setQuoteSubmitError(null);
+                          }}
+                        >
+                          {t('backToChat')}
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="contact_name">{t('name')} *</Label>
+                          <Input
+                            id="contact_name"
+                            className="mt-1"
+                            value={quoteContactName}
+                            onChange={(e) => setQuoteContactName(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="contact_email">{t('email')} *</Label>
+                          <Input
+                            id="contact_email"
+                            className="mt-1"
+                            value={quoteContactEmail}
+                            onChange={(e) => setQuoteContactEmail(e.target.value)}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="contact_phone">{t('phoneOptional')}</Label>
+                          <Input
+                            id="contact_phone"
+                            className="mt-1"
+                            value={quoteContactPhone}
+                            onChange={(e) => setQuoteContactPhone(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {projectFields.map((field) => {
+                          const qv = quoteVarsByKey.get(field.key);
+                          return (
+                            <div key={field.key}>
+                              <Label htmlFor={`quote-${field.key}`}>
+                                {field.label}
+                                {field.required ? ' *' : ''}
+                              </Label>
+                              {qv ? (
+                                qv.variable_type === 'boolean' ? (
+                                  <select
+                                    id={`quote-${field.key}`}
+                                    value={quoteFormInputs[field.key] ?? qv.default_value ?? 'false'}
+                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  >
+                                    <option value="false">No</option>
+                                    <option value="true">Yes</option>
+                                  </select>
+                                ) : qv.variable_type === 'select' && Array.isArray(qv.options) ? (
+                                  <select
+                                    id={`quote-${field.key}`}
+                                    value={quoteFormInputs[field.key] ?? qv.default_value ?? ''}
+                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  >
+                                    {(qv.options as { value: string; label: string }[]).map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <Input
+                                    id={`quote-${field.key}`}
+                                    type={
+                                      qv.variable_type === 'number' || qv.variable_type === 'area' || qv.variable_type === 'quantity'
+                                        ? 'number'
+                                        : 'text'
+                                    }
+                                    placeholder={qv.unit_label ?? ''}
+                                    value={quoteFormInputs[field.key] ?? ''}
+                                    onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                    className="mt-1"
+                                  />
+                                )
+                              ) : field.type === 'boolean' ? (
+                                <select
+                                  id={`quote-${field.key}`}
+                                  value={quoteFormInputs[field.key] ?? 'false'}
+                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                >
+                                  <option value="false">No</option>
+                                  <option value="true">Yes</option>
+                                </select>
+                              ) : field.type === 'text' ? (
+                                <Textarea
+                                  id={`quote-${field.key}`}
+                                  className="mt-1 min-h-[80px]"
+                                  value={quoteFormInputs[field.key] ?? ''}
+                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                />
+                              ) : (
+                                <Input
+                                  id={`quote-${field.key}`}
+                                  type={field.type === 'number' ? 'number' : 'text'}
+                                  value={quoteFormInputs[field.key] ?? ''}
+                                  onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                  className="mt-1"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
+
+                      <p className="mt-4 text-xs text-muted-foreground">{t('quoteFormCalculateSubmitHint')}</p>
+
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <Button
+                          onClick={submitQuoteForm}
+                          disabled={quoteSubmitting}
+                          className="w-full sm:min-w-[220px]"
+                          style={
+                            accentColor
+                              ? {
+                                  backgroundColor: accentColor,
+                                  color: accentTextColor,
+                                }
+                              : undefined
+                          }
+                        >
+                          {quoteSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {t('submitAndGetPrice')}
+                        </Button>
+                      </div>
+                      {config?.quoteCurrency ? (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {t('currency')}: {config.quoteCurrency}
+                        </p>
+                      ) : null}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </div>
 
-      <AnimatePresence>
-        {showQuoteForm && hasQuoteIntake ? (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.2 }}
-            className="w-full border-t bg-background/95 backdrop-blur"
-          >
-            <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-6">
-              <div className="rounded-2xl border border-border-soft bg-card/70 p-4 shadow-sm supports-[backdrop-filter]:bg-card/60">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h2 className="text-base font-semibold">{t('quoteFormTitle')}</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowQuoteForm(false);
-                      setQuoteSubmitError(null);
-                    }}
-                  >
-                    {t('backToChat')}
-                  </Button>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="contact_name">{t('name')} *</Label>
-                    <Input
-                      id="contact_name"
-                      className="mt-1"
-                      value={quoteContactName}
-                      onChange={(e) => setQuoteContactName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact_email">{t('email')} *</Label>
-                    <Input
-                      id="contact_email"
-                      className="mt-1"
-                      value={quoteContactEmail}
-                      onChange={(e) => setQuoteContactEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="contact_phone">{t('phoneOptional')}</Label>
-                    <Input
-                      id="contact_phone"
-                      className="mt-1"
-                      value={quoteContactPhone}
-                      onChange={(e) => setQuoteContactPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {projectFields.map((field) => {
-                    const qv = quoteVarsByKey.get(field.key);
-                    return (
-                      <div key={field.key}>
-                        <Label htmlFor={`quote-${field.key}`}>
-                          {field.label}
-                          {field.required ? ' *' : ''}
-                        </Label>
-                        {qv ? (
-                          qv.variable_type === 'boolean' ? (
-                            <select
-                              id={`quote-${field.key}`}
-                              value={quoteFormInputs[field.key] ?? qv.default_value ?? 'false'}
-                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            >
-                              <option value="false">No</option>
-                              <option value="true">Yes</option>
-                            </select>
-                          ) : qv.variable_type === 'select' && Array.isArray(qv.options) ? (
-                            <select
-                              id={`quote-${field.key}`}
-                              value={quoteFormInputs[field.key] ?? qv.default_value ?? ''}
-                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            >
-                              {(qv.options as { value: string; label: string }[]).map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <Input
-                              id={`quote-${field.key}`}
-                              type={
-                                qv.variable_type === 'number' || qv.variable_type === 'area' || qv.variable_type === 'quantity'
-                                  ? 'number'
-                                  : 'text'
-                              }
-                              placeholder={qv.unit_label ?? ''}
-                              value={quoteFormInputs[field.key] ?? ''}
-                              onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                              className="mt-1"
-                            />
-                          )
-                        ) : field.type === 'boolean' ? (
-                          <select
-                            id={`quote-${field.key}`}
-                            value={quoteFormInputs[field.key] ?? 'false'}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          >
-                            <option value="false">No</option>
-                            <option value="true">Yes</option>
-                          </select>
-                        ) : field.type === 'text' ? (
-                          <Textarea
-                            id={`quote-${field.key}`}
-                            className="mt-1 min-h-[80px]"
-                            value={quoteFormInputs[field.key] ?? ''}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                          />
-                        ) : (
-                          <Input
-                            id={`quote-${field.key}`}
-                            type={field.type === 'number' ? 'number' : 'text'}
-                            value={quoteFormInputs[field.key] ?? ''}
-                            onChange={(e) => setQuoteFormInputs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                            className="mt-1"
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
-
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                  <Button
-                    onClick={submitQuoteForm}
-                    disabled={quoteSubmitting}
-                    className="sm:min-w-[200px]"
-                  >
-                    {quoteSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {t('submitAndGetPrice')}
-                  </Button>
-                </div>
-                {config?.quoteCurrency ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {t('currency')}: {config.quoteCurrency}
-                  </p>
-                ) : null}
+      {!showQuoteForm ? (
+        <div
+          className="sticky bottom-0 w-full border-t border-border-soft/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+          style={accentColor ? ({ ['--accent' as string]: accentColor } as CSSProperties) : undefined}
+        >
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-3 py-3 sm:px-6">
+            {hasQuoteIntake && (
+              <div className="flex w-full flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={openQuoteFormFromQuickAction}
+                  className="rounded-full border border-border-soft/70 bg-background/40 px-4 shadow-sm hover:bg-background/70"
+                >
+                  {t('quickQuoteButton')}
+                </Button>
               </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      <div
-        className="sticky bottom-0 w-full border-t border-border-soft/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80"
-        style={accentColor ? ({ ["--accent" as string]: accentColor } as CSSProperties) : undefined}
-      >
-        <div className="mx-auto flex w-full max-w-3xl items-end gap-2 px-3 py-3 sm:px-6">
-          {!showQuoteForm && hasQuoteIntake && (
-            <div className="mb-2 flex w-full flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={openQuoteFormFromQuickAction}
-                className="rounded-full border border-border-soft/70 bg-background/40 px-4 shadow-sm hover:bg-background/70"
-              >
-                {t('quickQuoteButton')}
-              </Button>
-            </div>
-          )}
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t('placeholder')}
-            rows={1}
-            className="min-h-[44px] max-h-[160px] flex-1 resize-none rounded-2xl border border-border-soft bg-background/50 px-4 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                const text = input.trim();
-                if (text) sendMessage(text);
-              }
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              const text = input.trim();
-              if (text) sendMessage(text);
-            }}
-            disabled={loading || input.trim().length === 0}
-            className="h-[44px] rounded-2xl px-4 text-sm font-medium shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            style={
-              accentColor
-                ? {
-                    backgroundColor: accentColor,
-                    color: accentTextColor,
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t('placeholder')}
+                rows={1}
+                className="min-h-[44px] max-h-[160px] flex-1 resize-none rounded-2xl border border-border-soft bg-background/50 px-4 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]/35"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const text = input.trim();
+                    if (text) sendMessage(text);
                   }
-                : undefined
-            }
-          >
-            {t('send')}
-          </button>
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const text = input.trim();
+                  if (text) sendMessage(text);
+                }}
+                disabled={loading || input.trim().length === 0}
+                className="h-[44px] rounded-2xl px-4 text-sm font-medium shadow-sm transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                style={
+                  accentColor
+                    ? {
+                        backgroundColor: accentColor,
+                        color: accentTextColor,
+                      }
+                    : undefined
+                }
+              >
+                {t('send')}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

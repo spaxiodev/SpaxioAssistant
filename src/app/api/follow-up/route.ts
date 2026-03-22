@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import { getOrganizationId } from '@/lib/auth-server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { canUseFollowUpDrafts } from '@/lib/entitlements';
+import { canUseAiFollowUp } from '@/lib/entitlements';
 
 export async function GET(request: Request) {
   const orgId = await getOrganizationId();
@@ -22,9 +22,9 @@ export async function GET(request: Request) {
   const quoteRequestId = searchParams.get('quoteRequestId');
 
   const supabase = createAdminClient();
-  const allowed = await canUseFollowUpDrafts(supabase, orgId, false);
+  const allowed = await canUseAiFollowUp(supabase, orgId, false);
   if (!allowed) {
-    return NextResponse.json({ error: 'Follow-up drafts are not available on your plan.' }, { status: 403 });
+    return NextResponse.json(null);
   }
 
   if (leadId) {

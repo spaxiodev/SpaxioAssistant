@@ -15,6 +15,7 @@ import type { AssistantPlannerConfig } from '@/lib/ai-setup/types';
 import { TRIGGER_TYPES, ACTION_TYPES } from '@/lib/automations/types';
 import { canCreateAgent, canUseAutomation, canCreateAutomation, getEntitlements } from '@/lib/entitlements';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 
 /** POST /api/ai-setup/publish – publish session: create agent, widget link, automations, blueprint, deployment */
 export async function POST(request: Request) {
@@ -22,6 +23,8 @@ export async function POST(request: Request) {
     const access = await requireAiSetupAccess();
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const rl = rateLimit({ key: `ai-setup-publish:${orgId}`, limit: 5, windowMs: 60_000 });
     if (!rl.allowed) {

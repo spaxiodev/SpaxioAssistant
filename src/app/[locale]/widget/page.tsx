@@ -82,16 +82,6 @@ function WidgetContent() {
   const [quoteSubmitLoading, setQuoteSubmitLoading] = useState(false);
   const [quoteSubmitError, setQuoteSubmitError] = useState<string | null>(null);
   const [quoteSubmitResult, setQuoteSubmitResult] = useState<{ estimate?: string; message: string } | null>(null);
-  const [quoteEstimateResult, setQuoteEstimateResult] = useState<{
-    valid: boolean;
-    total: number;
-    estimate_low?: number | null;
-    estimate_high?: number | null;
-    applied_rules: { rule_name: string; amount: number; label?: string }[];
-    currency: string;
-    missing_required: string[];
-  } | null>(null);
-  const [quoteEstimateLoading, setQuoteEstimateLoading] = useState(false);
 
   useEffect(() => {
     if (!widgetId) return;
@@ -171,7 +161,7 @@ function WidgetContent() {
       clearTimeout(tId);
       ro.disconnect();
     };
-  }, [config, resolvedLocale, showQuoteForm, quoteEstimateResult, quoteSubmitted]);
+  }, [config, resolvedLocale, showQuoteForm, quoteSubmitted]);
 
   const color = config?.primaryBrandColor || '#0f172a';
   const baseUrl =
@@ -229,7 +219,6 @@ function WidgetContent() {
       if (data.action && typeof data.action === 'object' && typeof data.action.type === 'string') {
         if (data.action.type === 'open_quote_form') {
           setShowQuoteForm(true);
-          setQuoteEstimateResult(null);
           setQuoteSubmitted(false);
           setQuoteSubmitError(null);
           setQuoteSubmitResult(null);
@@ -329,55 +318,12 @@ function WidgetContent() {
       setQuoteSubmitted(true);
       setQuoteSubmitResult({
         estimate: data.estimate,
-        message: data.message ?? 'Quote request submitted',
+        message: data.message ?? '',
       });
     } catch {
       setQuoteSubmitError(t('errorMessage'));
     } finally {
       setQuoteSubmitLoading(false);
-    }
-  }
-
-  async function runQuoteEstimate() {
-    if (!widgetId || !config?.quoteVariables?.length || quoteEstimateLoading) return;
-    setQuoteEstimateLoading(true);
-    setQuoteEstimateResult(null);
-    try {
-      const body: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(quoteFormInputs)) {
-        if (v === 'true') body[k] = true;
-        else if (v === 'false') body[k] = false;
-        else if (v === '') continue;
-        else if (/^\d+$/.test(v)) body[k] = Number(v);
-        else if (/^\d+\.\d+$/.test(v)) body[k] = parseFloat(v);
-        else body[k] = v;
-      }
-      const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
-      const res = await fetch(`${base}/api/widget/estimate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ widgetId, inputs: body }),
-      });
-      const data = await res.json();
-      setQuoteEstimateResult({
-        valid: data.valid ?? false,
-        total: data.total ?? 0,
-        estimate_low: data.estimate_low,
-        estimate_high: data.estimate_high,
-        applied_rules: data.applied_rules ?? [],
-        currency: data.currency ?? 'USD',
-        missing_required: data.missing_required ?? [],
-      });
-    } catch {
-      setQuoteEstimateResult({
-        valid: false,
-        total: 0,
-        applied_rules: [],
-        currency: config?.quoteCurrency ?? 'USD',
-        missing_required: [],
-      });
-    } finally {
-      setQuoteEstimateLoading(false);
     }
   }
 
@@ -435,7 +381,6 @@ function WidgetContent() {
                   size="sm"
                   onClick={() => {
                     setShowQuoteForm(false);
-                    setQuoteEstimateResult(null);
                     setQuoteSubmitted(false);
                     setQuoteSubmitResult(null);
                     setQuoteSubmitError(null);
@@ -458,6 +403,7 @@ function WidgetContent() {
                       <span className="font-semibold">{quoteSubmitResult.estimate}</span>
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground">{t('quoteFormSuccessSentToBusiness')}</p>
                 </div>
               ) : (
                 <>
@@ -557,55 +503,7 @@ function WidgetContent() {
                     ))}
                   </div>
 
-                  <div className="flex">
-                    <Button
-                      onClick={runQuoteEstimate}
-                      disabled={quoteEstimateLoading || quoteVars.length === 0}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {quoteEstimateLoading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          {t('loading')}
-                        </span>
-                      ) : (
-                        t('quoteFormCalculate')
-                      )}
-                    </Button>
-                  </div>
-
-                  {quoteEstimateResult && (
-                    <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                      <p className="mb-2 font-medium text-foreground">{t('quoteFormYourEstimate')}</p>
-                      {quoteEstimateResult.missing_required.length > 0 && (
-                        <p className="mb-2 text-amber-600">
-                          {t('quoteFormMissing')}: {quoteEstimateResult.missing_required.join(', ')}
-                        </p>
-                      )}
-                      {quoteEstimateResult.applied_rules.length > 0 && (
-                        <ul className="mb-2 space-y-1">
-                          {quoteEstimateResult.applied_rules.map((item, i) => (
-                            <li key={i} className="flex justify-between">
-                              <span className="text-muted-foreground">{item.label ?? item.rule_name}</span>
-                              <span>
-                                {quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}
-                                {Number(item.amount).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="flex justify-between border-t pt-2 font-semibold">
-                        <span>{t('quoteFormTotal')}</span>
-                        <span>
-                          {quoteEstimateResult.estimate_low != null && quoteEstimateResult.estimate_high != null
-                            ? `${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_low).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })} – ${quoteEstimateResult.currency === 'USD' ? '$' : ''}${Number(quoteEstimateResult.estimate_high).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`
-                            : `${quoteEstimateResult.currency === 'USD' ? '$' : quoteEstimateResult.currency + ' '}${Number(quoteEstimateResult.total).toLocaleString(resolvedLocale, { minimumFractionDigits: 2 })}`}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-xs text-muted-foreground">{t('quoteFormCalculateSubmitHint')}</p>
 
                   <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
                     {quoteSubmitLoading ? (
@@ -614,7 +512,7 @@ function WidgetContent() {
                         {t('loading')}
                       </span>
                     ) : (
-                      t('quoteFormSubmitRequest')
+                      (config?.quoteFormConfig?.submit_button_label as string)?.trim() || t('quoteFormCalculate')
                     )}
                   </Button>
 

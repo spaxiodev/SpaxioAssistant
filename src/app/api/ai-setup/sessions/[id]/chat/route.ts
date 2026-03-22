@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAiSetupAccess } from '@/app/api/ai-setup/guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 import { sanitizeText } from '@/lib/validation';
 import { getChatCompletion } from '@/lib/ai/provider';
 import { buildAISetupSystemPrompt } from '@/lib/ai-setup/prompt';
@@ -20,6 +21,8 @@ export async function POST(request: Request, { params }: Params) {
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
     const { id: sessionId } = await params;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const rl = rateLimit({ key: `ai-setup-chat:${orgId}`, limit: 30, windowMs: 60_000 });
     if (!rl.allowed) {

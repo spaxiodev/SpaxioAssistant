@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { requireAiSetupAccess } from '@/app/api/ai-setup/guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 import { sanitizeText } from '@/lib/validation';
 import { fetchWebsiteText } from '@/lib/website-auto-setup/fetch-and-extract';
 import { analyzeWebsiteWithAI } from '@/lib/website-auto-setup/analyze-website';
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
     const access = await requireAiSetupAccess();
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const rl = rateLimit({ key: `ai-setup-quick:${orgId}`, limit: 5, windowMs: 60_000 });
     if (!rl.allowed) {

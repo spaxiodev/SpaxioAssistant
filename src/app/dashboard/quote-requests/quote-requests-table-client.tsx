@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
+import { mergeQuoteRequestFieldsForDisplay } from '@/lib/quote-requests/form-answers-fields';
+import { QUOTE_SUBMISSION_SOURCE } from '@/lib/quote-requests/submission-source';
 import { QuoteRequestRowActions } from './quote-request-row-actions';
 import { QuoteRequestDetailSheet } from './quote-request-detail-sheet';
 
@@ -13,6 +15,7 @@ type QuoteRequest = {
   customer_name: string;
   customer_email?: string | null;
   customer_phone?: string | null;
+  submission_source?: string | null;
   service_type?: string | null;
   project_details?: string | null;
   dimensions_size?: string | null;
@@ -24,8 +27,46 @@ type QuoteRequest = {
   estimate_low?: number | null;
   estimate_high?: number | null;
   conversation_id?: string | null;
+  form_answers?: Record<string, unknown> | null;
   created_at: string;
 };
+
+type Labels = {
+  customer: string;
+  email: string;
+  phone: string;
+  service: string;
+  budget: string;
+  worthIt: string;
+  location: string;
+  details: string;
+  date: string;
+  quoteRequestSource: string;
+  quoteSourceAiWidget: string;
+  quoteSourceAiPageAssistant: string;
+  quoteSourceUnknown: string;
+  worthItYes: string;
+  worthItNo: string;
+  allQuoteRequests: string;
+  quoteRequestsCardDescription: string;
+  noQuoteRequests: string;
+};
+
+type Props = {
+  requests: QuoteRequest[];
+  basePrices: Record<string, number> | null;
+  labels: Labels;
+};
+
+function formatSubmissionSource(
+  source: string | null | undefined,
+  labels: Labels
+): string {
+  if (!source) return labels.quoteSourceUnknown;
+  if (source === QUOTE_SUBMISSION_SOURCE.AI_WIDGET) return labels.quoteSourceAiWidget;
+  if (source === QUOTE_SUBMISSION_SOURCE.AI_PAGE_ASSISTANT) return labels.quoteSourceAiPageAssistant;
+  return source;
+}
 
 function formatBudget(r: QuoteRequest): string {
   if (r.budget_text) return r.budget_text;
@@ -36,36 +77,30 @@ function formatBudget(r: QuoteRequest): string {
   return '—';
 }
 
+function lookupBasePrice(
+  basePrices: Record<string, number> | null,
+  serviceType: string | null | undefined
+): number | undefined {
+  if (!basePrices || !serviceType) return undefined;
+  if (typeof basePrices[serviceType] === 'number' && Number.isFinite(basePrices[serviceType])) {
+    return basePrices[serviceType];
+  }
+  const lower = serviceType.toLowerCase();
+  for (const [k, v] of Object.entries(basePrices)) {
+    if (k.toLowerCase() === lower && typeof v === 'number' && Number.isFinite(v)) return v;
+  }
+  return undefined;
+}
+
 function getWorthItStatus(
   r: QuoteRequest,
   basePrices: Record<string, number> | null
 ): 'worth_it' | 'not_worth_it' | null {
   if (r.budget_amount == null || !Number.isFinite(r.budget_amount)) return null;
-  const base = basePrices && r.service_type ? basePrices[r.service_type] : undefined;
+  const base = lookupBasePrice(basePrices, r.service_type);
   if (base == null || !Number.isFinite(base)) return null;
   return r.budget_amount >= base ? 'worth_it' : 'not_worth_it';
 }
-
-type Props = {
-  requests: QuoteRequest[];
-  basePrices: Record<string, number> | null;
-  labels: {
-    customer: string;
-    email: string;
-    phone: string;
-    service: string;
-    budget: string;
-    worthIt: string;
-    location: string;
-    details: string;
-    date: string;
-    worthItYes: string;
-    worthItNo: string;
-    allQuoteRequests: string;
-    quoteRequestsCardDescription: string;
-    noQuoteRequests: string;
-  };
-};
 
 export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props) {
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -95,13 +130,15 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                   <TableHead>{labels.worthIt}</TableHead>
                   <TableHead>{labels.location}</TableHead>
                   <TableHead>{labels.details}</TableHead>
+                  <TableHead>{labels.quoteRequestSource}</TableHead>
                   <TableHead>{labels.date}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {requests.map((r) => {
-                  const worthIt = getWorthItStatus(r, basePrices);
+                  const row = mergeQuoteRequestFieldsForDisplay(r);
+                  const worthIt = getWorthItStatus(row, basePrices);
                   return (
                     <TableRow
                       key={r.id}
@@ -111,8 +148,8 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                       <TableCell className="font-medium">{r.customer_name}</TableCell>
                       <TableCell className="text-muted-foreground">{r.customer_email ?? '—'}</TableCell>
                       <TableCell className="text-muted-foreground">{r.customer_phone ?? '—'}</TableCell>
-                      <TableCell>{r.service_type ?? '—'}</TableCell>
-                      <TableCell>{formatBudget(r)}</TableCell>
+                      <TableCell>{row.service_type ?? '—'}</TableCell>
+                      <TableCell>{formatBudget(row)}</TableCell>
                       <TableCell>
                         {worthIt === 'worth_it' && (
                           <Badge variant="default" className="bg-green-600 hover:bg-green-700">
@@ -124,9 +161,14 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
                         )}
                         {worthIt === null && <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell>{r.location ?? '—'}</TableCell>
+                      <TableCell>{row.location ?? '—'}</TableCell>
                       <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                        {r.project_details ?? '—'}
+                        {row.project_details ?? '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-normal">
+                          {formatSubmissionSource(r.submission_source, labels)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(r.created_at)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -142,7 +184,7 @@ export function QuoteRequestsTableClient({ requests, basePrices, labels }: Props
       </Card>
 
       <QuoteRequestDetailSheet
-        request={selected}
+        request={selected ? mergeQuoteRequestFieldsForDisplay(selected) : null}
         open={!!detailId}
         onOpenChange={(open) => !open && setDetailId(null)}
         formatBudget={formatBudget}

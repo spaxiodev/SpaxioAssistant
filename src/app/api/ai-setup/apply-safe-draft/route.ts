@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { requireAiSetupAccess } from '@/app/api/ai-setup/guard';
 import { rateLimit } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/api-error';
+import { deleteExpiredDraftAiSetupSessions } from '@/lib/ai-setup/session-ttl';
 import { executeSetupAction } from '@/lib/ai-setup/setup-actions';
 import type { AssistantPlannerConfig } from '@/lib/ai-setup/types';
 
@@ -17,6 +18,8 @@ export async function POST(request: Request) {
     const access = await requireAiSetupAccess();
     if ('response' in access) return access.response;
     const { orgId, supabase } = access;
+
+    await deleteExpiredDraftAiSetupSessions(supabase, orgId);
 
     const rl = rateLimit({ key: `ai-setup-apply:${orgId}`, limit: 10, windowMs: 60_000 });
     if (!rl.allowed) {

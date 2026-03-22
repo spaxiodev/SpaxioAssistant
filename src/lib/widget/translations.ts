@@ -33,6 +33,8 @@ export type WidgetTranslationKey =
   | 'quoteFormMissing'
   | 'quoteFormTotal'
   | 'quoteFormSuccess'
+  | 'quoteFormSuccessSentToBusiness'
+  | 'quoteFormCalculateSubmitHint'
   | 'quoteFormInvalidEmail'
   | 'quoteFormNameRequired'
   | 'quoteFormEmailRequired'
@@ -60,13 +62,16 @@ const en: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Loading...',
   quoteFormTitle: 'Get a quote',
-  quoteFormCalculate: 'Calculate',
+  quoteFormCalculate: 'Calculate and Submit',
   quoteFormYourEstimate: 'Your estimate',
   quoteFormSubmitRequest: 'Submit quote request',
   quoteFormBackToChat: 'Back to chat',
   quoteFormMissing: 'Missing',
   quoteFormTotal: 'Total',
-  quoteFormSuccess: 'Your quote request has been submitted! We\'ll be in touch soon.',
+  quoteFormSuccess: 'Your quote request was submitted.',
+  quoteFormSuccessSentToBusiness: 'Your estimate was calculated and the request was sent to the business for review.',
+  quoteFormCalculateSubmitHint:
+    'Submitting calculates your estimate and sends the request to the business in one step.',
   quoteFormInvalidEmail: 'Please enter a valid email address.',
   quoteFormNameRequired: 'Name is required.',
   quoteFormEmailRequired: 'Email is required.',
@@ -93,13 +98,17 @@ const fr: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Propulsé par Spaxio Assistant',
   loading: 'Chargement...',
   quoteFormTitle: 'Obtenir un devis',
-  quoteFormCalculate: 'Calculer',
+  quoteFormCalculate: 'Calculer et envoyer',
   quoteFormYourEstimate: 'Votre estimation',
   quoteFormSubmitRequest: 'Envoyer la demande',
   quoteFormBackToChat: 'Retour au chat',
   quoteFormMissing: 'Manquant',
   quoteFormTotal: 'Total',
-  quoteFormSuccess: 'Votre demande de devis a été envoyée ! Nous vous contacterons bientôt.',
+  quoteFormSuccess: 'Votre demande de devis a été envoyée.',
+  quoteFormSuccessSentToBusiness:
+    'Votre estimation a été calculée et la demande a été transmise à l’entreprise pour examen.',
+  quoteFormCalculateSubmitHint:
+    'En envoyant, vous calculez l’estimation et transmettez la demande à l’entreprise en une seule étape.',
   quoteFormInvalidEmail: 'Veuillez entrer une adresse e-mail valide.',
   quoteFormNameRequired: 'Le nom est requis.',
   quoteFormEmailRequired: 'L\'e-mail est requis.',
@@ -126,13 +135,17 @@ const es: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Desarrollado por Spaxio Assistant',
   loading: 'Cargando...',
   quoteFormTitle: 'Obtener un presupuesto',
-  quoteFormCalculate: 'Calcular',
+  quoteFormCalculate: 'Calcular y enviar',
   quoteFormYourEstimate: 'Su estimación',
   quoteFormSubmitRequest: 'Enviar solicitud',
   quoteFormBackToChat: 'Volver al chat',
   quoteFormMissing: 'Faltan',
   quoteFormTotal: 'Total',
-  quoteFormSuccess: '¡Tu solicitud de presupuesto ha sido enviada! Nos pondremos en contacto pronto.',
+  quoteFormSuccess: 'Tu solicitud de presupuesto fue enviada.',
+  quoteFormSuccessSentToBusiness:
+    'Se calculó tu estimación y la solicitud se envió al negocio para su revisión.',
+  quoteFormCalculateSubmitHint:
+    'Al enviar, se calcula tu estimación y se envía la solicitud al negocio en un solo paso.',
   quoteFormInvalidEmail: 'Por favor, introduce una dirección de correo válida.',
   quoteFormNameRequired: 'El nombre es obligatorio.',
   quoteFormEmailRequired: 'El correo es obligatorio.',
@@ -159,13 +172,17 @@ const de: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Unterstützt von Spaxio Assistant',
   loading: 'Laden...',
   quoteFormTitle: 'Angebot anfordern',
-  quoteFormCalculate: 'Berechnen',
+  quoteFormCalculate: 'Berechnen und senden',
   quoteFormYourEstimate: 'Ihre Schätzung',
   quoteFormSubmitRequest: 'Anfrage senden',
   quoteFormBackToChat: 'Zurück zum Chat',
   quoteFormMissing: 'Fehlend',
   quoteFormTotal: 'Gesamt',
-  quoteFormSuccess: 'Ihre Angebotsanfrage wurde gesendet! Wir melden uns bald.',
+  quoteFormSuccess: 'Ihre Angebotsanfrage wurde gesendet.',
+  quoteFormSuccessSentToBusiness:
+    'Ihre Schätzung wurde berechnet und die Anfrage zur Prüfung an das Unternehmen gesendet.',
+  quoteFormCalculateSubmitHint:
+    'Mit dem Senden wird Ihre Schätzung berechnet und die Anfrage in einem Schritt übermittelt.',
   quoteFormInvalidEmail: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
   quoteFormNameRequired: 'Name ist erforderlich.',
   quoteFormEmailRequired: 'E-Mail ist erforderlich.',
@@ -192,13 +209,17 @@ const pt: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Desenvolvido por Spaxio Assistant',
   loading: 'Carregando...',
   quoteFormTitle: 'Solicitar orçamento',
-  quoteFormCalculate: 'Calcular',
+  quoteFormCalculate: 'Calcular e enviar',
   quoteFormYourEstimate: 'Sua estimativa',
   quoteFormSubmitRequest: 'Enviar pedido',
   quoteFormBackToChat: 'Voltar ao chat',
   quoteFormMissing: 'Em falta',
   quoteFormTotal: 'Total',
-  quoteFormSuccess: 'O seu pedido de orçamento foi enviado! Entraremos em contacto em breve.',
+  quoteFormSuccess: 'O seu pedido de orçamento foi enviado.',
+  quoteFormSuccessSentToBusiness:
+    'A sua estimativa foi calculada e o pedido foi enviado ao negócio para revisão.',
+  quoteFormCalculateSubmitHint:
+    'Ao enviar, a sua estimativa é calculada e o pedido é enviado ao negócio num único passo.',
   quoteFormInvalidEmail: 'Por favor, introduza um endereço de e-mail válido.',
   quoteFormNameRequired: 'O nome é obrigatório.',
   quoteFormEmailRequired: 'O e-mail é obrigatório.',
@@ -225,13 +246,17 @@ const it: Record<WidgetTranslationKey, string> = {
   poweredBy: 'Powered by Spaxio Assistant',
   loading: 'Caricamento...',
   quoteFormTitle: 'Richiedi preventivo',
-  quoteFormCalculate: 'Calcola',
+  quoteFormCalculate: 'Calcola e invia',
   quoteFormYourEstimate: 'La tua stima',
   quoteFormSubmitRequest: 'Invia richiesta',
   quoteFormBackToChat: 'Torna alla chat',
   quoteFormMissing: 'Mancante',
   quoteFormTotal: 'Totale',
-  quoteFormSuccess: 'La tua richiesta di preventivo è stata inviata! Ti contatteremo presto.',
+  quoteFormSuccess: 'La tua richiesta di preventivo è stata inviata.',
+  quoteFormSuccessSentToBusiness:
+    'La tua stima è stata calcolata e la richiesta è stata inviata all’attività per la revisione.',
+  quoteFormCalculateSubmitHint:
+    'Inviando, calcoli il preventivo e invii la richiesta all’attività in un solo passaggio.',
   quoteFormInvalidEmail: 'Inserisci un indirizzo email valido.',
   quoteFormNameRequired: 'Il nome è obbligatorio.',
   quoteFormEmailRequired: 'L\'email è obbligatoria.',
