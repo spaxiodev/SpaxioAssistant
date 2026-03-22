@@ -425,12 +425,11 @@ function WidgetContent() {
             className="flex w-full max-w-[400px] flex-col gap-4"
           >
             <div
-              className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 [&_input]:border-slate-400 [&_input]:bg-white [&_input]:text-slate-900 [&_input]:placeholder:text-slate-500 dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_input]:placeholder:text-zinc-500 [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-slate-400 [&_select]:bg-white [&_select]:text-slate-900 dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 [&_select]:focus-visible:ring-2 [&_select]:focus-visible:ring-[var(--quote-brand)]"
+              className="rounded-xl border-2 border-black bg-white p-5 text-black shadow-sm dark:border-2 dark:border-zinc-300 dark:bg-zinc-950 dark:text-zinc-50 [&_label]:text-black dark:[&_label]:text-zinc-100 [&_input]:border-2 [&_input]:border-black [&_input]:bg-white [&_input]:text-black [&_input]:placeholder:text-neutral-500 dark:[&_input]:border-zinc-300 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-50 dark:[&_input]:placeholder:text-zinc-400 [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-2 [&_select]:border-black [&_select]:bg-white [&_select]:text-black dark:[&_select]:border-zinc-300 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-50 [&_select]:focus-visible:ring-2 [&_select]:focus-visible:ring-[var(--quote-brand)]"
               style={
                 {
                   ['--quote-brand' as string]: color,
                   ['--quote-brand-border' as string]: `${color}44`,
-                  borderColor: `${color}33`,
                 } as CSSProperties
               }
             >
@@ -461,12 +460,12 @@ function WidgetContent() {
                     <p className="text-sm font-semibold text-green-700 dark:text-green-200">{qs.successTitle}</p>
                   </div>
                   {quoteSubmitResult?.estimate && (
-                    <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
-                      <span className="text-slate-600 dark:text-zinc-400">{qs.estimatedPricePrefix}: </span>
+                    <p className="rounded-lg border-2 border-black bg-neutral-50 p-3 text-sm dark:border-zinc-300 dark:bg-zinc-900/80">
+                      <span className="text-neutral-700 dark:text-zinc-300">{qs.estimatedPricePrefix}: </span>
                       <span className="font-semibold">{quoteSubmitResult.estimate}</span>
                     </p>
                   )}
-                  <p className="text-xs text-slate-600 dark:text-zinc-400">{qs.successSentToBusiness}</p>
+                  <p className="text-xs text-neutral-700 dark:text-zinc-300">{qs.successSentToBusiness}</p>
                 </div>
               ) : (
                 <>
@@ -549,7 +548,7 @@ function WidgetContent() {
                               });
                               setQuoteSubmitError(null);
                             }}
-                            className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
+                            className={`mt-1 w-full rounded-md border-2 border-black bg-white px-3 py-2 text-sm text-black dark:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-50 ${quoteFieldErrors[v.key] ? '!border-red-500' : ''}`}
                           >
                             <option value="false">{qs.no}</option>
                             <option value="true">{qs.yes}</option>
@@ -567,7 +566,7 @@ function WidgetContent() {
                               });
                               setQuoteSubmitError(null);
                             }}
-                            className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
+                            className={`mt-1 w-full rounded-md border-2 border-black bg-white px-3 py-2 text-sm text-black dark:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-50 ${quoteFieldErrors[v.key] ? '!border-red-500' : ''}`}
                           >
                             {(v.options as { value: string; label: string }[]).map((opt) => (
                               <option key={opt.value} value={opt.value}>
@@ -600,7 +599,7 @@ function WidgetContent() {
                     ))}
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-zinc-400">{qs.calculateSubmitHint}</p>
+                  <p className="text-xs text-neutral-700 dark:text-zinc-300">{qs.calculateSubmitHint}</p>
 
                   <Button
                     onClick={submitQuoteRequest}

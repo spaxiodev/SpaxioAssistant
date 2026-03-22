@@ -584,7 +584,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                     className="mt-4 w-full"
                   >
                     <div
-                      className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/[0.06] supports-[backdrop-filter]:bg-white/95 dark:supports-[backdrop-filter]:bg-zinc-950/95 [&_input]:border-slate-400 [&_input]:bg-white [&_input]:text-slate-900 [&_input]:placeholder:text-slate-500 dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_input]:placeholder:text-zinc-500 [&_select]:border-slate-400 [&_select]:bg-white [&_select]:text-slate-900 dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 [&_textarea]:border-slate-400 [&_textarea]:bg-white [&_textarea]:text-slate-900 [&_textarea]:placeholder:text-slate-500 dark:[&_textarea]:border-zinc-600 dark:[&_textarea]:bg-zinc-900 dark:[&_textarea]:text-zinc-100 dark:[&_textarea]:placeholder:text-zinc-500"
+                      className="rounded-2xl border-2 border-black bg-white p-5 text-black shadow-sm ring-1 ring-black/[0.06] dark:border-2 dark:border-zinc-300 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-white/[0.08] supports-[backdrop-filter]:bg-white/95 dark:supports-[backdrop-filter]:bg-zinc-950/95 [&_label]:text-black dark:[&_label]:text-zinc-100 [&_input]:border-2 [&_input]:border-black [&_input]:bg-white [&_input]:text-black [&_input]:placeholder:text-neutral-500 dark:[&_input]:border-zinc-300 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-50 dark:[&_input]:placeholder:text-zinc-400 [&_select]:border-2 [&_select]:border-black [&_select]:bg-white [&_select]:text-black dark:[&_select]:border-zinc-300 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-50 [&_textarea]:border-2 [&_textarea]:border-black [&_textarea]:bg-white [&_textarea]:text-black [&_textarea]:placeholder:text-neutral-500 dark:[&_textarea]:border-zinc-300 dark:[&_textarea]:bg-zinc-900 dark:[&_textarea]:text-zinc-50 dark:[&_textarea]:placeholder:text-zinc-400"
                       style={
                         accentColor
                           ? { boxShadow: `0 0 0 1px ${accentColor}22, 0 12px 40px -12px ${accentColor}44` }
@@ -682,7 +682,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                       });
                                       setQuoteSubmitError(null);
                                     }}
-                                    className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                    className={`mt-1 w-full rounded-md border-2 border-black bg-white px-3 py-2 text-sm text-black dark:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-50 ${quoteFieldErrors[field.key] ? '!border-red-500' : ''}`}
                                   >
                                     <option value="false">{qs.no}</option>
                                     <option value="true">{qs.yes}</option>
@@ -700,7 +700,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                       });
                                       setQuoteSubmitError(null);
                                     }}
-                                    className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                    className={`mt-1 w-full rounded-md border-2 border-black bg-white px-3 py-2 text-sm text-black dark:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-50 ${quoteFieldErrors[field.key] ? '!border-red-500' : ''}`}
                                   >
                                     {(qv.options as { value: string; label: string }[]).map((opt) => (
                                       <option key={opt.value} value={opt.value}>
@@ -743,7 +743,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                     });
                                     setQuoteSubmitError(null);
                                   }}
-                                  className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                  className={`mt-1 w-full rounded-md border-2 border-black bg-white px-3 py-2 text-sm text-black dark:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-50 ${quoteFieldErrors[field.key] ? '!border-red-500' : ''}`}
                                 >
                                   <option value="false">{qs.no}</option>
                                   <option value="true">{qs.yes}</option>
