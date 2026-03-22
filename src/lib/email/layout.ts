@@ -15,10 +15,12 @@ export interface EmailLayoutOptions {
   cta?: { label: string; url: string };
   /** Language for localized footer text */
   language?: string;
+  /** When set, replaces the default Spaxio product footer (tenant customer emails). */
+  footerOverride?: string;
 }
 
 /** Wrap content in branded email layout. */
-export function emailLayout({ content, badge, title, cta, language }: EmailLayoutOptions): string {
+export function emailLayout({ content, badge, title, cta, language, footerOverride }: EmailLayoutOptions): string {
   const badgeHtml = badge
     ? `<span style="display:inline-block;padding:6px 12px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:600;border-radius:6px;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(badge)}</span>`
     : '';
@@ -26,7 +28,12 @@ export function emailLayout({ content, badge, title, cta, language }: EmailLayou
     ? `<a href="${escapeHtml(cta.url)}" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#fff!important;font-size:16px;font-weight:600;text-decoration:none;border-radius:10px;">${escapeHtml(cta.label)}</a>`
     : '';
   const lang = typeof language === 'string' ? language.trim().toLowerCase().slice(0, 2) : 'en';
-  const footerText = lang === 'fr' ? 'Spaxio Assistant — assistant IA pour votre entreprise' : 'Spaxio Assistant — AI website assistant for your business';
+  const footerText =
+    typeof footerOverride === 'string' && footerOverride.trim()
+      ? footerOverride.trim()
+      : lang === 'fr'
+        ? 'Spaxio Assistant — assistant IA pour votre entreprise'
+        : 'Spaxio Assistant — AI website assistant for your business';
   return `
 <!DOCTYPE html>
 <html>

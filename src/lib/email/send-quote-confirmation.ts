@@ -5,17 +5,10 @@
 
 import { Resend } from 'resend';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveTenantOutboundFromAddress } from './resend-from';
 import { renderQuoteRequestConfirmationEmail } from './templates/quote-request-confirmation';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const FREE_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com'];
-
-function getFromEmail(): string {
-  const raw = process.env.RESEND_FROM_EMAIL?.trim() ?? '';
-  const domain = raw.includes('@') ? raw.split('@')[1]?.toLowerCase() ?? '' : '';
-  const isFree = FREE_EMAIL_DOMAINS.some((d) => domain === d || domain.endsWith('.' + d));
-  return raw && !isFree ? raw : 'Spaxio Assistant <onboarding@resend.dev>';
-}
 
 export interface SendQuoteConfirmationParams {
   supabase: SupabaseClient;
@@ -75,7 +68,7 @@ export async function sendQuoteRequestConfirmation(params: SendQuoteConfirmation
 
   const resend = new Resend(resendKey);
   await resend.emails.send({
-    from: getFromEmail(),
+    from: resolveTenantOutboundFromAddress(businessName),
     to: [customerEmail.trim()],
     subject,
     html,

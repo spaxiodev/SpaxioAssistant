@@ -1,4 +1,4 @@
-/* Spaxio Embedded Form Loader v1.2
+/* Spaxio Embedded Form Loader v1.3
  * Fetches form config from the Spaxio API and renders it inline.
  * Usage:
  *   <div id="spaxio-form-FORM_ID"></div>
@@ -59,10 +59,11 @@
 
   var COLORS = {
     light: {
+      colorScheme: 'light',
       bg: '#ffffff',
       border: '#cbd5e1',
-      text: '#0f172a',
-      muted: '#64748b',
+      text: '#111827',
+      muted: '#4b5563',
       inputBg: '#ffffff',
       btnBg: '#6366f1',
       btnText: '#ffffff',
@@ -75,6 +76,7 @@
       errorPanelBorder: '#fecaca'
     },
     dark: {
+      colorScheme: 'dark',
       bg: '#000000',
       border: '#3f3f46',
       text: '#f4f4f5',
@@ -130,6 +132,73 @@
     return L > 186 ? '#111827' : '#ffffff';
   }
 
+  /** WCAG relative luminance 0–1; used to reject inherited “light” text on white embed areas */
+  function relativeLuminance(rgb) {
+    if (!rgb) return 0;
+    function lin(c) {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    var R = lin(rgb.r);
+    var G = lin(rgb.g);
+    var B = lin(rgb.b);
+    return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+  }
+
+  /** Walk ancestors for first non-transparent background; luminance > ~0.45 reads as a light surface */
+  function isBackgroundMostlyLight(el) {
+    var n = el;
+    for (var d = 0; d < 12 && n; d++) {
+      var bg = getComputedStyle(n).backgroundColor;
+      var m = bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/i);
+      if (!m) {
+        n = n.parentElement;
+        continue;
+      }
+      var a = m[4] !== undefined && m[4] !== '' ? parseFloat(m[4]) : 1;
+      if (isNaN(a) || a < 0.12) {
+        n = n.parentElement;
+        continue;
+      }
+      var rr = +m[1];
+      var gg = +m[2];
+      var bb = +m[3];
+      return relativeLuminance({ r: rr, g: gg, b: bb }) > 0.45;
+    }
+    return true;
+  }
+
+  /**
+   * On light surfaces, inherited light-grey / white text (common when a parent uses “muted” styles)
+   * is illegible — force dark body text. On dark surfaces, keep inherited light text and a softer muted.
+   */
+  function coerceInheritedPalette(base, container) {
+    var rgb = parseColorToRgb(base.text);
+    var lum = relativeLuminance(rgb);
+    var lightSurface = isBackgroundMostlyLight(container);
+    var muted = lightSurface ? '#4b5563' : '#9ca3af';
+    var linkRgb = parseColorToRgb(base.link);
+    var linkOk = linkRgb && relativeLuminance(linkRgb) < 0.55;
+    if (lum > 0.55 && lightSurface) {
+      return {
+        text: '#111827',
+        link: linkOk ? base.link : '#4f46e5',
+        muted: '#4b5563',
+        fontFamily: base.fontFamily,
+        fontSize: base.fontSize,
+        lineHeight: base.lineHeight
+      };
+    }
+    return {
+      text: base.text,
+      link: base.link,
+      muted: muted,
+      fontFamily: base.fontFamily,
+      fontSize: base.fontSize,
+      lineHeight: base.lineHeight
+    };
+  }
+
   function sampleHostStyles(container) {
     var probe = container.parentElement || container;
     var cs = getComputedStyle(probe);
@@ -146,14 +215,7 @@
     var linkColor = getComputedStyle(anchor).color;
     document.body.removeChild(anchor);
 
-    var muted = text;
-    try {
-      if (window.CSS && CSS.supports && CSS.supports('color', 'color-mix(in srgb, red 50%, blue)')) {
-        muted = 'color-mix(in srgb, ' + text + ' 62%, transparent)';
-      }
-    } catch (e) {}
-
-    return { text: text, link: linkColor, muted: muted, fontFamily: fontFamily, fontSize: fontSize, lineHeight: lineHeight };
+    return { text: text, link: linkColor, fontFamily: fontFamily, fontSize: fontSize, lineHeight: lineHeight };
   }
 
   function normalizeRadius(r) {
@@ -170,8 +232,9 @@
     var brSm = 'calc(' + br + ' - 2px)';
     var btnText = contrastTextForBg(btn);
     return [
-      '.spx-form { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: ' + c.text + '; background: ' + c.bg + '; padding: 24px; border-radius: ' + br + '; border: 1px solid ' + c.border + '; max-width: 560px; box-sizing: border-box; }',
+      '.spx-form { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: ' + c.text + '; background: ' + c.bg + '; padding: 24px; border-radius: ' + br + '; border: 1px solid ' + c.border + '; max-width: 560px; box-sizing: border-box; color-scheme: ' + c.colorScheme + '; }',
       '.spx-form * { box-sizing: border-box; }',
+      '.spx-select option, .spx-select optgroup { color: ' + c.text + '; background: ' + c.bg + '; }',
       '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + c.text + '; }',
       '.spx-field { margin-bottom: 16px; }',
       '.spx-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: ' + c.text + '; }',
@@ -179,7 +242,7 @@
       '.spx-input { width: 100%; padding: 9px 12px; border: 1px solid ' + c.border + '; border-radius: ' + brSm + '; background: ' + c.inputBg + '; color: ' + c.text + '; font-size: 14px; outline: none; transition: border-color 0.15s; }',
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px ' + btn + '33; }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
-      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23718096\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }',
+      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23374151\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; color: ' + c.text + '; }',
       '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
       '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 13px; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid ' + c.border + '; border-radius: ' + brSm + '; background: ' + c.radioIdle + '; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }',
       '.spx-radio-item:hover { background: ' + c.radioHover + '; border-color: ' + btn + '66; }',
@@ -214,8 +277,12 @@
     var brSm = 'calc(' + br + ' - 2px)';
     var text = palette.text;
     var muted = palette.muted;
+    var textRgb = parseColorToRgb(text);
+    var lightFg = textRgb && relativeLuminance(textRgb) > 0.5;
+    var selectOptBg = lightFg ? '#18181b' : '#ffffff';
+    var chevronStroke = lightFg ? '%23d1d5db' : '%23374151';
     return [
-      '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; }',
+      '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; color-scheme: light dark; }',
       '.spx-form * { box-sizing: border-box; }',
       '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + text + '; }',
       '.spx-field { margin-bottom: 16px; }',
@@ -224,7 +291,12 @@
       '.spx-input { width: 100%; padding: 9px 12px; border: 1px solid color-mix(in srgb, ' + text + ' 22%, transparent); border-radius: ' + brSm + '; background: color-mix(in srgb, ' + text + ' 5%, transparent); color: ' + text + '; font: inherit; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }',
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px color-mix(in srgb, ' + btn + ' 35%, transparent); }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
-      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' opacity=\'0.55\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; color: inherit; }',
+      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'' +
+      chevronStroke +
+      '\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; color: ' +
+      text +
+      '; }',
+      '.spx-select option, .spx-select optgroup { color: ' + text + '; background: ' + selectOptBg + '; }',
       '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
       '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 0.92em; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid color-mix(in srgb, ' + text + ' 20%, transparent); border-radius: ' + brSm + '; background: color-mix(in srgb, ' + text + ' 5%, transparent); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
       '.spx-radio-item:hover { border-color: color-mix(in srgb, ' + btn + ' 55%, transparent); background: color-mix(in srgb, ' + text + ' 8%, transparent); }',
@@ -259,12 +331,15 @@
     var br = normalizeRadius(borderRadius);
     var brSm = 'calc(' + br + ' - 2px)';
     var text = palette.text;
+    var muted = palette.muted;
     var tr = parseColorToRgb(text);
     var borderSoft = tr ? 'rgba(' + tr.r + ',' + tr.g + ',' + tr.b + ',0.22)' : 'rgba(128,128,128,0.35)';
     var inputBg = tr ? 'rgba(' + tr.r + ',' + tr.g + ',' + tr.b + ',0.06)' : 'rgba(128,128,128,0.06)';
-    var muted = tr ? 'rgba(' + tr.r + ',' + tr.g + ',' + tr.b + ',0.62)' : '#718096';
+    var lightFg = tr && relativeLuminance(tr) > 0.5;
+    var selectOptBg = lightFg ? '#18181b' : '#ffffff';
+    var chevronStroke = lightFg ? '%23d1d5db' : '%23374151';
     return [
-      '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; }',
+      '.spx-form { font-family: ' + palette.fontFamily + '; font-size: ' + palette.fontSize + '; line-height: ' + palette.lineHeight + '; color: ' + text + '; background: transparent; padding: 0; border: none; max-width: 100%; box-sizing: border-box; color-scheme: light dark; }',
       '.spx-form * { box-sizing: border-box; }',
       '.spx-form-heading { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px 0; line-height: 1.35; color: ' + text + '; }',
       '.spx-field { margin-bottom: 16px; }',
@@ -273,7 +348,12 @@
       '.spx-input { width: 100%; padding: 9px 12px; border: 1px solid ' + borderSoft + '; border-radius: ' + brSm + '; background: ' + inputBg + '; color: ' + text + '; font: inherit; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }',
       '.spx-input:focus { border-color: ' + btn + '; box-shadow: 0 0 0 3px ' + btn + '40; }',
       '.spx-textarea { resize: vertical; min-height: 80px; }',
-      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23718096\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }',
+      '.spx-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'' +
+      chevronStroke +
+      '\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; color: ' +
+      text +
+      '; }',
+      '.spx-select option, .spx-select optgroup { color: ' + text + '; background: ' + selectOptBg + '; }',
       '.spx-radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; align-items: stretch; }',
       '.spx-radio-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; padding: 12px 10px; font-size: 0.92em; line-height: 1.25; text-align: center; cursor: pointer; border: 1px solid ' + borderSoft + '; border-radius: ' + brSm + '; background: ' + inputBg + '; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
       '.spx-radio-item:hover { border-color: ' + btn + '99; }',
@@ -395,7 +475,7 @@
 
     var cssText = '';
     if (currentTheme === 'inherit') {
-      var palette = sampleHostStyles(container);
+      var palette = coerceInheritedPalette(sampleHostStyles(container), container);
       cssText = supportsColorMix()
         ? getStylesInherit(palette, primary, borderRadius)
         : getStylesInheritLegacy(palette, primary, borderRadius);

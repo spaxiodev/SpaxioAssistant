@@ -83,11 +83,18 @@ ${formatted.split('\n').map((line) => `    <div style="padding:4px 0;">${escapeH
 
   const content = `<table width="100%" cellpadding="0" cellspacing="0"><tbody>${rows.join('')}</tbody></table>`;
 
+  const footerOverride = data.business_name?.trim()
+    ? data.business_name.trim()
+    : isFrench
+      ? 'Merci pour votre intérêt.'
+      : 'Thank you for your interest.';
+
   const html = emailLayout({
     badge: isFrench ? 'Demande de devis' : 'Quote Request',
     title: subject,
     content,
     language: data.language,
+    footerOverride,
   });
 
   const textParts = [

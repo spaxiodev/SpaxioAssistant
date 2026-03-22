@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AutomationRunInput } from '@/lib/automations/types';
 import { emailLayout, escapeHtml } from '@/lib/email';
+import { resolveTenantOutboundFromAddress } from '@/lib/email/resend-from';
 import { generateFollowUpOutput } from '@/lib/follow-up/generate-follow-up';
 
 export type FollowUpMode =
@@ -37,14 +38,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidEmail(email: string | null | undefined): email is string {
   return !!email && EMAIL_RE.test(email.trim());
-}
-
-function getFromEmail(): string {
-  const rawFrom = process.env.RESEND_FROM_EMAIL || '';
-  const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com'];
-  const fromDomain = rawFrom.includes('@') ? rawFrom.split('@')[1]?.toLowerCase() : '';
-  const isFreeEmail = fromDomain ? freeEmailDomains.some((d) => fromDomain === d || fromDomain.endsWith('.' + d)) : false;
-  return rawFrom && !isFreeEmail ? rawFrom : 'Spaxio Assistant <onboarding@resend.dev>';
 }
 
 function normalizeText(htmlOrText: string): string {
@@ -352,10 +345,14 @@ export async function executeFollowUpAction(params: {
   const customerLanguageResolved = await resolveCustomerLanguage();
   const { data: bizSettings } = await supabase
     .from('business_settings')
-    .select('default_language')
+    .select('default_language, business_name')
     .eq('organization_id', organizationId)
     .maybeSingle();
   const businessDefaultLanguage = normalizeLanguageCode((bizSettings as any)?.default_language) ?? 'en';
+  const tenantBusinessName =
+    bizSettings && typeof (bizSettings as { business_name?: unknown }).business_name === 'string'
+      ? (bizSettings as { business_name: string }).business_name
+      : null;
   const recipientLanguage = mode === 'internal_only_notification' ? businessDefaultLanguage : customerLanguageResolved ?? businessDefaultLanguage;
 
   const internalEmail =
@@ -455,7 +452,7 @@ export async function executeFollowUpAction(params: {
   const resend = new Resend(resendKey);
   try {
     const sent = await resend.emails.send({
-      from: getFromEmail(),
+      from: resolveTenantOutboundFromAddress(tenantBusinessName),
       to: [recipientEmail],
       replyTo: typeof actionConfig.reply_to === 'string' ? actionConfig.reply_to : undefined,
       subject: payload.subject,
