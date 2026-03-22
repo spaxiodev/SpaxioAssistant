@@ -1,7 +1,23 @@
 export type TonePreset = 'professional' | 'friendly' | 'luxury' | 'concise';
 
 export type EmailProviderType = 'gmail' | 'outlook' | 'imap' | 'resend' | 'webhook_inbound';
-export type EmailProviderStatus = 'connected' | 'disconnected' | 'error';
+
+/**
+ * Provider connection status.
+ * - connected        : credentials valid, ready to use
+ * - disconnected     : added but not yet authenticated / credentials cleared
+ * - connecting       : OAuth flow in progress (transient, cleared on callback)
+ * - needs_reconnect  : access token expired or revoked; user must re-authenticate
+ * - error            : last connectivity test failed
+ * - disabled         : user explicitly disabled this provider
+ */
+export type EmailProviderStatus =
+  | 'connected'
+  | 'disconnected'
+  | 'connecting'
+  | 'needs_reconnect'
+  | 'error'
+  | 'disabled';
 export type InboundEmailProcessingStatus = 'pending' | 'replied' | 'skipped' | 'failed';
 export type AutoReplyStatus = 'pending' | 'sent' | 'failed';
 
@@ -48,8 +64,17 @@ export interface EmailProvider {
   display_name: string | null;
   status: EmailProviderStatus;
   status_message: string | null;
+  /** Encrypted credentials / OAuth tokens. Never expose to the client. */
   config_json: Record<string, unknown> | null;
   inbound_webhook_token: string | null;
+  /** Safe-to-display email address of the connected account (e.g. user@gmail.com). */
+  connected_email: string | null;
+  /** Safe-to-display display name of the connected account. */
+  connected_name: string | null;
+  /** Timestamp of the last successful connection verification. */
+  last_verified_at: string | null;
+  /** Whether this provider is the default for outbound auto-replies. */
+  is_default: boolean;
   last_checked_at: string | null;
   connected_at: string | null;
   created_at: string;

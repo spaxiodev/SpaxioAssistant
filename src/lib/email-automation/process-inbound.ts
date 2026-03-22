@@ -2,14 +2,18 @@
  * Core inbound email processing pipeline.
  *
  * Orchestrates: spam filter → language detection → dedup check →
- * lead upsert → reply generation → reply send → status update.
+ * lead upsert → reply generation → provider-aware send → status update.
+ *
+ * Outbound sending is provider-aware:
+ *   - gmail / outlook / imap providers use their own credentials
+ *   - webhook_inbound / resend / unset providers fall back to Resend
  */
 
-import { Resend } from 'resend';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { filterInboundEmail } from './spam-filter';
 import { detectEmailLanguage } from './language-detection';
 import { generateAutoReply } from './reply-generator';
+import { sendEmailViaProvider } from '@/lib/email/providers';
 import type {
   InboundEmailEvent,
   ProcessInboundEmailResult,
@@ -21,21 +25,29 @@ function isValidEmail(email: string | null | undefined): email is string {
   return !!email && EMAIL_RE.test(email.trim());
 }
 
-function getFromEmail(): string {
-  const rawFrom = process.env.RESEND_FROM_EMAIL ?? '';
-  const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'icloud.com'];
-  const fromDomain = rawFrom.includes('@') ? rawFrom.split('@')[1]?.toLowerCase() : '';
-  const isFreeEmail = freeEmailDomains.some(
-    (d) => fromDomain === d || fromDomain?.endsWith('.' + d)
-  );
-  return rawFrom && !isFreeEmail ? rawFrom : 'Spaxio Assistant <onboarding@resend.dev>';
-}
-
 function makeThreadDedupeKey(organizationId: string, event: InboundEmailEvent): string {
   if (event.threadId) return `${organizationId}:thread:${event.threadId}`;
   // Fall back to sender + normalised subject
   const subjectNorm = (event.subject ?? '').toLowerCase().replace(/^re:\s*/g, '').trim().slice(0, 80);
   return `${organizationId}:sender:${event.senderEmail}:${subjectNorm}`;
+}
+
+/** Load an email_provider record including config_json (server-side only). */
+async function getProviderRecord(
+  supabase: SupabaseClient,
+  emailProviderId: string | null,
+  organizationId: string
+): Promise<{ id: string; organization_id: string; provider_type: string; config_json: Record<string, unknown> | null } | null> {
+  if (!emailProviderId) return null;
+
+  const { data } = await supabase
+    .from('email_providers')
+    .select('id, organization_id, provider_type, config_json')
+    .eq('id', emailProviderId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  return data as typeof data;
 }
 
 async function getOrCreateSettings(
@@ -245,56 +257,23 @@ export async function processInboundEmail(params: {
 
   const autoReplyId = (autoReplyRow?.id as string | null) ?? null;
 
-  // ── 9. Send via Resend ─────────────────────────────────────────────────────
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    await Promise.all([
-      markInboundFailed(supabase, inboundId, 'resend_key_missing'),
-      autoReplyId &&
-        supabase
-          .from('email_auto_replies')
-          .update({ status: 'failed', error_message: 'RESEND_API_KEY not configured' })
-          .eq('id', autoReplyId),
-    ]);
-    return { status: 'failed', reason: 'email_provider_not_configured', inboundEmailId: inboundId, autoReplyId };
-  }
+  // ── 9. Send via provider-aware abstraction ────────────────────────────────
+  // Use the inbound provider for sending if it supports outbound (gmail/outlook/imap).
+  // Otherwise falls back to Resend automatically.
+  const providerRecord = await getProviderRecord(supabase, emailProviderId, organizationId);
 
-  try {
-    const resend = new Resend(resendKey);
-    const sent = await resend.emails.send({
-      from: getFromEmail(),
-      to: [event.senderEmail],
-      subject: replyPayload.subject,
-      html: replyPayload.bodyHtml,
-      text: replyPayload.bodyText,
-      headers: {
-        'In-Reply-To': event.messageId ?? '',
-        References: [event.messageId, event.inReplyTo].filter(Boolean).join(' '),
-        'X-Auto-Response-Suppress': 'All',
-        'Auto-Submitted': 'auto-replied',
-      },
-    });
+  const sendResult = await sendEmailViaProvider(providerRecord, {
+    to: event.senderEmail,
+    toName: event.senderName,
+    subject: replyPayload.subject,
+    html: replyPayload.bodyHtml,
+    text: replyPayload.bodyText,
+    inReplyTo: event.messageId,
+    references: [event.messageId, event.inReplyTo].filter((v): v is string => !!v),
+  });
 
-    const now = new Date().toISOString();
-    await Promise.all([
-      supabase
-        .from('email_auto_replies')
-        .update({
-          status: 'sent',
-          provider: 'resend',
-          provider_message_id: sent.data?.id ?? null,
-          sent_at: now,
-        })
-        .eq('id', autoReplyId ?? ''),
-      supabase
-        .from('inbound_emails')
-        .update({ processing_status: 'replied', processed_at: now })
-        .eq('id', inboundId ?? ''),
-    ]);
-
-    return { status: 'replied', inboundEmailId: inboundId, autoReplyId };
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : 'Send failed';
+  if (!sendResult.success) {
+    const errMsg = sendResult.error ?? 'Send failed';
     await Promise.all([
       markInboundFailed(supabase, inboundId, 'send_failed'),
       autoReplyId &&
@@ -305,6 +284,25 @@ export async function processInboundEmail(params: {
     ]);
     return { status: 'failed', reason: errMsg, inboundEmailId: inboundId, autoReplyId };
   }
+
+  const now = new Date().toISOString();
+  await Promise.all([
+    supabase
+      .from('email_auto_replies')
+      .update({
+        status: 'sent',
+        provider: sendResult.provider,
+        provider_message_id: sendResult.messageId ?? null,
+        sent_at: now,
+      })
+      .eq('id', autoReplyId ?? ''),
+    supabase
+      .from('inbound_emails')
+      .update({ processing_status: 'replied', processed_at: now })
+      .eq('id', inboundId ?? ''),
+  ]);
+
+  return { status: 'replied', inboundEmailId: inboundId, autoReplyId };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

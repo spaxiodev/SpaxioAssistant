@@ -50,6 +50,7 @@ export default async function QuoteRequestsPage() {
     quoteRequestSource: t('quoteRequestSource'),
     quoteSourceAiWidget: t('quoteSourceAiWidget'),
     quoteSourceAiPageAssistant: t('quoteSourceAiPageAssistant'),
+    quoteSourceEmbeddedForm: t('quoteSourceEmbeddedForm'),
     quoteSourceUnknown: t('quoteSourceUnknown'),
   };
 

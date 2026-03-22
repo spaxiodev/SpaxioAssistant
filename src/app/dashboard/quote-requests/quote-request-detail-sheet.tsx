@@ -3,6 +3,7 @@
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -54,7 +55,9 @@ export function QuoteRequestDetailSheet({
       ? 'AI Widget'
       : request.submission_source === QUOTE_SUBMISSION_SOURCE.AI_PAGE_ASSISTANT
         ? 'AI Page Assistant'
-        : request.submission_source ?? null;
+        : request.submission_source === QUOTE_SUBMISSION_SOURCE.EMBEDDED_FORM
+          ? 'Embedded Form'
+          : request.submission_source ?? null;
 
   const fields: { label: string; value: string | number | null | undefined }[] = [
     { label: 'Customer', value: request.customer_name },
@@ -89,6 +92,7 @@ export function QuoteRequestDetailSheet({
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Quote request details</SheetTitle>
+          <SheetDescription className="sr-only">Full details for the selected quote request</SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4">
           {sourceLabel ? (
@@ -135,8 +139,8 @@ export function QuoteRequestDetailSheet({
               <dt className="font-medium text-muted-foreground">Estimate</dt>
               <dd className="mt-1 font-semibold">
                 {request.estimate_low != null && request.estimate_high != null
-                  ? `$${Number(request.estimate_low).toLocaleString()} – $${Number(request.estimate_high).toLocaleString()}`
-                  : `$${Number(request.estimate_total).toLocaleString()}`}
+                  ? `$${Number(request.estimate_low).toLocaleString('en-US')} – $${Number(request.estimate_high).toLocaleString('en-US')}`
+                  : `$${Number(request.estimate_total).toLocaleString('en-US')}`}
               </dd>
             </div>
           )}

@@ -142,7 +142,17 @@ export function FollowUpCard({ leadId, quoteRequestId }: Props) {
     );
   }
 
-  if ((!run || run.status !== 'completed') && !draft) return null;
+  if ((!run || run.status !== 'completed') && !draft) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-5 text-center text-sm text-muted-foreground">
+          {run?.status === 'failed'
+            ? 'Follow-up analysis failed. It will be retried on the next quote submission.'
+            : 'No follow-up analysis yet for this quote.'}
+        </CardContent>
+      </Card>
+    );
+  }
   const viewRun = run ?? {
     id: '',
     status: '',

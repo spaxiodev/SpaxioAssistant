@@ -83,6 +83,7 @@ export const FEATURE_KEYS = [
   'ai_suggestions',
   'advanced_branding',
   'conversation_learning',
+  'embedded_forms',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -111,6 +112,7 @@ export const FEATURE_MIN_PLAN: Record<FeatureKey, PlanSlug> = {
   ai_suggestions: 'starter',
   advanced_branding: 'pro',
   conversation_learning: 'pro',
+  embedded_forms: 'starter',
 };
 
 /** Whether the given plan has access to the feature. */
@@ -160,6 +162,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   ai_suggestions: 'AI setup suggestions',
   advanced_branding: 'Advanced widget branding',
   conversation_learning: 'Conversation learning & insights',
+  embedded_forms: 'Embedded Forms',
 };
 
 // -----------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,12 @@ import {
   Plus,
   Trash2,
   Languages,
+  RefreshCw,
+  Server,
+  ExternalLink,
+  Star,
+  Loader2,
+  WifiOff,
 } from 'lucide-react';
 import type {
   EmailAutomationSettings,
@@ -72,11 +79,38 @@ const TONE_OPTIONS: { value: TonePreset; label: string; description: string }[] 
 ];
 
 const PROVIDER_OPTIONS = [
-  { value: 'webhook_inbound', label: 'Webhook (Universal)', description: 'Works with any email provider via webhook' },
-  { value: 'resend', label: 'Resend Inbound', description: 'Use Resend inbound routing' },
-  { value: 'gmail', label: 'Gmail / Google Workspace', description: 'Coming soon' },
-  { value: 'outlook', label: 'Outlook / Microsoft 365', description: 'Coming soon' },
-  { value: 'imap', label: 'IMAP / Custom', description: 'Coming soon' },
+  {
+    value: 'webhook_inbound',
+    label: 'Webhook (Universal)',
+    description: 'Forward inbound emails from any provider via a webhook URL',
+    connectMode: 'webhook' as const,
+  },
+  {
+    value: 'resend',
+    label: 'Resend Inbound',
+    description: 'Route inbound email through Resend inbound routing',
+    connectMode: 'webhook' as const,
+  },
+  {
+    value: 'gmail',
+    label: 'Gmail / Google Workspace',
+    description: 'Connect your Google account with OAuth — send replies from Gmail',
+    connectMode: 'oauth' as const,
+    oauthPath: '/api/email-automation/providers/google/start',
+  },
+  {
+    value: 'outlook',
+    label: 'Outlook / Microsoft 365',
+    description: 'Connect your Microsoft account with OAuth — send replies via Graph API',
+    connectMode: 'oauth' as const,
+    oauthPath: '/api/email-automation/providers/microsoft/start',
+  },
+  {
+    value: 'imap',
+    label: 'IMAP / Custom',
+    description: 'Connect any mailbox using IMAP/SMTP credentials',
+    connectMode: 'imap' as const,
+  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -647,111 +681,182 @@ function TemplatesTab({
   );
 }
 
-// ── Providers Tab ─────────────────────────────────────────────────────────────
+// ── Provider Status Badge ─────────────────────────────────────────────────────
 
-function ProvidersTab({
-  providers,
+function ProviderStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    connected: {
+      label: 'Connected',
+      cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-0',
+    },
+    connecting: {
+      label: 'Connecting…',
+      cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-0',
+    },
+    needs_reconnect: {
+      label: 'Needs Reconnect',
+      cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-0',
+    },
+    error: {
+      label: 'Error',
+      cls: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-0',
+    },
+    disabled: {
+      label: 'Disabled',
+      cls: 'bg-muted text-muted-foreground border-0',
+    },
+  };
+  const { label, cls } = map[status] ?? { label: 'Disconnected', cls: 'bg-muted text-muted-foreground border-0' };
+  return <Badge className={`text-xs ${cls}`}>{label}</Badge>;
+}
+
+// ── Provider Card ─────────────────────────────────────────────────────────────
+
+function ProviderCard({
+  provider,
   baseUrl,
-  onAdd,
   onDelete,
+  onTest,
+  onReconnect,
+  onSetDefault,
+  onToggleDisabled,
   saving,
 }: {
-  providers: EmailProvider[];
+  provider: EmailProvider;
   baseUrl: string;
-  onAdd: (providerType: string, displayName: string) => void;
-  onDelete: (providerId: string) => void;
+  onDelete: (id: string) => void;
+  onTest: (id: string) => void;
+  onReconnect: (provider: EmailProvider) => void;
+  onSetDefault: (id: string) => void;
+  onToggleDisabled: (provider: EmailProvider) => void;
   saving: boolean;
 }) {
-  const [showAdd, setShowAdd] = useState(false);
-  const [addType, setAddType] = useState('webhook_inbound');
-  const [displayName, setDisplayName] = useState('');
+  const typeInfo = PROVIDER_OPTIONS.find((p) => p.value === provider.provider_type);
+  const name =
+    provider.display_name ??
+    typeInfo?.label ??
+    provider.provider_type;
 
-  function handleAdd() {
-    onAdd(addType, displayName);
-    setShowAdd(false);
-    setAddType('webhook_inbound');
-    setDisplayName('');
-  }
+  const webhookUrl =
+    provider.inbound_webhook_token
+      ? `${baseUrl}/api/email-automation/inbound/webhook?token=${provider.inbound_webhook_token}`
+      : null;
 
-  const comingSoon = new Set(['gmail', 'outlook', 'imap']);
+  const isOAuth = provider.provider_type === 'gmail' || provider.provider_type === 'outlook';
+  const isImap = provider.provider_type === 'imap';
+  const needsAction =
+    provider.status === 'needs_reconnect' ||
+    provider.status === 'error' ||
+    provider.status === 'connecting';
+  const isDisabled = provider.status === 'disabled';
 
   return (
-    <div className="space-y-4">
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="py-4">
-          <div className="flex items-start gap-3">
-            <Plug className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div className="text-sm">
-              <p className="font-medium">How inbound email works</p>
-              <p className="mt-1 text-muted-foreground">
-                Connect an email provider so Spaxio can receive incoming emails. Use the <strong>Webhook</strong> option to route emails from any provider (Gmail, Outlook, Mailgun, Postmark, etc.) via a webhook URL. Native Gmail and Outlook integrations are coming soon.
-              </p>
+    <Card className={isDisabled ? 'opacity-60' : undefined}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2 min-w-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold leading-tight">{name}</span>
+                <ProviderStatusBadge status={provider.status} />
+                {provider.is_default && (
+                  <Badge className="text-xs bg-primary/10 text-primary border-primary/20">Default</Badge>
+                )}
+              </div>
+              {provider.connected_email && (
+                <p className="mt-0.5 text-xs text-muted-foreground truncate">{provider.connected_email}</p>
+              )}
+              {provider.last_verified_at && (
+                <p className="mt-0.5 text-xs text-muted-foreground/60">
+                  Verified {formatRelativeTime(provider.last_verified_at)}
+                </p>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {providers.length === 0 && (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <Mail className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">No email provider connected yet.</p>
-            <p className="mt-1 text-xs text-muted-foreground">Add a provider to start receiving inbound emails.</p>
-          </CardContent>
-        </Card>
-      )}
+          {/* Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            {!provider.is_default && provider.status === 'connected' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground gap-1"
+                title="Set as default sending provider"
+                onClick={() => onSetDefault(provider.id)}
+                disabled={saving}
+              >
+                <Star className="h-3 w-3" />
+              </Button>
+            )}
+            {provider.status === 'connected' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground gap-1"
+                title="Test connection"
+                onClick={() => onTest(provider.id)}
+                disabled={saving}
+              >
+                <Wifi className="h-3 w-3" />
+              </Button>
+            )}
+            {(isOAuth || isImap) && needsAction && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
+                onClick={() => onReconnect(provider)}
+                disabled={saving}
+              >
+                <RefreshCw className="h-3 w-3" />
+                Reconnect
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs text-muted-foreground"
+              title={isDisabled ? 'Enable provider' : 'Disable provider'}
+              onClick={() => onToggleDisabled(provider)}
+              disabled={saving}
+            >
+              {isDisabled ? <CheckCircle2 className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-muted-foreground hover:text-destructive"
+              title="Remove provider"
+              onClick={() => onDelete(provider.id)}
+              disabled={saving}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
 
-      <div className="space-y-3">
-        {providers.map((provider) => {
-          const webhookUrl = provider.inbound_webhook_token
-            ? `${baseUrl}/api/email-automation/inbound/webhook?token=${provider.inbound_webhook_token}`
-            : null;
-          return (
-            <Card key={provider.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">
-                      {provider.display_name ?? PROVIDER_OPTIONS.find((p) => p.value === provider.provider_type)?.label ?? provider.provider_type}
-                    </CardTitle>
-                    <Badge
-                      className={
-                        provider.status === 'connected'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-0 text-xs'
-                          : provider.status === 'error'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-0 text-xs'
-                            : 'border-0 text-xs bg-muted text-muted-foreground'
-                      }
-                    >
-                      {provider.status === 'connected' ? 'Connected' : provider.status === 'error' ? 'Error' : 'Disconnected'}
-                    </Badge>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => onDelete(provider.id)}
-                    disabled={saving}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              {webhookUrl && (
-                <CardContent className="pt-0 space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Inbound Webhook URL</p>
-                  <p className="text-xs text-muted-foreground mb-1">
-                    Configure your email provider to forward inbound emails as JSON POST requests to this URL.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-xs font-mono break-all">
-                      {webhookUrl}
-                    </code>
-                    <CopyButton text={webhookUrl} />
-                  </div>
-                  <div className="mt-2 rounded-md border bg-muted/50 p-3">
-                    <p className="text-xs font-medium mb-1">Expected JSON payload:</p>
-                    <pre className="text-xs text-muted-foreground overflow-auto">{`{
+        {/* Status message */}
+        {provider.status_message && (
+          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{provider.status_message}</p>
+        )}
+      </CardHeader>
+
+      {/* Webhook URL section */}
+      {webhookUrl && (
+        <CardContent className="pt-0 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Inbound Webhook URL</p>
+          <p className="text-xs text-muted-foreground mb-1">
+            Configure your email provider to POST inbound emails as JSON to this URL.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-xs font-mono break-all">
+              {webhookUrl}
+            </code>
+            <CopyButton text={webhookUrl} />
+          </div>
+          <div className="mt-2 rounded-md border bg-muted/50 p-3">
+            <p className="text-xs font-medium mb-1">Expected JSON payload:</p>
+            <pre className="text-xs text-muted-foreground overflow-auto">{`{
   "senderEmail": "customer@example.com",
   "senderName": "John Doe",
   "subject": "Question about your services",
@@ -759,20 +864,479 @@ function ProvidersTab({
   "messageId": "<msg-id@mail.example.com>",
   "threadId": "optional-thread-id"
 }`}</pre>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          );
-        })}
+          </div>
+        </CardContent>
+      )}
+
+      {/* OAuth capability note */}
+      {isOAuth && provider.status === 'connected' && (
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border px-3 py-2">
+            <strong>Sending:</strong> Auto-replies will be sent from {provider.connected_email ?? 'your connected account'}.
+            Inbound emails are still received via webhook — configure your email provider to forward to a webhook if needed.
+          </p>
+        </CardContent>
+      )}
+
+      {/* Reconnect prompt for OAuth */}
+      {isOAuth && (provider.status === 'needs_reconnect' || provider.status === 'error') && (
+        <CardContent className="pt-0">
+          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-3 py-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <div className="text-xs text-amber-700 dark:text-amber-400">
+              <p className="font-medium">Reconnection required</p>
+              <p className="mt-0.5">
+                {provider.status_message ?? 'The authorization has expired or been revoked.'}
+                {' '}Click <strong>Reconnect</strong> to re-authorize.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+// Inline Wifi icon (lucide doesn't export it by default in older versions)
+function Wifi({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className}>
+      <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+      <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+      <circle cx="12" cy="20" r="1"/>
+    </svg>
+  );
+}
+
+// ── IMAP Credential Form ──────────────────────────────────────────────────────
+
+interface ImapFormState {
+  email: string;
+  from_name: string;
+  password: string;
+  imap_host: string;
+  imap_port: string;
+  imap_secure: boolean;
+  smtp_host: string;
+  smtp_port: string;
+  smtp_secure: boolean;
+}
+
+const DEFAULT_IMAP_FORM: ImapFormState = {
+  email: '',
+  from_name: '',
+  password: '',
+  imap_host: '',
+  imap_port: '993',
+  imap_secure: true,
+  smtp_host: '',
+  smtp_port: '587',
+  smtp_secure: false,
+};
+
+interface ImapTestResult {
+  ok: boolean;
+  imap_ok?: boolean;
+  smtp_ok?: boolean;
+  imap_error?: string | null;
+  smtp_error?: string | null;
+  error?: string;
+}
+
+function ImapForm({
+  onSave,
+  onCancel,
+  saving,
+}: {
+  onSave: (body: Record<string, unknown>) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<ImapFormState>(DEFAULT_IMAP_FORM);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<ImapTestResult | null>(null);
+
+  function set(field: keyof ImapFormState, value: string | boolean) {
+    setForm((f) => ({ ...f, [field]: value }));
+    setTestResult(null); // reset test result when form changes
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/email-automation/providers/imap/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+          imap_host: form.imap_host.trim(),
+          imap_port: parseInt(form.imap_port, 10),
+          imap_secure: form.imap_secure,
+          smtp_host: form.smtp_host.trim(),
+          smtp_port: parseInt(form.smtp_port, 10),
+          smtp_secure: form.smtp_secure,
+        }),
+      });
+      const data: ImapTestResult = await res.json();
+      setTestResult(data);
+    } catch {
+      setTestResult({ ok: false, error: 'Network error — could not reach the test endpoint.' });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  function handleSave() {
+    onSave({
+      provider_type: 'imap',
+      display_name: form.email.trim(),
+      email: form.email.trim(),
+      from_name: form.from_name.trim() || null,
+      password: form.password,
+      imap_host: form.imap_host.trim(),
+      imap_port: parseInt(form.imap_port, 10),
+      imap_secure: form.imap_secure,
+      smtp_host: form.smtp_host.trim(),
+      smtp_port: parseInt(form.smtp_port, 10),
+      smtp_secure: form.smtp_secure,
+    });
+  }
+
+  const isValid =
+    form.email.trim() &&
+    form.password &&
+    form.imap_host.trim() &&
+    form.smtp_host.trim() &&
+    parseInt(form.imap_port, 10) > 0 &&
+    parseInt(form.smtp_port, 10) > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* App password notice */}
+      <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-3 py-2.5">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <div className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="font-medium">Use an App Password</p>
+            <p className="mt-0.5">
+              Gmail and Outlook require an <strong>app password</strong> (not your regular login password) when 2-step
+              verification is enabled.{' '}
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline inline-flex items-center gap-0.5"
+              >
+                Gmail <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+              {' · '}
+              <a
+                href="https://account.live.com/proofs/manage/additional"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline inline-flex items-center gap-0.5"
+              >
+                Microsoft <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-1.5">
+          <Label htmlFor="imap_email">Email Address</Label>
+          <Input
+            id="imap_email"
+            type="email"
+            value={form.email}
+            onChange={(e) => set('email', e.target.value)}
+            placeholder="support@yourcompany.com"
+            autoComplete="off"
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="imap_from_name">From Name (optional)</Label>
+          <Input
+            id="imap_from_name"
+            value={form.from_name}
+            onChange={(e) => set('from_name', e.target.value)}
+            placeholder="e.g. Support Team"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="imap_password">Password / App Password</Label>
+        <Input
+          id="imap_password"
+          type="password"
+          value={form.password}
+          onChange={(e) => set('password', e.target.value)}
+          placeholder="App password or account password"
+          autoComplete="new-password"
+        />
+      </div>
+
+      {/* IMAP */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <Server className="h-3.5 w-3.5" />
+          IMAP (Inbound)
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_100px_auto]">
+          <div className="grid gap-1">
+            <Label htmlFor="imap_host" className="text-xs">Host</Label>
+            <Input
+              id="imap_host"
+              value={form.imap_host}
+              onChange={(e) => set('imap_host', e.target.value)}
+              placeholder="imap.yourcompany.com"
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="imap_port" className="text-xs">Port</Label>
+            <Input
+              id="imap_port"
+              type="number"
+              value={form.imap_port}
+              onChange={(e) => set('imap_port', e.target.value)}
+              placeholder="993"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">TLS/SSL</Label>
+            <div className="flex items-center h-10">
+              <Switch
+                checked={form.imap_secure}
+                onCheckedChange={(v) => {
+                  set('imap_secure', v);
+                  if (v && form.imap_port === '143') set('imap_port', '993');
+                  if (!v && form.imap_port === '993') set('imap_port', '143');
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SMTP */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <Mail className="h-3.5 w-3.5" />
+          SMTP (Outbound / Replies)
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_100px_auto]">
+          <div className="grid gap-1">
+            <Label htmlFor="smtp_host" className="text-xs">Host</Label>
+            <Input
+              id="smtp_host"
+              value={form.smtp_host}
+              onChange={(e) => set('smtp_host', e.target.value)}
+              placeholder="smtp.yourcompany.com"
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="smtp_port" className="text-xs">Port</Label>
+            <Input
+              id="smtp_port"
+              type="number"
+              value={form.smtp_port}
+              onChange={(e) => set('smtp_port', e.target.value)}
+              placeholder="587"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">TLS/SSL</Label>
+            <div className="flex items-center h-10">
+              <Switch
+                checked={form.smtp_secure}
+                onCheckedChange={(v) => {
+                  set('smtp_secure', v);
+                  if (v && form.smtp_port === '587') set('smtp_port', '465');
+                  if (!v && form.smtp_port === '465') set('smtp_port', '587');
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Test result */}
+      {testResult && (
+        <div
+          className={`rounded-md border px-3 py-2.5 text-xs ${
+            testResult.ok
+              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
+              : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+          }`}
+        >
+          {testResult.ok ? (
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              IMAP and SMTP connected successfully.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 font-medium">
+                <XCircle className="h-3.5 w-3.5" />
+                Connection test failed
+              </div>
+              {testResult.imap_error && (
+                <p>IMAP: {testResult.imap_error}</p>
+              )}
+              {testResult.smtp_error && (
+                <p>SMTP: {testResult.smtp_error}</p>
+              )}
+              {testResult.error && <p>{testResult.error}</p>}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleTest}
+          disabled={!isValid || testing || saving}
+          className="gap-1.5"
+        >
+          {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wifi className="h-3.5 w-3.5" />}
+          Test Connection
+        </Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={!isValid || saving}
+          className="gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+          Save Provider
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Providers Tab ─────────────────────────────────────────────────────────────
+
+function ProvidersTab({
+  providers,
+  baseUrl,
+  onAdd,
+  onDelete,
+  onTest,
+  onReconnect,
+  onSetDefault,
+  onToggleDisabled,
+  saving,
+}: {
+  providers: EmailProvider[];
+  baseUrl: string;
+  onAdd: (body: Record<string, unknown>) => void;
+  onDelete: (providerId: string) => void;
+  onTest: (providerId: string) => void;
+  onReconnect: (provider: EmailProvider) => void;
+  onSetDefault: (providerId: string) => void;
+  onToggleDisabled: (provider: EmailProvider) => void;
+  saving: boolean;
+}) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [addType, setAddType] = useState('webhook_inbound');
+
+  const selectedOption = PROVIDER_OPTIONS.find((p) => p.value === addType);
+
+  function handleWebhookAdd(displayName: string) {
+    onAdd({ provider_type: addType, display_name: displayName || null });
+    setShowAdd(false);
+    setAddType('webhook_inbound');
+  }
+
+  function handleOAuthConnect() {
+    const option = PROVIDER_OPTIONS.find((p) => p.value === addType);
+    if (!option || option.connectMode !== 'oauth') return;
+    const returnTo = window.location.pathname;
+    window.location.href = `${option.oauthPath}?returnTo=${encodeURIComponent(returnTo)}`;
+  }
+
+  function handleImapSave(body: Record<string, unknown>) {
+    onAdd(body);
+    setShowAdd(false);
+    setAddType('webhook_inbound');
+  }
+
+  const atLimit = providers.length >= 3;
+
+  // Local state for webhook/resend display name input
+  const [webhookDisplayName, setWebhookDisplayName] = useState('');
+
+  return (
+    <div className="space-y-4">
+      {/* Info card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <Plug className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="text-sm">
+              <p className="font-medium">Email provider connections</p>
+              <p className="mt-1 text-muted-foreground">
+                Connect a provider to send auto-replies from your own email address.
+                Use <strong>Webhook</strong> or <strong>Resend</strong> for inbound routing.
+                Connect <strong>Gmail</strong> or <strong>Outlook</strong> via OAuth for reply sending.
+                Use <strong>IMAP / Custom</strong> for any mailbox with SMTP credentials.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Provider list */}
+      {providers.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <Mail className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">No email provider connected yet.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add a provider below to start routing inbound emails and sending auto-replies.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <ProviderCard
+              key={provider.id}
+              provider={provider}
+              baseUrl={baseUrl}
+              onDelete={onDelete}
+              onTest={onTest}
+              onReconnect={onReconnect}
+              onSetDefault={onSetDefault}
+              onToggleDisabled={onToggleDisabled}
+              saving={saving}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Add Provider Form */}
       {showAdd ? (
         <Card className="border-dashed border-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Add Email Provider</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* Provider type selection */}
             <div className="grid gap-1.5">
               <Label>Provider Type</Label>
               <div className="grid gap-2">
@@ -780,52 +1344,87 @@ function ProvidersTab({
                   <button
                     key={p.value}
                     type="button"
-                    disabled={comingSoon.has(p.value)}
-                    onClick={() => !comingSoon.has(p.value) && setAddType(p.value)}
-                    className={`flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-all ${
+                    onClick={() => setAddType(p.value)}
+                    className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left transition-all ${
                       addType === p.value
                         ? 'border-primary bg-primary/5 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)]'
-                        : comingSoon.has(p.value)
-                          ? 'cursor-not-allowed opacity-50'
-                          : 'hover:bg-muted/50'
+                        : 'hover:bg-muted/50'
                     }`}
                   >
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">{p.label}</div>
-                      <div className="text-xs text-muted-foreground">{p.description}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{p.description}</div>
                     </div>
-                    {comingSoon.has(p.value) && (
-                      <Badge variant="secondary" className="text-xs shrink-0 ml-2">Soon</Badge>
+                    {addType === p.value && (
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     )}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="display_name">Display Name (optional)</Label>
-              <Input
-                id="display_name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. support@yourcompany.com"
-                className="w-full sm:w-[300px]"
+
+            {/* Action area based on selected type */}
+            {selectedOption?.connectMode === 'webhook' && (
+              <div className="space-y-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="webhook_display_name">Display Name (optional)</Label>
+                  <Input
+                    id="webhook_display_name"
+                    value={webhookDisplayName}
+                    onChange={(e) => setWebhookDisplayName(e.target.value)}
+                    placeholder="e.g. Main Inbox"
+                    className="w-full sm:w-[300px]"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => handleWebhookAdd(webhookDisplayName)} disabled={saving}>
+                    Add Provider
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {selectedOption?.connectMode === 'oauth' && (
+              <div className="space-y-3">
+                <div className="rounded-md border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+                  You will be redirected to {addType === 'gmail' ? 'Google' : 'Microsoft'} to authorize
+                  Spaxio to send emails on your behalf. Your login credentials are never shared with Spaxio.
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleOAuthConnect}
+                    className="gap-1.5"
+                    disabled={saving}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Connect with {addType === 'gmail' ? 'Google' : 'Microsoft'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {selectedOption?.connectMode === 'imap' && (
+              <ImapForm
+                onSave={handleImapSave}
+                onCancel={() => setShowAdd(false)}
+                saving={saving}
               />
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleAdd} disabled={saving}>Add Provider</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            </div>
+            )}
           </CardContent>
         </Card>
       ) : (
         <Button
           variant="outline"
           className="w-full gap-2"
-          onClick={() => setShowAdd(true)}
-          disabled={providers.length >= 3}
+          onClick={() => { setShowAdd(true); setWebhookDisplayName(''); }}
+          disabled={atLimit}
+          title={atLimit ? 'Maximum of 3 providers reached' : undefined}
         >
           <Plus className="h-4 w-4" />
-          Add Email Provider
+          {atLimit ? 'Provider limit reached (max 3)' : 'Add Email Provider'}
         </Button>
       )}
     </div>
@@ -900,11 +1499,38 @@ export function EmailAutomationClient({
   const [inboundEmails] = useState(initialInboundEmails);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 4500);
   }
+
+  // ── OAuth callback handling ────────────────────────────────────────────────
+  useEffect(() => {
+    const connected = searchParams.get('provider_connected');
+    const error = searchParams.get('provider_error');
+
+    if (connected) {
+      const labels: Record<string, string> = { gmail: 'Gmail', outlook: 'Outlook / Microsoft 365' };
+      showToast(`${labels[connected] ?? connected} connected successfully. Reloading providers…`);
+      // Refresh provider list from server
+      fetch('/api/email-automation/providers')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.providers) setProviders(d.providers);
+        })
+        .catch(() => {});
+      // Clear the query params
+      router.replace(pathname, { scroll: false });
+    } else if (error) {
+      showToast(decodeURIComponent(error), 'error');
+      router.replace(pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Settings save ──────────────────────────────────────────────────────────
   function handleSaveSettings(updates: Partial<EmailAutomationSettings>) {
@@ -975,20 +1601,25 @@ export function EmailAutomationClient({
   }
 
   // ── Provider add ───────────────────────────────────────────────────────────
-  function handleAddProvider(providerType: string, displayName: string) {
+  function handleAddProvider(body: Record<string, unknown>) {
     startTransition(async () => {
       try {
         const res = await fetch('/api/email-automation/providers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider_type: providerType, display_name: displayName || null }),
+          body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+          const smtpErr = err.smtp_error ? ` SMTP: ${err.smtp_error}` : '';
+          const imapErr = err.imap_error ? ` IMAP: ${err.imap_error}` : '';
+          throw new Error((err.error ?? 'Failed to add provider') + smtpErr + imapErr);
+        }
         const { provider } = await res.json();
         setProviders((prev) => [...prev, provider]);
-        showToast('Provider added.');
-      } catch {
-        showToast('Failed to add provider.', 'error');
+        showToast('Provider added successfully.');
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Failed to add provider.', 'error');
       }
     });
   }
@@ -1003,6 +1634,86 @@ export function EmailAutomationClient({
         showToast('Provider removed.');
       } catch {
         showToast('Failed to remove provider.', 'error');
+      }
+    });
+  }
+
+  // ── Provider test connection ───────────────────────────────────────────────
+  function handleTestProvider(providerId: string) {
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/email-automation/providers/test?id=${providerId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          setProviders((prev) =>
+            prev.map((p) =>
+              p.id === providerId
+                ? { ...p, status: 'connected' as const, status_message: null, last_verified_at: new Date().toISOString() }
+                : p
+            )
+          );
+          showToast('Connection test passed.');
+        } else {
+          setProviders((prev) =>
+            prev.map((p) =>
+              p.id === providerId ? { ...p, status: 'error' as const, status_message: data.error ?? 'Test failed' } : p
+            )
+          );
+          showToast(data.error ?? 'Connection test failed.', 'error');
+        }
+      } catch {
+        showToast('Could not reach test endpoint.', 'error');
+      }
+    });
+  }
+
+  // ── Provider reconnect (OAuth) ─────────────────────────────────────────────
+  function handleReconnectProvider(provider: EmailProvider) {
+    const oauthPath =
+      provider.provider_type === 'gmail'
+        ? '/api/email-automation/providers/google/start'
+        : '/api/email-automation/providers/microsoft/start';
+    const returnTo = pathname;
+    window.location.href = `${oauthPath}?returnTo=${encodeURIComponent(returnTo)}&reconnect=${provider.id}`;
+  }
+
+  // ── Provider set default ───────────────────────────────────────────────────
+  function handleSetDefault(providerId: string) {
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/email-automation/providers?id=${providerId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_default: true }),
+        });
+        if (!res.ok) throw new Error('Failed to update provider');
+        setProviders((prev) =>
+          prev.map((p) => ({ ...p, is_default: p.id === providerId }))
+        );
+        showToast('Default provider updated.');
+      } catch {
+        showToast('Failed to update default provider.', 'error');
+      }
+    });
+  }
+
+  // ── Provider enable / disable ──────────────────────────────────────────────
+  function handleToggleDisabled(provider: EmailProvider) {
+    const newStatus = provider.status === 'disabled' ? 'connected' : 'disabled';
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/email-automation/providers?id=${provider.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (!res.ok) throw new Error('Failed to update provider');
+        setProviders((prev) =>
+          prev.map((p) => (p.id === provider.id ? { ...p, status: newStatus } : p))
+        );
+        showToast(newStatus === 'disabled' ? 'Provider disabled.' : 'Provider enabled.');
+      } catch {
+        showToast('Failed to update provider.', 'error');
       }
     });
   }
@@ -1103,6 +1814,10 @@ export function EmailAutomationClient({
             baseUrl={baseUrl}
             onAdd={handleAddProvider}
             onDelete={handleDeleteProvider}
+            onTest={handleTestProvider}
+            onReconnect={handleReconnectProvider}
+            onSetDefault={handleSetDefault}
+            onToggleDisabled={handleToggleDisabled}
             saving={isPending}
           />
         </TabsContent>

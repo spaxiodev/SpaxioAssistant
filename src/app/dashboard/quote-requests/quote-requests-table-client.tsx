@@ -44,6 +44,7 @@ type Labels = {
   quoteRequestSource: string;
   quoteSourceAiWidget: string;
   quoteSourceAiPageAssistant: string;
+  quoteSourceEmbeddedForm: string;
   quoteSourceUnknown: string;
   worthItYes: string;
   worthItNo: string;
@@ -65,15 +66,16 @@ function formatSubmissionSource(
   if (!source) return labels.quoteSourceUnknown;
   if (source === QUOTE_SUBMISSION_SOURCE.AI_WIDGET) return labels.quoteSourceAiWidget;
   if (source === QUOTE_SUBMISSION_SOURCE.AI_PAGE_ASSISTANT) return labels.quoteSourceAiPageAssistant;
+  if (source === QUOTE_SUBMISSION_SOURCE.EMBEDDED_FORM) return labels.quoteSourceEmbeddedForm;
   return source;
 }
 
 function formatBudget(r: QuoteRequest): string {
   if (r.budget_text) return r.budget_text;
-  if (r.budget_amount != null) return `$${Number(r.budget_amount).toLocaleString()}`;
+  if (r.budget_amount != null) return `$${Number(r.budget_amount).toLocaleString('en-US')}`;
   if (r.estimate_low != null && r.estimate_high != null)
-    return `$${Number(r.estimate_low).toLocaleString()} – $${Number(r.estimate_high).toLocaleString()}`;
-  if (r.estimate_total != null) return `$${Number(r.estimate_total).toLocaleString()}`;
+    return `$${Number(r.estimate_low).toLocaleString('en-US')} – $${Number(r.estimate_high).toLocaleString('en-US')}`;
+  if (r.estimate_total != null) return `$${Number(r.estimate_total).toLocaleString('en-US')}`;
   return '—';
 }
 

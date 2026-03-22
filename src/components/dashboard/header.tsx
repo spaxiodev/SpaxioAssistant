@@ -57,7 +57,7 @@ export function Header({ showUpgradeButton }: HeaderProps) {
               <Link href="/pricing">{t('upgrade')}</Link>
             </Button>
           )}
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-background/70 px-2 py-1 text-xs text-muted-foreground sm:px-3">
+          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-background/70 px-2 py-1 text-xs text-muted-foreground sm:gap-2 sm:px-3">
             <button
               type="button"
               className={`transition-colors ${mode === 'simple' ? 'font-semibold text-foreground' : ''}`}
@@ -75,7 +75,8 @@ export function Header({ showUpgradeButton }: HeaderProps) {
               className={`transition-colors ${mode === 'developer' ? 'font-semibold text-foreground' : ''}`}
               onClick={() => setMode('developer')}
             >
-              Developer (Advanced)
+              <span className="sm:hidden">Dev</span>
+              <span className="hidden sm:inline">Developer (Advanced)</span>
             </button>
           </div>
         </div>

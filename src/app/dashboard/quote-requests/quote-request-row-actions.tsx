@@ -16,6 +16,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -62,6 +63,7 @@ export function QuoteRequestRowActions({ quoteRequestId }: QuoteRequestRowAction
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Follow-up</SheetTitle>
+            <SheetDescription className="sr-only">AI-generated follow-up analysis for this quote request</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-4">
             <FollowUpCard quoteRequestId={quoteRequestId} />

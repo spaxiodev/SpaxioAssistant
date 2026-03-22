@@ -20,6 +20,7 @@ import {
   Lock,
   HelpCircle,
   Mail,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from '@/components/intl-link';
@@ -192,6 +193,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
     { href: '/dashboard/leads', key: 'leads', icon: Users },
     { href: '/dashboard/quote-requests', key: 'quoteRequests', icon: FileText },
+    { href: '/dashboard/embedded-forms', key: 'embeddedForms', icon: ClipboardList, featureKey: 'embedded_forms' as FeatureKey },
     { href: '/dashboard/email-automation', key: 'emailAutomation', icon: Mail, featureKey: 'email_automation' as FeatureKey },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
     { href: '/dashboard/team', key: 'teamMembers', icon: UserPlus, featureKey: 'team_members' as FeatureKey },
@@ -291,7 +293,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <LayoutDashboard className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1 truncate">Home</span>
+                  <span className="min-w-0 flex-1 truncate">{t('overview')}</span>
                 </Link>
                 <Link
                   href="/dashboard/ai-setup"
@@ -304,7 +306,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Sparkles className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">AI Setup</span>
+                  <span className="min-w-0 flex-1 truncate">{t('aiSetupAssistant')}</span>
                 </Link>
                 <Link
                   href="/dashboard/conversations"
@@ -317,7 +319,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <MessageCircle className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Conversations</span>
+                  <span className="min-w-0 flex-1 truncate">{t('conversations')}</span>
                 </Link>
                 <Link
                   href="/dashboard/leads"
@@ -330,7 +332,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Users className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Leads</span>
+                  <span className="min-w-0 flex-1 truncate">{t('leads')}</span>
                 </Link>
                 <Link
                   href="/dashboard/install"
@@ -343,7 +345,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Code className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Install</span>
+                  <span className="min-w-0 flex-1 truncate">{t('install')}</span>
                 </Link>
                 <Link
                   href="/dashboard/email-automation"
@@ -356,7 +358,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Mail className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Email Auto Replies</span>
+                  <span className="min-w-0 flex-1 truncate">{t('emailAutomation')}</span>
                   {featureAccess.email_automation === false && (
                     <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                   )}
@@ -372,7 +374,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <HelpCircle className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Help</span>
+                  <span className="min-w-0 flex-1 truncate">{tCommon('help')}</span>
                 </Link>
               </NavSection>
 
@@ -388,7 +390,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Settings className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Settings</span>
+                  <span className="min-w-0 flex-1 truncate">{t('settingsTitle')}</span>
                 </Link>
                 <button
                   type="button"
@@ -399,7 +401,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   <Lock className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">Developer Mode (Advanced)</span>
+                  <span className="min-w-0 flex-1 truncate">{t('developerModeAdvanced')}</span>
                 </button>
               </NavSection>
             </>
