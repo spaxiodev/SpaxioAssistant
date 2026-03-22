@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/components/intl-link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { SignInPromptModal } from '@/components/dashboard/sign-in-prompt-modal';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 
 type GuestDashboardShellProps = {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export function GuestDashboardShell({ children }: GuestDashboardShellProps) {
           >
             {tHome('getStarted')}
           </Link>
+          <LocaleSwitcher />
           <ThemeToggle />
         </div>
       </header>
