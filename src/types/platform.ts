@@ -129,7 +129,6 @@ export const ACTION_BLOCK_TYPES = [
   'create_deal',
   'create_ticket',
   'send_email',
-  'send_sms',
   'notify_team',
   'tag_record',
   'save_to_database',

@@ -89,7 +89,7 @@ export async function PATCH(request: Request) {
     if (typeof body.max_session_duration_seconds === 'number') {
       updates.max_session_duration_seconds = Math.min(7200, Math.max(60, body.max_session_duration_seconds));
     }
-    if (typeof body.provider === 'string' && ['browser', 'twilio', 'vapi', 'deepgram', 'openai_realtime'].includes(body.provider)) {
+    if (typeof body.provider === 'string' && ['browser', 'vapi', 'deepgram', 'openai_realtime'].includes(body.provider)) {
       updates.provider = body.provider;
     }
     if (typeof body.allow_actions_during_voice === 'boolean') updates.allow_actions_during_voice = body.allow_actions_during_voice;

@@ -54,7 +54,7 @@ export function PhoneNumbersClient() {
           phone_number: phone.trim(),
           provider_phone_number_sid: sid.trim() || null,
           is_default: isDefault,
-          capabilities_json: { sms: true },
+          capabilities_json: {},
         }),
       });
       if (res.ok) {

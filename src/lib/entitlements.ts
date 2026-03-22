@@ -587,7 +587,7 @@ export async function canUseAiDraftReplies(
   return entitlements.ai_draft_replies;
 }
 
-/** Whether the org has phone integration (Twilio etc.) entitlement. */
+/** Whether the org has phone integration entitlement. */
 export async function hasPhoneIntegration(
   supabase: SupabaseClient,
   organizationId: string,

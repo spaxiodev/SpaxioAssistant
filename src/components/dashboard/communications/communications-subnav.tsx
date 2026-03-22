@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl';
 
 const LINKS: { href: string; key: string }[] = [
   { href: '/dashboard/communications', key: 'communicationsNavOverview' },
-  { href: '/dashboard/communications/sms', key: 'communicationsNavSms' },
   { href: '/dashboard/communications/calls', key: 'communicationsNavCalls' },
   { href: '/dashboard/communications/phone-numbers', key: 'communicationsNavPhoneNumbers' },
   { href: '/dashboard/communications/ai-flows', key: 'communicationsNavAiFlows' },

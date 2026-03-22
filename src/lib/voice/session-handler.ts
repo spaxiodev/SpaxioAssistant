@@ -1,5 +1,5 @@
 /**
- * Server-side voice session lifecycle. Used by browser widget API and (future) Twilio/Vapi webhooks.
+ * Server-side voice session lifecycle. Used by browser widget API and (future) telephony webhooks.
  * All providers persist to voice_sessions + voice_transcripts + messages.
  */
 
