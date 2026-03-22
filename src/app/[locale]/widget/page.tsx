@@ -425,7 +425,7 @@ function WidgetContent() {
             className="flex w-full max-w-[400px] flex-col gap-4"
           >
             <div
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 [&_input]:border-slate-300 [&_input]:bg-white [&_input]:text-foreground dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-slate-300 [&_select]:bg-white dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 [&_select]:focus-visible:ring-2 [&_select]:focus-visible:ring-[var(--quote-brand)]"
+              className="rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 [&_input]:border-slate-400 [&_input]:bg-white [&_input]:text-slate-900 [&_input]:placeholder:text-slate-500 dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_input]:placeholder:text-zinc-500 [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-slate-400 [&_select]:bg-white [&_select]:text-slate-900 dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 [&_select]:focus-visible:ring-2 [&_select]:focus-visible:ring-[var(--quote-brand)]"
               style={
                 {
                   ['--quote-brand' as string]: color,
@@ -435,7 +435,7 @@ function WidgetContent() {
               }
             >
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-foreground">
+                <h2 className="text-base font-semibold">
                   {(config?.quoteFormConfig?.intro_text as string)?.trim() || qs.quoteFormTitle}
                 </h2>
                 <Button
@@ -461,18 +461,18 @@ function WidgetContent() {
                     <p className="text-sm font-semibold text-green-700 dark:text-green-200">{qs.successTitle}</p>
                   </div>
                   {quoteSubmitResult?.estimate && (
-                    <p className="rounded-lg border bg-muted/30 p-3 text-sm">
-                      <span className="text-muted-foreground">{qs.estimatedPricePrefix}: </span>
+                    <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
+                      <span className="text-slate-600 dark:text-zinc-400">{qs.estimatedPricePrefix}: </span>
                       <span className="font-semibold">{quoteSubmitResult.estimate}</span>
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">{qs.successSentToBusiness}</p>
+                  <p className="text-xs text-slate-600 dark:text-zinc-400">{qs.successSentToBusiness}</p>
                 </div>
               ) : (
                 <>
                   <div className="grid gap-3">
                     <div>
-                      <Label htmlFor="quote-lead-name" className="text-sm text-foreground">
+                      <Label htmlFor="quote-lead-name" className="text-sm">
                         {qs.name} *
                       </Label>
                       <Input
@@ -491,7 +491,7 @@ function WidgetContent() {
                     </div>
 
                     <div>
-                      <Label htmlFor="quote-lead-email" className="text-sm text-foreground">
+                      <Label htmlFor="quote-lead-email" className="text-sm">
                         {qs.email} *
                       </Label>
                       <Input
@@ -510,7 +510,7 @@ function WidgetContent() {
                     </div>
 
                     <div>
-                      <Label htmlFor="quote-lead-phone" className="text-sm text-foreground">
+                      <Label htmlFor="quote-lead-phone" className="text-sm">
                         {qs.phoneOptionalFull}
                       </Label>
                       <Input
@@ -532,7 +532,7 @@ function WidgetContent() {
                   <div className="grid gap-3">
                     {quoteVars.map((v) => (
                       <div key={v.key}>
-                        <Label htmlFor={`quote-${v.key}`} className="text-sm text-foreground">
+                        <Label htmlFor={`quote-${v.key}`} className="text-sm">
                           {v.label}
                           {v.required ? ' *' : ''}
                         </Label>
@@ -549,7 +549,7 @@ function WidgetContent() {
                               });
                               setQuoteSubmitError(null);
                             }}
-                            className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
+                            className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
                           >
                             <option value="false">{qs.no}</option>
                             <option value="true">{qs.yes}</option>
@@ -567,7 +567,7 @@ function WidgetContent() {
                               });
                               setQuoteSubmitError(null);
                             }}
-                            className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
+                            className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[v.key] ? 'border-red-500' : ''}`}
                           >
                             {(v.options as { value: string; label: string }[]).map((opt) => (
                               <option key={opt.value} value={opt.value}>
@@ -600,7 +600,7 @@ function WidgetContent() {
                     ))}
                   </div>
 
-                  <p className="text-xs text-muted-foreground">{qs.calculateSubmitHint}</p>
+                  <p className="text-xs text-slate-600 dark:text-zinc-400">{qs.calculateSubmitHint}</p>
 
                   <Button
                     onClick={submitQuoteRequest}

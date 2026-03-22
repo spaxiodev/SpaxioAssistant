@@ -146,11 +146,15 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // Theme fallback: if the host doesn't provide theme info, follow prefers-color-scheme.
+  // Theme fallback: match widget — only follow OS when there is no stored choice (embed postMessage still wins via setTheme).
   useEffect(() => {
     try {
+      if (typeof window !== 'undefined' && localStorage.getItem('spaxio-theme')) return;
       const mql = window.matchMedia?.('(prefers-color-scheme: dark)');
-      setTheme(mql && mql.matches ? 'dark' : 'light');
+      const apply = () => setTheme(mql && mql.matches ? 'dark' : 'light');
+      apply();
+      mql?.addEventListener?.('change', apply);
+      return () => mql?.removeEventListener?.('change', apply);
     } catch {
       // ignore
     }
@@ -580,7 +584,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                     className="mt-4 w-full"
                   >
                     <div
-                      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:ring-white/[0.06] supports-[backdrop-filter]:bg-white/95 dark:supports-[backdrop-filter]:bg-zinc-950/95 [&_input]:border-slate-300 [&_input]:bg-white dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 [&_select]:border-slate-300 [&_select]:bg-white dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 [&_textarea]:border-slate-300 [&_textarea]:bg-white dark:[&_textarea]:border-zinc-600 dark:[&_textarea]:bg-zinc-900"
+                      className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/[0.06] supports-[backdrop-filter]:bg-white/95 dark:supports-[backdrop-filter]:bg-zinc-950/95 [&_input]:border-slate-400 [&_input]:bg-white [&_input]:text-slate-900 [&_input]:placeholder:text-slate-500 dark:[&_input]:border-zinc-600 dark:[&_input]:bg-zinc-900 dark:[&_input]:text-zinc-100 dark:[&_input]:placeholder:text-zinc-500 [&_select]:border-slate-400 [&_select]:bg-white [&_select]:text-slate-900 dark:[&_select]:border-zinc-600 dark:[&_select]:bg-zinc-900 dark:[&_select]:text-zinc-100 [&_textarea]:border-slate-400 [&_textarea]:bg-white [&_textarea]:text-slate-900 [&_textarea]:placeholder:text-slate-500 dark:[&_textarea]:border-zinc-600 dark:[&_textarea]:bg-zinc-900 dark:[&_textarea]:text-zinc-100 dark:[&_textarea]:placeholder:text-zinc-500"
                       style={
                         accentColor
                           ? { boxShadow: `0 0 0 1px ${accentColor}22, 0 12px 40px -12px ${accentColor}44` }
@@ -588,7 +592,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                       }
                     >
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <h2 className="text-base font-semibold">{qs.quoteFormTitle}</h2>
+                        <h2 className="text-base font-semibold text-inherit">{qs.quoteFormTitle}</h2>
                         <Button
                           variant="outline"
                           size="sm"
@@ -678,7 +682,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                       });
                                       setQuoteSubmitError(null);
                                     }}
-                                    className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                    className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   >
                                     <option value="false">{qs.no}</option>
                                     <option value="true">{qs.yes}</option>
@@ -696,7 +700,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                       });
                                       setQuoteSubmitError(null);
                                     }}
-                                    className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                    className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                   >
                                     {(qv.options as { value: string; label: string }[]).map((opt) => (
                                       <option key={opt.value} value={opt.value}>
@@ -739,7 +743,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                                     });
                                     setQuoteSubmitError(null);
                                   }}
-                                  className={`mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
+                                  className={`mt-1 w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 ${quoteFieldErrors[field.key] ? 'border-red-500' : ''}`}
                                 >
                                   <option value="false">{qs.no}</option>
                                   <option value="true">{qs.yes}</option>
@@ -786,7 +790,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
 
                       {quoteSubmitError && <p className="mt-3 text-sm text-red-600">{quoteSubmitError}</p>}
 
-                      <p className="mt-4 text-xs text-muted-foreground">{qs.calculateSubmitHint}</p>
+                      <p className="mt-4 text-xs text-slate-600 dark:text-zinc-400">{qs.calculateSubmitHint}</p>
 
                       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <Button
@@ -813,7 +817,7 @@ export function AiPageClient({ pageId, slug, locale, langOverride, handoffToken 
                         </Button>
                       </div>
                       {config?.quoteCurrency ? (
-                        <p className="mt-2 text-xs text-muted-foreground">
+                        <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400">
                           {qs.currency}: {config.quoteCurrency}
                         </p>
                       ) : null}
