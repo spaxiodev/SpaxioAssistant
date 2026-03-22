@@ -11,7 +11,7 @@ import { getWidgetTranslation, normalizeLocale } from '@/lib/widget/translations
 import type { CustomTranslations } from '@/lib/widget/translations';
 import { getQuoteUiStrings, applyFrCaEmailLabel } from '@/lib/quote-ui/i18n';
 import { useTheme } from '@/components/theme-provider';
-import { CheckCircle2, Moon, Sun } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 type QuoteVariable = {
   key: string;
@@ -83,7 +83,7 @@ function WidgetContent() {
   const widgetId = searchParams.get('widgetId');
   const initialLang = searchParams.get('lang') || 'en';
   const contentRef = useRef<HTMLDivElement>(null);
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   /** Active UI/API language: from URL, then postMessage, or manual override. */
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(initialLang));
@@ -388,8 +388,8 @@ function WidgetContent() {
       className="flex h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-black transition-colors duration-300 overflow-hidden"
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
-      <div className="mb-1.5 flex w-full max-w-[400px] items-center justify-between gap-2">
-        {config?.showLanguageSwitcher && supportedLangs.length > 1 ? (
+      {config?.showLanguageSwitcher && supportedLangs.length > 1 && (
+        <div className="mb-1.5 flex w-full max-w-[400px] items-center gap-2">
           <select
             aria-label={qs.languageAria}
             value={resolvedLocale}
@@ -402,34 +402,8 @@ function WidgetContent() {
               </option>
             ))}
           </select>
-        ) : (
-          <span className="min-w-0 flex-1" aria-hidden />
-        )}
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-md border border-slate-200 bg-white text-foreground shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-            aria-label="Light theme"
-            aria-pressed={theme === 'light'}
-            onClick={() => setTheme('light')}
-          >
-            <Sun className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-md border border-slate-200 bg-white text-foreground shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-            aria-label="Dark theme"
-            aria-pressed={theme === 'dark'}
-            onClick={() => setTheme('dark')}
-          >
-            <Moon className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
+      )}
       {pageHandoff && (
         <a
           href={`${baseUrl}/${resolvedLocale}/a/${pageHandoff.target_page_slug}${pageHandoff.context_token ? `?handoff=${encodeURIComponent(pageHandoff.context_token)}` : ''}`}

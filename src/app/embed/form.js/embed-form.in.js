@@ -30,26 +30,9 @@
 
   var containerId = scriptEl.getAttribute('data-container') || '#spaxio-form-' + formId;
   var theme = scriptEl.getAttribute('data-theme') || 'inherit';
-  var EMBED_THEME_STORE = 'spaxio-embed-form-theme:' + formId;
-
-  function getStoredEmbedUiTheme() {
-    try {
-      var v = localStorage.getItem(EMBED_THEME_STORE);
-      if (v === 'light' || v === 'dark') return v;
-    } catch (e) {}
-    return null;
-  }
-
-  function setStoredEmbedUiTheme(mode) {
-    try {
-      localStorage.setItem(EMBED_THEME_STORE, mode);
-    } catch (e) {}
-  }
 
   function resolveTheme() {
     if (theme === 'inherit') return 'inherit';
-    var stored = getStoredEmbedUiTheme();
-    if (stored) return stored;
     if (theme === 'dark') return 'dark';
     if (theme === 'light') return 'light';
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
@@ -209,10 +192,6 @@
       '.spx-btn:hover { opacity: 0.88; }',
       '.spx-btn:disabled { opacity: 0.55; cursor: not-allowed; }',
       '.spx-error { font-size: 13px; color: ' + c.errorText + '; margin-top: 4px; }',
-      '.spx-theme-bar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }',
-      '.spx-theme-btn { appearance: none; border: 1px solid ' + c.border + '; background: ' + c.inputBg + '; color: ' + c.text + '; width: 38px; height: 38px; border-radius: ' + brSm + '; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }',
-      '.spx-theme-btn:hover { border-color: ' + btn + '99; }',
-      '.spx-theme-btn[aria-pressed="true"] { border-color: ' + btn + '; box-shadow: 0 0 0 2px ' + btn + '40; }',
       '.spx-global-error { padding: 10px 14px; background: ' + c.errorPanelBg + '; border: 1px solid ' + c.errorPanelBorder + '; border-radius: ' + brSm + '; color: ' + c.errorText + '; font-size: 14px; margin-bottom: 16px; }',
       '.spx-success { text-align: center; padding: 32px 20px; }',
       '.spx-success-icon { font-size: 40px; margin-bottom: 12px; }',
@@ -420,21 +399,7 @@
       fieldsHtml += renderField(field);
     });
 
-    var themeBarHtml = '';
-    if (currentTheme === 'light' || currentTheme === 'dark') {
-      themeBarHtml =
-        '<div class="spx-theme-bar" role="group" aria-label="Color theme">' +
-        '<button type="button" class="spx-theme-btn" data-spx-theme="light" aria-pressed="' +
-        (currentTheme === 'light' ? 'true' : 'false') +
-        '" title="Light">☀️</button>' +
-        '<button type="button" class="spx-theme-btn" data-spx-theme="dark" aria-pressed="' +
-        (currentTheme === 'dark' ? 'true' : 'false') +
-        '" title="Dark">🌙</button>' +
-        '</div>';
-    }
-
     formEl.innerHTML = [
-      themeBarHtml,
       '<div class="spx-global-error" id="spx-global-error" style="display:none"></div>',
       fieldsHtml,
       '<div style="display:none" id="spx-submitting"><button class="spx-btn" disabled>Submitting…</button></div>',
@@ -443,17 +408,6 @@
     ].join('');
 
     container.appendChild(formEl);
-
-    if (currentTheme === 'light' || currentTheme === 'dark') {
-      formEl.querySelectorAll('[data-spx-theme]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var mode = btn.getAttribute('data-spx-theme');
-          if (mode !== 'light' && mode !== 'dark') return;
-          setStoredEmbedUiTheme(mode);
-          renderForm(config, container);
-        });
-      });
-    }
 
     var submitBtn = document.getElementById('spx-submit');
     var submittingEl = document.getElementById('spx-submitting');
