@@ -22,7 +22,7 @@ export type SubmissionStatus =
 
 export type SubmissionSource = 'embed' | 'widget' | 'api';
 
-export type ThemeMode = 'light' | 'dark' | 'auto';
+export type ThemeMode = 'inherit' | 'light' | 'dark' | 'auto';
 
 export interface FormField {
   id: string;

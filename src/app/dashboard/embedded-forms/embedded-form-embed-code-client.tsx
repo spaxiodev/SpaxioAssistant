@@ -32,7 +32,7 @@ function buildEmbedCode(formId: string, theme: ThemeMode, baseUrl: string): stri
 }
 
 export function EmbeddedFormEmbedCodeClient({ formId, formName, isActive, baseUrl }: Props) {
-  const [theme, setTheme] = useState<ThemeMode>('auto');
+  const [theme, setTheme] = useState<ThemeMode>('inherit');
   const [copied, setCopied] = useState(false);
 
   const embedCode = buildEmbedCode(formId, theme, baseUrl);
@@ -86,7 +86,8 @@ export function EmbeddedFormEmbedCodeClient({ formId, formName, isActive, baseUr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">Auto (detect)</SelectItem>
+                  <SelectItem value="inherit">Match site (default)</SelectItem>
+                  <SelectItem value="auto">Auto (system)</SelectItem>
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="dark">Dark</SelectItem>
                 </SelectContent>

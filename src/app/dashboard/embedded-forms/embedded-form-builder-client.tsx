@@ -97,6 +97,11 @@ function generateKey(label: string): string {
     .slice(0, 50) || `field_${Date.now()}`;
 }
 
+/** Trim and drop blank lines for persisted options (editing uses raw lines so spaces/newlines work). */
+function normalizeChoiceOptions(lines: string[]) {
+  return lines.map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
 export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated }: Props) {
   const [settings, setSettings] = useState({
     name: form.name,
@@ -167,7 +172,13 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
           is_active: settings.is_active,
           success_message: settings.success_message || null,
           pricing_profile_id: settings.pricing_profile_id || null,
-          fields: fields.map((f, i) => ({ ...f, sort_order: i })),
+          fields: fields.map((f, i) => ({
+            ...f,
+            sort_order: i,
+            ...(f.field_type === 'select' || f.field_type === 'radio'
+              ? { options_json: normalizeChoiceOptions(f.options_json ?? []) }
+              : {}),
+          })),
         }),
       });
       const data = await res.json();
@@ -452,15 +463,15 @@ export function EmbeddedFormBuilderClient({ form, pricingProfiles, onFormUpdated
                 <div>
                   <Label>Options (one per line)</Label>
                   <Textarea
-                    className="mt-1 font-mono text-xs"
+                    className="mt-1 font-mono text-xs whitespace-pre-wrap"
                     rows={5}
                     value={(editingField.options_json ?? []).join('\n')}
                     onChange={(e) =>
                       updateEditingField({
-                        options_json: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
+                        options_json: e.target.value.split('\n'),
                       })
                     }
-                    placeholder="Option 1&#10;Option 2&#10;Option 3"
+                    placeholder={'Option 1\nOption 2\nOption 3'}
                   />
                 </div>
               )}

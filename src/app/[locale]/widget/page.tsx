@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AIChatCard, { type AIChatMessage } from '@/components/ui/ai-chat';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,32 @@ type WidgetConfig = {
   quoteCurrency?: string;
   quoteFormConfig?: QuoteFormConfig | null;
 };
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const value = hex.replace('#', '');
+  if (value.length === 3) {
+    const r = parseInt(value[0]! + value[0]!, 16);
+    const g = parseInt(value[1]! + value[1]!, 16);
+    const b = parseInt(value[2]! + value[2]!, 16);
+    return Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b) ? null : { r, g, b };
+  }
+  if (value.length !== 6) return null;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b) ? null : { r, g, b };
+}
+
+function isLightBrandColor(hex: string): boolean {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return false;
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.7;
+}
 
 function WidgetContent() {
   const searchParams = useSearchParams();
@@ -179,6 +205,7 @@ function WidgetContent() {
   }, [config, resolvedLocale, showQuoteForm, quoteSubmitted]);
 
   const color = config?.primaryBrandColor || '#0f172a';
+  const brandOnAccent = isLightBrandColor(color) ? '#0b1220' : '#ffffff';
   const baseUrl =
     typeof window !== 'undefined'
       ? window.location.origin
@@ -396,7 +423,16 @@ function WidgetContent() {
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className="flex w-full max-w-[400px] flex-col gap-4"
           >
-            <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div
+              className="rounded-lg border bg-card/80 p-4 shadow-sm [&_input]:border-[var(--quote-brand-border)] [&_input]:focus-visible:ring-[var(--quote-brand)] [&_select]:border-[var(--quote-brand-border)] [&_select]:focus-visible:ring-[var(--quote-brand)]"
+              style={
+                {
+                  ['--quote-brand' as string]: color,
+                  ['--quote-brand-border' as string]: `${color}44`,
+                  borderColor: `${color}38`,
+                } as CSSProperties
+              }
+            >
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold text-foreground">
                   {(config?.quoteFormConfig?.intro_text as string)?.trim() || qs.quoteFormTitle}
@@ -565,7 +601,18 @@ function WidgetContent() {
 
                   <p className="text-xs text-muted-foreground">{qs.calculateSubmitHint}</p>
 
-                  <Button onClick={submitQuoteRequest} disabled={quoteSubmitLoading} variant="default" className="w-full">
+                  <Button
+                    onClick={submitQuoteRequest}
+                    disabled={quoteSubmitLoading}
+                    variant="default"
+                    className="w-full !border-0 !shadow-none ![background:var(--quote-brand)] !text-[var(--quote-on-brand)] hover:!opacity-90 hover:!brightness-100 focus-visible:ring-2 focus-visible:ring-[var(--quote-brand)]"
+                    style={
+                      {
+                        ['--quote-brand' as string]: color,
+                        ['--quote-on-brand' as string]: brandOnAccent,
+                      } as CSSProperties
+                    }
+                  >
                     {quoteSubmitLoading ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
