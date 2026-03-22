@@ -8,6 +8,12 @@ import type { ToolContext } from '@/lib/tools/types';
 
 const MAX_TOOL_LOOP_ITERATIONS = 8;
 
+function isFunctionToolCall(
+  tc: OpenAI.Chat.Completions.ChatCompletionMessageToolCall
+): tc is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall {
+  return tc.type === 'function';
+}
+
 /** Map our parameter type to JSON schema type */
 function paramTypeToJsonSchema(t: string): string {
   if (t === 'string' || t === 'number' || t === 'boolean' || t === 'object') return t;
@@ -121,13 +127,18 @@ export async function runChatWithToolsLoop(options: ChatWithToolsOptions): Promi
       return 'Sorry, I could not generate a response.';
     }
 
+    const functionToolCalls = toolCalls.filter(isFunctionToolCall);
+    if (functionToolCalls.length === 0) {
+      return 'Sorry, I could not run the requested tools.';
+    }
+
     // Append assistant message with tool_calls to conversation
     messages = [
       ...messages,
       {
         role: 'assistant' as const,
         content: message.content ?? null,
-        tool_calls: toolCalls.map((tc) => ({
+        tool_calls: functionToolCalls.map((tc) => ({
           id: tc.id,
           type: 'function' as const,
           function: { name: tc.function.name, arguments: tc.function.arguments },
@@ -136,9 +147,9 @@ export async function runChatWithToolsLoop(options: ChatWithToolsOptions): Promi
     ];
 
     // Execute each tool call and append tool results
-    for (const tc of toolCalls) {
-      const toolId = tc.function?.name;
-      const argsStr = tc.function?.arguments ?? '{}';
+    for (const tc of functionToolCalls) {
+      const toolId = tc.function.name;
+      const argsStr = tc.function.arguments ?? '{}';
       let toolResult: string;
       let params: Record<string, unknown> = {};
       try {
