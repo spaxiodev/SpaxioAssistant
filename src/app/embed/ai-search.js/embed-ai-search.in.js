@@ -60,6 +60,7 @@
   var takeoverMode = false;
   var quickPrompts = [];
   var boundSearchInput = null;
+  var aiSearchEnabled = true;
 
   function esc(s) {
     var d = document.createElement('div');
@@ -221,6 +222,11 @@
   function runSearch(q) {
     if (!q || !q.trim()) return;
     if (!panel) return;
+    if (!aiSearchEnabled) {
+      panel.style.display = 'block';
+      panel.innerHTML = '<div style="padding:16px;color:#b91c1c;font-size:14px;">' + esc('AI Search is not enabled for this widget.') + '</div>';
+      return;
+    }
     panel.style.display = 'block';
     if (boundSearchInput) boundSearchInput.setAttribute('aria-busy', 'true');
     panel.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">' + esc(t('loading')) + '</div>';
@@ -237,9 +243,20 @@
       }),
     })
       .then(function (r) {
-        return r.json();
+        return r.json().then(function (data) {
+          return { ok: r.ok, status: r.status, data: data };
+        });
       })
-      .then(function (data) {
+      .then(function (res) {
+        var data = res.data || {};
+        if (!res.ok) {
+          var err =
+            data.error ||
+            (res.status === 403 ? 'AI Search is not available for this widget.' : 'Search request failed');
+          panel.innerHTML = '<div style="padding:16px;color:#b91c1c;font-size:14px;">' + esc(err) + '</div>';
+          if (boundSearchInput) boundSearchInput.removeAttribute('aria-busy');
+          return;
+        }
         if (data.error) {
           panel.innerHTML = '<div style="padding:16px;color:#b91c1c;font-size:14px;">' + esc(data.error) + '</div>';
           if (boundSearchInput) boundSearchInput.removeAttribute('aria-busy');
@@ -355,10 +372,17 @@
     })
     .then(function (cfg) {
       var aiSearch = cfg && cfg.aiSearch ? cfg.aiSearch : {};
+      aiSearchEnabled = aiSearch.enabled === true;
       quickPrompts = Array.isArray(aiSearch.quickPrompts) ? aiSearch.quickPrompts : [];
       var displayMode = typeof aiSearch.displayMode === 'string' ? aiSearch.displayMode : 'modal';
+      if (!aiSearchEnabled) return;
       var wantsTakeover = displayMode === 'replace_search' || displayMode === 'beside_search';
       if (wantsTakeover && initTakeoverMode()) return;
+      if (displayMode === 'replace_search') {
+        // In strict replace mode, never show the floating fallback button.
+        console.warn('[Spaxio AI Search] replace_search mode enabled but no search input was found.');
+        return;
+      }
       initWidgetMode();
     })
     .catch(function () {
