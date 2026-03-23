@@ -276,17 +276,26 @@
   }
 
   function getSearchInput() {
+    function isUsableInput(el) {
+      if (!el || el.tagName !== 'INPUT' || el.disabled) return false;
+      if (el.type && String(el.type).toLowerCase() === 'hidden') return false;
+      if (el.getClientRects && el.getClientRects().length === 0) return false;
+      var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+      if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+      return true;
+    }
+
     var explicitSelector = me.getAttribute('data-search-selector');
     if (explicitSelector) {
       var selected = document.querySelector(explicitSelector);
-      if (selected && selected.tagName === 'INPUT') return selected;
+      if (isUsableInput(selected)) return selected;
     }
     var candidates = document.querySelectorAll(
-      'input[type="search"], input[name*="search" i], input[id*="search" i], form[role="search"] input'
+      'input[type="search"], input[type="text"], input[name*="search" i], input[id*="search" i], input[name="q" i], input[id="q" i], input[name*="query" i], input[id*="query" i], form[role="search"] input'
     );
     for (var i = 0; i < candidates.length; i++) {
       var el = candidates[i];
-      if (el && el.tagName === 'INPUT' && el.offsetParent !== null) return el;
+      if (isUsableInput(el)) return el;
     }
     return null;
   }
