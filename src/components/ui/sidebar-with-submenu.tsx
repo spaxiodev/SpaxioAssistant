@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { ComponentType } from 'react';
 import {
   LayoutDashboard,
   Bot,
@@ -16,11 +17,14 @@ import {
   Settings,
   LogOut,
   UserPlus,
-  Sparkles,
   Lock,
   HelpCircle,
   Mail,
-  ClipboardList,
+  Search,
+  BarChart3,
+  Plug,
+  ListChecks,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from '@/components/intl-link';
@@ -160,7 +164,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
   const router = useRouter();
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
-  const { mode, setMode } = useViewMode();
+  const { mode } = useViewMode();
   const featureAccess = planAccess?.featureAccess ?? {};
 
   function isLocked(featureKey?: FeatureKey): boolean {
@@ -184,18 +188,32 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
     { nameKey: 'quoteRequestsTabPricingRules', href: '/dashboard/quote-requests/pricing' },
   ];
 
-  const coreNav = [
-    { href: '/dashboard', key: 'overview', icon: LayoutDashboard },
-    { href: '/dashboard/ai-setup', key: 'aiSetupAssistant', icon: Sparkles },
-    { href: '/dashboard/agents', key: 'agents', icon: Bot },
-    { href: '/dashboard/knowledge', key: 'knowledge', icon: BookOpen },
-    { href: '/dashboard/install', key: 'install', icon: Code },
+  const integrationsSubmenu: SubmenuItem[] = [
+    { nameKey: 'navDevWebhooks', href: '/dashboard/webhooks' },
+    { nameKey: 'embeddedForms', href: '/dashboard/embedded-forms', featureKey: 'embedded_forms' as FeatureKey },
+  ];
+
+  /** Developer Mode: full product surface area, structured sections. */
+  const developerCoreNav: {
+    href?: string;
+    key: string;
+    icon: ComponentType<{ className?: string }>;
+    featureKey?: FeatureKey;
+    menuItems?: SubmenuItem[];
+    menuLabelKey?: string;
+  }[] = [
+    { href: '/dashboard', key: 'navDevOverview', icon: LayoutDashboard },
+    { href: '/dashboard/agents', key: 'navDevAiCore', icon: Bot },
+    { href: '/dashboard/knowledge', key: 'navDevKnowledgeBase', icon: BookOpen },
     { href: '/dashboard/conversations', key: 'conversations', icon: MessageCircle },
     { href: '/dashboard/leads', key: 'leads', icon: Users },
-    { href: '/dashboard/quote-requests', key: 'quoteRequests', icon: FileText },
-    { href: '/dashboard/embedded-forms', key: 'embeddedForms', icon: ClipboardList, featureKey: 'embedded_forms' as FeatureKey },
-    { href: '/dashboard/email-automation', key: 'emailAutomation', icon: Mail, featureKey: 'email_automation' as FeatureKey },
+    { key: 'navDevQuotes', icon: FileText, menuItems: quoteRequestSubmenu, menuLabelKey: 'navDevQuotes' },
+    { href: '/dashboard/ai-search', key: 'aiSearch', icon: Search, featureKey: 'ai_search' as FeatureKey },
     { href: '/dashboard/automations', key: 'automations', icon: Workflow, featureKey: 'automations' as FeatureKey },
+    { key: 'navDevIntegrations', icon: Plug, menuItems: integrationsSubmenu, menuLabelKey: 'navDevIntegrations' },
+    { href: '/dashboard/install', key: 'navDevWebsiteWidget', icon: Code },
+    { href: '/dashboard/email-automation', key: 'navDevEmailsNotifications', icon: Mail, featureKey: 'email_automation' as FeatureKey },
+    { href: '/dashboard/analytics', key: 'navDevAnalytics', icon: BarChart3 },
     { href: '/dashboard/team', key: 'teamMembers', icon: UserPlus, featureKey: 'team_members' as FeatureKey },
   ];
 
@@ -293,20 +311,34 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <LayoutDashboard className="h-5 w-5 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1 truncate">{t('overview')}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('navSimpleHome')}</span>
                 </Link>
                 <Link
                   href="/dashboard/ai-setup"
                   onClick={onNavClick}
                   className={cn(
                     'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/ai-setup')
+                    pathname.startsWith('/dashboard/ai-setup') ||
+                      pathname.startsWith('/dashboard/business-setup')
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-sky-500 hover:bg-white/60 hover:text-sky-500 dark:hover:bg-white/5'
+                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
-                  <Sparkles className="h-5 w-5 shrink-0" />
+                  <Sparkles className="h-5 w-5 shrink-0 text-amber-500" />
                   <span className="min-w-0 flex-1 truncate">{t('aiSetupAssistant')}</span>
+                </Link>
+                <Link
+                  href="/dashboard/setup"
+                  onClick={onNavClick}
+                  className={cn(
+                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
+                    pathname.startsWith('/dashboard/setup')
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
+                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
+                  )}
+                >
+                  <ListChecks className="h-5 w-5 shrink-0 text-sky-500" />
+                  <span className="min-w-0 flex-1 truncate">{t('navSimpleSetup')}</span>
                 </Link>
                 <Link
                   href="/dashboard/conversations"
@@ -322,17 +354,20 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   <span className="min-w-0 flex-1 truncate">{t('conversations')}</span>
                 </Link>
                 <Link
-                  href="/dashboard/leads"
+                  href="/dashboard/leads-quotes"
                   onClick={onNavClick}
                   className={cn(
                     'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/leads') || pathname.startsWith('/dashboard/contacts') || pathname.startsWith('/dashboard/quote-requests')
+                    pathname.startsWith('/dashboard/leads-quotes') ||
+                      pathname.startsWith('/dashboard/leads') ||
+                      pathname.startsWith('/dashboard/contacts') ||
+                      pathname.startsWith('/dashboard/quote-requests')
                       ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
                       : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
                   )}
                 >
                   <Users className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('leads')}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('navSimpleLeadsQuotes')}</span>
                 </Link>
                 <Link
                   href="/dashboard/install"
@@ -345,36 +380,7 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Code className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('install')}</span>
-                </Link>
-                <Link
-                  href="/dashboard/email-automation"
-                  onClick={onNavClick}
-                  className={cn(
-                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname.startsWith('/dashboard/email-automation')
-                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
-                  )}
-                >
-                  <Mail className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('emailAutomation')}</span>
-                  {featureAccess.email_automation === false && (
-                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                  )}
-                </Link>
-                <Link
-                  href="/help"
-                  onClick={onNavClick}
-                  className={cn(
-                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
-                    pathname === '/help'
-                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
-                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
-                  )}
-                >
-                  <HelpCircle className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{tCommon('help')}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('navSimpleWebsiteInstall')}</span>
                 </Link>
               </NavSection>
 
@@ -390,61 +396,63 @@ function SidebarContent({ userDisplay, planAccess, onNavClick }: SidebarContentP
                   )}
                 >
                   <Settings className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('settingsTitle')}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('navSimpleSettings')}</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('developer');
-                    onNavClick?.();
-                  }}
-                  className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                <Link
+                  href="/help"
+                  onClick={onNavClick}
+                  className={cn(
+                    'mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all',
+                    pathname === '/help'
+                      ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.18,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]'
+                      : 'text-muted-foreground hover:bg-white/60 hover:text-foreground dark:hover:bg-white/5'
+                  )}
                 >
-                  <Lock className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">{t('developerModeAdvanced')}</span>
-                </button>
+                  <HelpCircle className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">{tCommon('help')}</span>
+                </Link>
               </NavSection>
             </>
           ) : (
             <>
               <NavSection labelKey="navSectionWorkspace">
-                {coreNav.map((item) => {
-                  if (item.key === 'quoteRequests') {
+                {developerCoreNav.map((item) => {
+                  if (item.menuItems && item.menuLabelKey) {
+                    const defaultOpen = item.menuItems.some(
+                      (sub) => pathname === sub.href || pathname.startsWith(sub.href + '/')
+                    );
                     return (
                       <Menu
-                        key="quote-requests"
-                        items={quoteRequestSubmenu}
-                        labelKey="quoteRequests"
-                        icon={FileText}
-                        defaultOpen={pathname.startsWith('/dashboard/quote-requests')}
+                        key={item.menuLabelKey}
+                        items={item.menuItems}
+                        labelKey={item.menuLabelKey}
+                        icon={item.icon}
+                        defaultOpen={defaultOpen}
                         onNavClick={onNavClick}
                       />
                     );
                   }
+                  const href = item.href!;
+                  // `/dashboard` must match exactly; otherwise every /dashboard/* route would match `href + '/'`.
                   const isActive =
-                    pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                    href === '/dashboard'
+                      ? pathname === '/dashboard' || pathname === '/dashboard/'
+                      : pathname === href || pathname.startsWith(href + '/');
                   const Icon = item.icon;
-                  const isAiSetup = item.key === 'aiSetupAssistant';
                   const locked = isLocked(item.featureKey);
                   return (
                     <Link
-                      key={item.href}
-                      href={item.href}
+                      key={href + item.key}
+                      href={href}
                       onClick={onNavClick}
-                      style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined}
                       className={cn(
                         'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                         isActive
                           ? 'bg-[linear-gradient(135deg,hsl(var(--primary))/0.20,rgba(14,165,233,0.16))] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.16)]'
-                          : isAiSetup
-                            ? 'hover:bg-white/50 hover:opacity-90 dark:hover:bg-white/5'
-                            : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
+                          : 'text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5'
                       )}
                     >
-                      <Icon
-                        className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')}
-                        style={!isActive && isAiSetup ? { color: '#0ea5e9' } : undefined}
-                      />
+                      <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
                       <span className="min-w-0 flex-1 truncate">{t(item.key)}</span>
                       {locked && (
                         <Lock className="h-4 w-4 shrink-0 text-muted-foreground/80" aria-label="Upgrade required" />

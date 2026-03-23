@@ -34,7 +34,8 @@ export function stripHtmlToText(html: string): string {
   return text.slice(0, MAX_TEXT_CHARS);
 }
 
-export async function fetchWebsiteText(url: string): Promise<string> {
+/** Raw HTML fetch (e.g. JSON-LD extraction). Same limits as fetchWebsiteText. */
+export async function fetchWebsiteHtml(url: string): Promise<{ html: string; finalUrl: string }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -55,11 +56,17 @@ export async function fetchWebsiteText(url: string): Promise<string> {
     const buf = await res.arrayBuffer();
     if (buf.byteLength > MAX_BODY_BYTES) throw new Error('Page too large');
     const html = new TextDecoder('utf-8', { fatal: false }).decode(buf);
-    const extracted = stripHtmlToText(html);
-    if (extracted.length < 100) throw new Error('Too little text on page');
-    return extracted;
+    const finalUrl = typeof res.url === 'string' && res.url ? res.url : url;
+    return { html, finalUrl };
   } catch (e) {
     clearTimeout(timeoutId);
     throw e;
   }
+}
+
+export async function fetchWebsiteText(url: string): Promise<string> {
+  const { html } = await fetchWebsiteHtml(url);
+  const extracted = stripHtmlToText(html);
+  if (extracted.length < 100) throw new Error('Too little text on page');
+  return extracted;
 }

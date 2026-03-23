@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ArrowLeft, MessageSquare, Monitor, LayoutGrid } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from '@/components/intl-link';
 
 // Streamlined list: only types with real behavioral differentiation (website-scanner, automations, etc.)
@@ -21,12 +21,6 @@ const ROLE_TYPES = [
   { value: 'custom', label: 'Custom' },
 ] as const;
 
-const DEPLOYMENT_TYPES = [
-  { value: 'widget', label: 'Widget', description: 'Chat bubble on your website', icon: MessageSquare },
-  { value: 'full_page', label: 'Full page', description: 'Shareable link or embeddable page', icon: Monitor },
-  { value: 'both', label: 'Both', description: 'Widget and full-page', icon: LayoutGrid },
-] as const;
-
 export function CreateAgentForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -35,8 +29,6 @@ export function CreateAgentForm() {
   const [roleType, setRoleType] = useState<string>('website_chatbot');
   const [description, setDescription] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [deploymentType, setDeploymentType] = useState<'widget' | 'full_page' | 'both'>('widget');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
@@ -54,7 +46,7 @@ export function CreateAgentForm() {
           description: description.trim() || null,
           role_type: roleType,
           system_prompt: systemPrompt.trim() || null,
-          deployment_type: deploymentType,
+          deployment_type: 'widget',
           enabled_tools: [],
           webhook_enabled: false,
         }),
@@ -89,7 +81,7 @@ export function CreateAgentForm() {
       <CardHeader>
         <CardTitle>New agent</CardTitle>
         <CardDescription>
-          Choose a type, name, and how to deploy (widget or full page). You can add instructions and knowledge after creation.
+          Choose a type and name. Assistants deploy as a chat widget on your site. You can add instructions and knowledge after creation.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -143,37 +135,6 @@ export function CreateAgentForm() {
               maxLength={16000}
               rows={5}
             />
-          </div>
-
-          <div className="space-y-3">
-            <Label>Deploy as</Label>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {DEPLOYMENT_TYPES.map((d) => (
-                <label
-                  key={d.value}
-                  htmlFor={`deploy-${d.value}`}
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5`}
-                >
-                  <input
-                    type="radio"
-                    id={`deploy-${d.value}`}
-                    name="deployment"
-                    value={d.value}
-                    checked={deploymentType === d.value}
-                    onChange={() => setDeploymentType(d.value as 'widget' | 'full_page' | 'both')}
-                    className="mt-1.5"
-                  />
-                  <div className="grid gap-1">
-                    {(() => {
-                      const Icon = d.icon;
-                      return <Icon className="h-5 w-5 text-muted-foreground" />;
-                    })()}
-                    <span className="font-medium">{d.label}</span>
-                    <p className="text-sm text-muted-foreground">{d.description}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
           </div>
 
           <div className="flex items-center gap-4 pt-2">

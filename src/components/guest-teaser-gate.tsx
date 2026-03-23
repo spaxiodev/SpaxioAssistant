@@ -18,6 +18,7 @@ function isTeaserRoute(pathname: string | null): boolean {
   if (p.includes('widget-preview')) return false;
   if (p.includes('/privacy-policy') || p.includes('/terms-and-conditions')) return false;
   if (p.includes('/invite') || p.includes('/demo')) return false;
+  if (p.includes('/setup-guide')) return false;
   return true;
 }
 

@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
 import { ViewModeProvider } from '@/contexts/view-mode-context';
 import { ModeAwareContent } from '@/components/dashboard/mode-aware-content';
+import { DashboardModeChrome } from '@/components/dashboard/dashboard-mode-chrome';
 import { CommandPaletteProvider } from '@/components/command-palette';
 import type { UserDisplay } from '@/types/dashboard';
 import type { SidebarPlanAccess } from '@/components/dashboard/sidebar';
@@ -33,9 +34,11 @@ export function DashboardLayoutClient({
           <Sidebar organizationId={organizationId} userDisplay={userDisplay} planAccess={planAccess} />
           <div className="relative ml-0 flex min-h-screen flex-1 flex-col md:ml-56">
             <Header organizationId={organizationId} showUpgradeButton={showUpgradeButton} />
-            <main className="flex-1 p-4 md:p-6">
-            <ModeAwareContent>{children}</ModeAwareContent>
-          </main>
+            <main className="flex-1 p-3 sm:p-4 md:p-5">
+              <DashboardModeChrome>
+                <ModeAwareContent>{children}</ModeAwareContent>
+              </DashboardModeChrome>
+            </main>
           </div>
         </div>
         </CommandPaletteProvider>

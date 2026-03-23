@@ -14,52 +14,58 @@ export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { href: '/', label: t('home'), primary: true },
-    { href: '/pricing', label: t('pricing'), primary: false },
-    { href: '/help', label: t('help'), primary: false },
-    { href: '/contact', label: t('contact'), primary: false },
+    { href: '/#features', label: t('features') },
+    { href: '/#how-it-works', label: t('howItWorksNav') },
+    { href: '/setup-guide', label: t('setupGuide') },
+    { href: '/pricing', label: t('pricing') },
   ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 text-sm md:flex">
-          {navLinks.map(({ href, label, primary }) => (
-            <Link
-              key={href}
-              href={href}
-              className={primary ? 'font-medium text-foreground hover:text-muted-foreground' : 'text-muted-foreground hover:text-foreground'}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        {/* Mobile menu button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileOpen(true)}
-          aria-label={t('menu')}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-2 sm:gap-3">
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 md:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label={t('menu')}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <Link
+            href="/"
+            className="flex min-w-0 items-center gap-2 text-foreground transition-opacity hover:opacity-90"
+          >
+            <img src="/icon.png" alt="" className="h-8 w-8 shrink-0 object-contain" aria-hidden />
+            <span className="truncate font-semibold tracking-tight">{t('appName')}</span>
+          </Link>
+          <nav className="hidden items-center gap-6 text-sm font-medium md:flex" aria-label="Main">
+            {navLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <LocaleSwitcher />
           <ThemeToggle />
-          <Button asChild variant="ghost" size="sm" className="hidden shrink-0 sm:inline-flex">
-            <Link href="/login">{t('logIn')}</Link>
+          <Button asChild variant="ghost" size="sm" className="hidden px-3 sm:inline-flex">
+            <Link href="/login">{t('signIn')}</Link>
           </Button>
-          <Button asChild size="sm" className="shrink-0 rounded-full px-4">
+          <Button asChild size="sm" className="rounded-full px-4">
             <Link href="/signup">{t('getStarted')}</Link>
           </Button>
         </div>
       </div>
-      {/* Mobile menu sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-72">
-          <nav className="mt-8 flex flex-col gap-1">
+        <SheetContent side="left" className="w-80">
+          <nav className="mt-6 flex flex-col gap-1" aria-label="Mobile main">
             {navLinks.map(({ href, label }) => (
               <Link
                 key={href}
@@ -73,13 +79,11 @@ export function PublicHeader() {
             <div className="mt-4 border-t border-border pt-4">
               <Link href="/login" onClick={() => setMobileOpen(false)}>
                 <Button variant="outline" className="w-full justify-start">
-                  {t('logIn')}
+                  {t('signIn')}
                 </Button>
               </Link>
               <Link href="/signup" onClick={() => setMobileOpen(false)}>
-                <Button className="mt-2 w-full justify-start">
-                  {t('getStarted')}
-                </Button>
+                <Button className="mt-2 w-full justify-start">{t('getStarted')}</Button>
               </Link>
             </div>
           </nav>

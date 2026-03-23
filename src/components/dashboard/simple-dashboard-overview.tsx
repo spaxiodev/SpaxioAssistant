@@ -6,7 +6,6 @@ import {
   Sparkles,
   Wand2,
   Users,
-  Globe,
   Loader2,
   CheckCircle2,
   MessageSquare,
@@ -145,9 +144,9 @@ export function SimpleDashboardOverview() {
   const step1Done = progress.businessInfoDone || websiteSetupStatus?.status === 'done';
   const step2Done = progress.aiTrainedDone || websiteSetupStatus?.status === 'done';
   const step3Done = progress.widgetReadyDone;
-  const step4Done = false;
-  const completedSteps = [step1Done, step2Done, step3Done, step4Done].filter(Boolean).length;
   const totalSteps = 4;
+  const featuresEnabledDone = step1Done && step2Done;
+  const completedSteps = [step1Done, step2Done, featuresEnabledDone, step3Done].filter(Boolean).length;
   const percentComplete = Math.round((completedSteps / totalSteps) * 100);
 
   const stats = intelligence?.stats;
@@ -160,14 +159,13 @@ export function SimpleDashboardOverview() {
   const getPrimaryCta = () => {
     if (isSetupRunning) return null;
     if (!step1Done || !step2Done) {
-      return { label: step1Done ? 'Continue setup' : 'Set up my assistant', href: '/dashboard/ai-setup', icon: Sparkles };
+      return { label: step1Done ? 'Continue setup' : 'Set up my assistant', href: '/dashboard/setup', icon: Sparkles };
     }
-    if (!step3Done) return { label: 'Finish setup', href: '/dashboard/ai-setup', icon: Sparkles };
-    if (!step4Done) return { label: 'Install on my website', href: '/dashboard/install', icon: Copy };
+    if (!step3Done) return { label: 'Finish install', href: '/dashboard/setup?step=7', icon: Sparkles };
     if ((stats?.total_leads ?? 0) > 0 || (stats?.pending_quotes ?? 0) > 0) {
-      return { label: 'View leads & conversations', href: '/dashboard/leads', icon: Users };
+      return { label: 'View leads & conversations', href: '/dashboard/leads-quotes', icon: Users };
     }
-    return { label: 'Test your widget', href: '/dashboard/install', icon: Globe };
+    return { label: 'Install on my website', href: '/dashboard/install', icon: Copy };
   };
   const primaryCta = getPrimaryCta();
 
@@ -192,8 +190,10 @@ export function SimpleDashboardOverview() {
     !step1Done && 'Add your business info so the assistant can introduce itself properly.',
     !step2Done && !isSetupRunning && 'Connect your website URL so the assistant learns your business.',
     step2Done && !step3Done && 'Review and publish your assistant settings.',
-    step3Done && !step4Done && 'Copy the install code and add it to your website.',
-    step4Done && (stats?.total_leads ?? 0) === 0 && 'Test the widget on your site to make sure it works.',
+    step3Done &&
+      (stats?.total_leads ?? 0) === 0 &&
+      (stats?.pending_quotes ?? 0) === 0 &&
+      'Copy the install code from Install, add it to your site, and send a test message.',
     (stats?.total_leads ?? 0) > 0 && 'Review new leads and follow up from the Leads page.',
     (stats?.pending_quotes ?? 0) > 0 && 'Check quote requests and send estimates.',
   ].filter(Boolean) as string[];
@@ -204,10 +204,33 @@ export function SimpleDashboardOverview() {
 
   const isLive = step1Done && step2Done;
 
+  const aiStatus: 'active' | 'needs_setup' | 'not_installed' =
+    step1Done && step2Done && step3Done ? 'active' : !step1Done || !step2Done ? 'needs_setup' : 'not_installed';
+
   return (
     <div className="space-y-8">
       {/* Next best action - prominent guidance */}
       {!isSetupRunning && <NextBestActionCard />}
+
+      <Card className="border-border/80 bg-gradient-to-br from-card via-card to-primary/5 shadow-sm">
+        <CardHeader className="pb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">AI status</CardTitle>
+            {aiStatus === 'active' && (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>
+            )}
+            {aiStatus === 'needs_setup' && <Badge variant="secondary">Needs setup</Badge>}
+            {aiStatus === 'not_installed' && <Badge variant="outline">Not installed on site</Badge>}
+          </div>
+          <CardDescription>
+            {aiStatus === 'active' && 'Your assistant is configured and linked—keep an eye on conversations and leads.'}
+            {aiStatus === 'needs_setup' &&
+              'Finish business details and training so replies sound like you—not a generic bot.'}
+            {aiStatus === 'not_installed' &&
+              'Your AI is ready behind the scenes—add the snippet to your website to go live for visitors.'}
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       <SimplePageHeader
         title="Your AI receptionist"
@@ -335,8 +358,8 @@ export function SimpleDashboardOverview() {
           <ul className="space-y-2 text-sm">
             <StepItem label="Business info" done={step1Done} />
             <StepItem label="AI trained on your business" done={step2Done} />
-            <StepItem label="Widget ready" done={step3Done} />
-            <StepItem label="Installed on your site" done={step4Done} />
+            <StepItem label="Features enabled (goals)" done={step1Done && step2Done} />
+            <StepItem label="Website installed" done={step3Done} />
           </ul>
           {primaryCta && (
             <Button size="sm" className="gap-2 mt-1" onClick={() => router.push(primaryCta.href)}>
@@ -412,8 +435,8 @@ export function SimpleDashboardOverview() {
           />
           <SimpleStatusCard
             title="Quote requests"
-            value={stats.pending_quotes > 0 ? `${stats.pending_quotes} pending` : (intelligence?.stats.total_leads ?? 0).toString()}
-            subtitle={stats.pending_quotes > 0 ? 'Need your review' : 'All reviewed'}
+            value={stats.pending_quotes > 0 ? `${stats.pending_quotes} pending` : '0'}
+            subtitle={stats.pending_quotes > 0 ? 'Need your review' : 'None pending review'}
             icon={<FileText className="h-4 w-4" />}
           />
           <SimpleStatusCard
@@ -468,24 +491,30 @@ export function SimpleDashboardOverview() {
           <h2 className="text-sm font-semibold text-foreground">Quick actions</h2>
           <PreviewAssistantButton />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SimpleQuickActionCard
-            title="Set up from website URL"
-            description="Scan your site so the assistant learns your business."
-            icon={Globe}
-            onClick={() => router.push('/dashboard/ai-setup')}
+            title="Edit your AI"
+            description="Guided setup, business details, and goals."
+            icon={Sparkles}
+            onClick={() => router.push('/dashboard/setup')}
           />
           <SimpleQuickActionCard
-            title="Install on my site"
-            description="Copy the code and add the chat to your website."
+            title="Test your AI"
+            description="Open a safe preview of your assistant."
+            icon={MessageSquare}
+            onClick={() => router.push('/dashboard/install')}
+          />
+          <SimpleQuickActionCard
+            title="Install on website"
+            description="Copy the snippet and publish on your site."
             icon={Copy}
             onClick={() => router.push('/dashboard/install')}
           />
           <SimpleQuickActionCard
-            title="View leads"
-            description="See who contacted you through the assistant."
+            title="Review leads"
+            description="Leads and quote requests in one place."
             icon={Users}
-            onClick={() => router.push('/dashboard/leads')}
+            onClick={() => router.push('/dashboard/leads-quotes')}
           />
         </div>
       </div>

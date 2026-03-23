@@ -17,14 +17,16 @@
     "backToDashboard": "Retour au tableau de bord",
     "contact": "Contact",
     "help": "Aide",
-    "getStarted": "Commencer",
-    "logIn": "Se connecter",
     "tryAgain": "Réessayer",
     "email": "E-mail",
     "password": "Mot de passe",
     "loading": "Chargement…",
     "signUpToSeeMore": "Inscrivez-vous pour en voir plus.",
-    "signUpToSeeFullSite": "Inscrivez-vous pour voir le site en entier."
+    "signUpToSeeFullSite": "Inscrivez-vous pour voir le site en entier.",
+    "features": "Fonctionnalités",
+    "howItWorksNav": "Fonctionnement",
+    "setupGuide": "Guide de configuration",
+    "signIn": "Connexion"
   },
   "home": {
     "title": "Spaxio Assistant",
@@ -206,6 +208,23 @@
     "navSectionDevelopers": "Développeurs",
     "navSectionAccount": "Compte",
     "developerModeAdvanced": "Mode développeur (avancé)",
+    "navSimpleHome": "Accueil",
+    "navSimpleSetup": "Configuration",
+    "navSimpleLeadsQuotes": "Prospects et devis",
+    "navSimpleWebsiteInstall": "Installation sur le site",
+    "navSimpleSettings": "Paramètres",
+    "navDevOverview": "Vue d’ensemble",
+    "navDevAiCore": "Cœur de l’IA",
+    "navDevKnowledgeBase": "Base de connaissances",
+    "navDevQuotes": "Demandes de devis clients",
+    "navDevIntegrations": "Intégrations",
+    "navDevWebsiteWidget": "Widget du site",
+    "navDevEmailsNotifications": "Courriels et notifications",
+    "navDevAnalytics": "Analytique",
+    "navDevWebhooks": "Webhooks et API",
+    "developerOverviewSubtitle": "Opérations, entonnoirs et automatisations en un coup d’œil — le même espace qu’en mode Simple, organisé pour un usage avancé.",
+    "developerSetupWarnings": "Points de configuration à vérifier",
+    "developerSetupWarningsHint": "Vérifications rapides pour repérer les lacunes avant la mise en ligne.",
     "navAriaLabel": "Navigation du tableau de bord",
     "installAndSettings": "Installation et paramètres",
     "crm": "CRM",
@@ -217,6 +236,7 @@
     "deployments": "Déploiements",
     "aiPages": "Pages IA",
     "embeddedForms": "Formulaires intégrés",
+    "aiSearch": "Recherche IA",
     "knowledge": "Base de connaissances",
     "knowledgeDescription": "Enseignez à l’assistant à partir de vos pages web et fichiers pour des réponses fiables.",
     "automations": "Automatisations",
@@ -278,6 +298,73 @@
     "noAgent": "Aucun",
     "analytics": "Analytiques",
     "analyticsDescription": "Usage et performance des agents, automatisations et CRM.",
+    "aiSearchTitle": "Agent de recherche IA",
+    "aiSearchDescription": "Recherche produit en langage naturel : les visiteurs décrivent leur besoin, vous contrôlez le classement et les signaux commerciaux—sans afficher d’articles hors sujet.",
+    "aiSearchTabSettings": "Paramètres",
+    "aiSearchTabCatalog": "Catalogue",
+    "aiSearchTabAnalytics": "Analytique",
+    "aiSearchTabEmbed": "Installation",
+    "aiSearchSectionGeneral": "Général",
+    "aiSearchSectionGeneralHint": "Activez la fonctionnalité, choisissez le mode d’affichage et le niveau de rigueur des correspondances.",
+    "aiSearchEnabled": "Recherche IA activée",
+    "aiSearchEnabledHint": "Si désactivé, l’API publique et l’intégration restent inactives.",
+    "aiSearchDisplayMode": "Emplacement",
+    "aiSearchDisplayReplace": "Remplacer la barre de recherche",
+    "aiSearchDisplayBeside": "À côté de la barre de recherche",
+    "aiSearchDisplayModal": "Ouvrir dans une fenêtre modale",
+    "aiSearchDisplayWidget": "Dans le widget du site uniquement",
+    "aiSearchMode": "Mode de recherche",
+    "aiSearchModeStrict": "Strict — correspondances plus serrées",
+    "aiSearchModeBalanced": "Équilibré",
+    "aiSearchModeBroad": "Large — plus exploratoire",
+    "aiSearchHideOos": "Masquer les produits en rupture",
+    "aiSearchHideOosHint": "Les visiteurs ne verront pas les produits sans stock.",
+    "aiSearchCustomBoost": "Utiliser le score de boost lorsque le coût est inconnu",
+    "aiSearchCustomBoostHint": "Si la marge ou le coût manque, le boost personnalisé et les promotions influencent le classement parmi les résultats pertinents.",
+    "aiSearchIncludeSiteContent": "Inclure le contenu du site (pages et base de connaissances)",
+    "aiSearchIncludeSiteContentHint": "Ajoute des pages d’aide sémantiquement proches aux côtés des produits.",
+    "aiSearchWeights": "Poids de classement",
+    "aiSearchWeightsHint": "La pertinence filtre d’abord les résultats ; les poids s’appliquent ensuite. Gardez la pertinence élevée pour la confiance.",
+    "aiSearchWeightRelevance": "Pertinence",
+    "aiSearchWeightProfit": "Marge / rentabilité",
+    "aiSearchWeightPromotion": "Promotions",
+    "aiSearchWeightInventory": "Stock / déstockage",
+    "aiSearchWeightPopularity": "Popularité",
+    "aiSearchPriorityTitle": "Priorités en cas d’égalité",
+    "aiSearchPriorityHint": "Si deux produits sont proches, on favorise l’ordre ci-dessous (subtil, sans remplacer la pertinence).",
+    "aiSearchPriorityPromoted": "Produits mis en avant",
+    "aiSearchPriorityHighMargin": "Marge plus élevée",
+    "aiSearchPriorityOverstock": "Stock plus élevé (déstockage)",
+    "aiSearchPriorityNewest": "Plus récents",
+    "aiSearchPriorityPopular": "Plus populaires",
+    "aiSearchQuickPrompts": "Suggestions (une par ligne)",
+    "aiSearchQuickPromptsHint": "Affichées comme raccourcis dans l’UI lorsque le thème le permet.",
+    "aiSearchQuickPromptsPlaceholder": "Veste imperméable sous 150 $\nIdées cadeaux sous 50 $\nMeilleure vente en stock",
+    "aiSearchImportUrlTitle": "Importer depuis votre site",
+    "aiSearchImportUrlHint": "Collez l’URL d’une boutique, collection ou catégorie. Nous lisons le JSON-LD schema.org lorsque le thème l’expose (souvent sur Shopify). Sinon, nous analysons le texte visible avec l’IA. Une seule page à la fois — utilisez l’URL principale du catalogue.",
+    "aiSearchImportUrlPlaceholder": "https://boutique.com/collections/tous",
+    "aiSearchImportUrlRun": "Importer depuis la page",
+    "aiSearchImportUrlReplace": "Remplacer tout le catalogue d’abord",
+    "aiSearchImportUrlReplaceHint": "Supprime tous les produits du catalogue, puis ajoute les éléments extraits. Désactivez pour ajouter et ignorer les doublons (même SKU ou lien produit).",
+    "aiSearchImportUrlSuccess": "{count} produits ajoutés ({method}).",
+    "aiSearchImportUrlError": "Échec de l’import. Vérifiez l’URL et réessayez.",
+    "aiSearchImportMethodJsonLd": "données structurées",
+    "aiSearchImportMethodAi": "extraction IA",
+    "aiSearchCatalogTitle": "Catalogue produits",
+    "aiSearchCatalogHint": "Collez un tableau JSON de produits (titre requis). L’import ajoute des lignes—synchronisez les mises à jour depuis votre boutique.",
+    "aiSearchCatalogPlaceholder": "Exemple de champs produit : title, price, description, tags, inventory_count, promoted, popularity_score, custom_boost_score, image_url, product_url",
+    "aiSearchCatalogImport": "Importer les produits",
+    "aiSearchAnalyticsTitle": "Performance de recherche",
+    "aiSearchAnalyticsHint": "30 derniers jours : requêtes, engagement et impact marge estimé.",
+    "aiSearchAnalyticsOpen": "Ouvrez cet onglet pour charger les statistiques.",
+    "aiSearchAnQueries": "Recherches",
+    "aiSearchAnClicks": "Clics produits",
+    "aiSearchAnNoResults": "Recherches sans résultat",
+    "aiSearchAnMargin": "Impact marge estimé (USD)",
+    "aiSearchEmbedTitle": "Code d’intégration",
+    "aiSearchEmbedHint": "Ajoutez ce script à votre site. Le widget peut lire les paramètres via l’API de configuration.",
+    "aiSearchEmbedNote": "L’intégration utilise l’identifiant du widget. Pour le mode modal ou à côté de la recherche, placez le conteneur où vous voulez.",
+    "aiSearchWidgetId": "ID du widget",
     "aiActions": "Actions IA",
     "aiActionsDescription": "Actions que vos agents peuvent effectuer : créer des leads, prendre rendez-vous, envoyer des e-mails, etc.",
     "actionLogs": "Journaux d'actions",
@@ -311,7 +398,7 @@
     "normal": "Normale",
     "high": "Haute",
     "internalNotes": "Notes internes",
-    "timeline": "Chronologie",
+    "timeline": "Délai / quand",
     "crmContext": "Contexte CRM",
     "linkLead": "Lier un lead",
     "linkContact": "Lier un contact",
@@ -373,7 +460,6 @@
     "emailLabel": "E-mail",
     "phone": "Téléphone",
     "requestedService": "Service demandé",
-    "timeline": "Délai / quand",
     "projectDetails": "Détails du projet",
     "location": "Localisation",
     "message": "Message",
@@ -431,7 +517,6 @@
     "businessDeleted": "Entreprise supprimée.",
     "renameBusinessTitle": "Renommer l'entreprise",
     "renameBusinessLabel": "Nom de l'entreprise",
-    "save": "Enregistrer",
     "cleanupDuplicates": "Supprimer les entreprises en double",
     "cleanupDuplicatesDescription": "Conserver vos 2 plus anciennes entreprises et supprimer les autres.",
     "cleanupDuplicatesButton": "Supprimer les doublons (garder 2)",
@@ -493,7 +578,6 @@
     "usageThisPeriod": "Utilisation cette période",
     "usagePeriodDescription": "Période de facturation : {start} – {end}",
     "messages": "Messages",
-    "aiActions": "Actions IA",
     "upgradeCtaTitle": "Passer à Assistant Pro",
     "upgradeCtaDescription": "Profitez de l'assistant complet avec 7 semaines d'essai gratuit, puis 29 $/mois. Annulez à tout moment.",
     "assistantProPlanName": "Assistant Pro",
@@ -563,9 +647,9 @@
   "metadata": {
     "appName": "Spaxio Assistant",
     "title": "Assistant IA pour site web — Spaxio Assistant",
-    "description": "Spaxio Assistant est un assistant IA pour site web : il apprend votre activité, répond aux questions, capture des leads, collecte des demandes de devis et automatise le suivi.",
-    "homeTitle": "Assistant IA pour site web qui capture des leads",
-    "homeDescription": "Enseignez votre activité à partir de votre site, répondez aux questions, capturez des leads, collectez des demandes de devis et faites le suivi plus vite. Ajoutez un script à votre site.",
+    "description": "Spaxio Assistant est un assistant IA pour site web : il apprend depuis votre site, répond aux questions, qualifie les leads avec l’IA, collecte des demandes de devis avec formulaires et estimations configurables, et automatise le suivi. Ajoutez un script pour un widget ou une page d’assistant complète.",
+    "homeTitle": "Spaxio Assistant — assistant IA pour votre site",
+    "homeDescription": "Ajoutez un assistant IA qui répond aux visiteurs, capture des prospects, collecte des devis, recommande des produits et inclut une recherche IA. Sans code. Multilingue.",
     "pricingTitle": "Tarifs",
     "pricingDescription": "Des offres simples pour un assistant IA sur votre site. Commencez gratuitement et évoluez avec votre activité.",
     "contactTitle": "Contact Spaxio Assistant — Support et ventes",
@@ -575,7 +659,9 @@
     "widgetPreviewTitle": "Aperçu du widget",
     "widgetPreviewDescription": "Prévisualisez le widget de l’assistant. Testez la position et le comportement avant de l’installer sur votre site.",
     "helpTitle": "Aide et documentation",
-    "helpDescription": "Consultez nos articles d'aide pour le tableau de bord, le widget, les leads, les automatisations et la facturation."
+    "helpDescription": "Consultez nos articles d'aide pour le tableau de bord, le widget, les leads, les automatisations et la facturation.",
+    "setupGuideTitle": "Guide de configuration",
+    "setupGuideDescription": "Explications étape par étape : entreprise, comportement de l’IA, prospects, devis, recommandations, recherche IA, installation, notifications et tests."
   },
   "pricing": {
     "title": "Tarifs",
@@ -669,6 +755,7 @@
   },
   "footer": {
     "copyright": "Spaxio",
+    "setupGuide": "Guide de configuration",
     "contact": "Contact",
     "about": "À propos",
     "pricing": "Tarifs",
@@ -695,22 +782,70 @@
       "account": "Compte et équipe"
     },
     "articles": {
-      "gettingStarted": { "title": "Démarrage avec Spaxio Assistant", "body": "Après inscription, vous arrivez sur le tableau de bord. Commencez par définir le nom de votre entreprise dans Paramètres. Utilisez Installation pour copier un script et l’ajouter à votre site — c’est ainsi que le widget de chat apparaît. Créez/modifiez votre agent dans Agents, ajoutez votre site/fichiers dans Connaissances et utilisez Configuration IA pour activer la capture de leads et les demandes de devis. Le tableau de bord propose deux modes : Simple (épuré) et Développeur (plus de contrôles)." },
-      "dashboardOverview": { "title": "Aperçu du tableau de bord", "body": "Le tableau de bord est votre centre de contrôle. L’accueil affiche les compteurs (leads, conversations, demandes de devis) et des liens rapides vers Configuration IA, Installation, Connaissances, Leads, Conversations et Facturation. La barre latérale se concentre sur : Vue d’ensemble, Configuration IA, Agents, Connaissances, Installation, Conversations, Leads, Demandes de devis, Automatisations, Équipe, Facturation et Paramètres." },
-      "simpleVsDeveloper": { "title": "Mode Simple vs Mode Développeur", "body": "Spaxio Assistant propose deux modes de tableau de bord.\n\nMode Simple (épuré)\n- Se concentre sur la mise en place et l’usage quotidien : Vue d’ensemble, Configuration IA, Installation, Conversations, Leads et Paramètres.\n- Le contenu principal est rendu par un routeur « Simple Mode » qui affiche des pages simplifiées.\n\nMode Développeur (plus de contrôles)\n- Affiche le menu complet (mais ciblé) : Vue d’ensemble, Configuration IA, Agents, Connaissances, Installation, Conversations, Leads, Demandes de devis, Automatisations, Équipe, Facturation et Paramètres.\n\nComment basculer\n- Utilisez le sélecteur Simple/Développeur dans l’en-tête du tableau de bord (ordinateur). Votre choix est enregistré dans votre navigateur." },
-      "agents": { "title": "Assistants IA", "body": "Les assistants IA définissent le comportement de votre assistant sur le site. Créez-en dans la section Assistants IA : nom, objectif et ton. Ajoutez des sources de connaissances (URL de site web ou fichiers) pour des réponses fiables. Associez un assistant au widget depuis la page Installation via le menu de sélection." },
-      "installWidget": { "title": "Installer le widget de chat sur votre site", "body": "Allez dans Installation, copiez le code d'installation (une balise script) et collez-la avant la fermeture de </body> sur votre site. Choisissez l'agent qui alimente le chat dans le menu déroulant. Utilisez Aperçu pour voir le rendu sur ordinateur et mobile." },
-      "leads": { "title": "Leads et capture", "body": "Les leads sont capturés lorsque les visiteurs envoient le formulaire du widget. Consultez-les dans la section Leads. Vous pouvez définir statut, étape, propriétaire et étiquettes. La capture peut déclencher des automatisations et un e-mail de notification (paramétrable dans Paramètres)." },
-      "quoteRequests": { "title": "Demandes de devis", "body": "Les demandes de devis sont des envois structurés depuis le widget. Elles apparaissent dans la section Demandes de devis. Définissez des prix de base dans Paramètres pour marquer les demandes « Pas rentable » si elles sont sous votre minimum." },
-      "conversations": { "title": "Conversations", "body": "Les conversations sont les sessions de chat avec les visiteurs. Elles sont enregistrées à la fermeture du widget. Consultez-les dans la section Conversations : messages, téléchargement ou suppression." },
-      "automations": { "title": "Automatisations", "body": "Les automatisations sont des flux déclenchés par des événements (soumission de formulaire, webhook, planification). Créez-en dans la section Automatisations et ajoutez des étapes. Disponibles sur les forfaits Pro et supérieurs. Les webhooks entrants peuvent déclencher une automatisation." },
-      "knowledge": { "title": "Bases de connaissances", "body": "Les bases de connaissances forment vos agents avec votre contenu. Dans la section Connaissances, ajoutez des sources : documents ou URLs à ingérer. Les agents liés utilisent ce contenu pour répondre." },
-      "billing": { "title": "Facturation et abonnement", "body": "La facturation est dans le tableau de bord. Vous y voyez le forfait actuel, la fin d'essai éventuelle et l'utilisation (messages, actions IA). « Gérer l'abonnement » ouvre le portail Stripe pour modifier le moyen de paiement ou annuler." },
-      "settings": { "title": "Paramètres", "body": "Les paramètres regroupent la configuration de l'entreprise : nom, secteur, description, services, FAQ, ton, e-mail et téléphone, couleur de marque, message de bienvenue du widget, position du widget. L'option « Apprendre depuis le site » permet de saisir une URL pour suggérer description et FAQ." },
-      "team": { "title": "Membres de l'équipe", "body": "Invitez des membres depuis la section Compte (Membres de l'équipe). Seul le propriétaire peut inviter ; forfaits payants requis. Les invités reçoivent un e-mail avec un lien d'acceptation. Vous pouvez gérer les membres et les invitations en attente." },
-      "deployments": { "title": "Installation", "body": "Installation est l’endroit où vous récupérez le code du widget pour votre site. Copiez la balise script et collez-la juste avant </body>. Utilisez Aperçu sur la page Installation pour voir le rendu." },
-      "webhooks": { "title": "Webhooks", "body": "Certaines automatisations peuvent appeler une URL webhook externe lorsqu’un événement se produit (comme un nouveau lead). Si vous ne voyez pas d’options webhook, elles ne sont peut-être pas activées sur votre forfait." },
-      "inbox": { "title": "Boîte de réception", "body": "Si activée sur votre forfait, la boîte de réception permet de répondre en tant qu’humain, d’assigner des conversations et d’ajouter des notes internes. Si vous ne la voyez pas, vous pouvez quand même consulter les conversations dans Conversations." }
+      "gettingStarted": {
+        "title": "Démarrage avec Spaxio Assistant",
+        "body": "Après inscription, vous arrivez sur le tableau de bord. Commencez par définir le nom de votre entreprise dans Paramètres. Utilisez Installation pour copier un script et l’ajouter à votre site — c’est ainsi que le widget de chat apparaît. Créez/modifiez votre agent dans Agents, ajoutez votre site/fichiers dans Connaissances et utilisez Configuration IA pour activer la capture de leads et les demandes de devis. Le tableau de bord propose deux modes : Simple (épuré) et Développeur (plus de contrôles)."
+      },
+      "dashboardOverview": {
+        "title": "Aperçu du tableau de bord",
+        "body": "Le tableau de bord est votre centre de contrôle. L’accueil affiche les compteurs (leads, conversations, demandes de devis) et des liens rapides vers Configuration IA, Installation, Connaissances, Leads, Conversations et Facturation. La barre latérale se concentre sur : Vue d’ensemble, Configuration IA, Agents, Connaissances, Installation, Conversations, Leads, Demandes de devis, Automatisations, Équipe, Facturation et Paramètres."
+      },
+      "simpleVsDeveloper": {
+        "title": "Mode Simple vs Mode Développeur",
+        "body": "Spaxio Assistant propose deux modes de tableau de bord.\n\nMode Simple (épuré)\n- Se concentre sur la mise en place et l’usage quotidien : Vue d’ensemble, Configuration IA, Installation, Conversations, Leads et Paramètres.\n- Le contenu principal est rendu par un routeur « Simple Mode » qui affiche des pages simplifiées.\n\nMode Développeur (plus de contrôles)\n- Affiche le menu complet (mais ciblé) : Vue d’ensemble, Configuration IA, Agents, Connaissances, Installation, Conversations, Leads, Demandes de devis, Automatisations, Équipe, Facturation et Paramètres.\n\nComment basculer\n- Utilisez le sélecteur Simple/Développeur dans l’en-tête du tableau de bord (ordinateur). Votre choix est enregistré dans votre navigateur."
+      },
+      "agents": {
+        "title": "Assistants IA",
+        "body": "Les assistants IA définissent le comportement de votre assistant sur le site. Créez-en dans la section Assistants IA : nom, objectif et ton. Ajoutez des sources de connaissances (URL de site web ou fichiers) pour des réponses fiables. Associez un assistant au widget depuis la page Installation via le menu de sélection."
+      },
+      "installWidget": {
+        "title": "Installer le widget de chat sur votre site",
+        "body": "Allez dans Installation, copiez le code d'installation (une balise script) et collez-la avant la fermeture de </body> sur votre site. Choisissez l'agent qui alimente le chat dans le menu déroulant. Utilisez Aperçu pour voir le rendu sur ordinateur et mobile."
+      },
+      "leads": {
+        "title": "Leads et capture",
+        "body": "Les leads sont capturés lorsque les visiteurs envoient le formulaire du widget. Consultez-les dans la section Leads. Vous pouvez définir statut, étape, propriétaire et étiquettes. La capture peut déclencher des automatisations et un e-mail de notification (paramétrable dans Paramètres)."
+      },
+      "quoteRequests": {
+        "title": "Demandes de devis",
+        "body": "Les demandes de devis sont des envois structurés depuis le widget. Elles apparaissent dans la section Demandes de devis. Définissez des prix de base dans Paramètres pour marquer les demandes « Pas rentable » si elles sont sous votre minimum."
+      },
+      "conversations": {
+        "title": "Conversations",
+        "body": "Les conversations sont les sessions de chat avec les visiteurs. Elles sont enregistrées à la fermeture du widget. Consultez-les dans la section Conversations : messages, téléchargement ou suppression."
+      },
+      "automations": {
+        "title": "Automatisations",
+        "body": "Les automatisations sont des flux déclenchés par des événements (soumission de formulaire, webhook, planification). Créez-en dans la section Automatisations et ajoutez des étapes. Disponibles sur les forfaits Pro et supérieurs. Les webhooks entrants peuvent déclencher une automatisation."
+      },
+      "knowledge": {
+        "title": "Bases de connaissances",
+        "body": "Les bases de connaissances forment vos agents avec votre contenu. Dans la section Connaissances, ajoutez des sources : documents ou URLs à ingérer. Les agents liés utilisent ce contenu pour répondre."
+      },
+      "billing": {
+        "title": "Facturation et abonnement",
+        "body": "La facturation est dans le tableau de bord. Vous y voyez le forfait actuel, la fin d'essai éventuelle et l'utilisation (messages, actions IA). « Gérer l'abonnement » ouvre le portail Stripe pour modifier le moyen de paiement ou annuler."
+      },
+      "settings": {
+        "title": "Paramètres",
+        "body": "Les paramètres regroupent la configuration de l'entreprise : nom, secteur, description, services, FAQ, ton, e-mail et téléphone, couleur de marque, message de bienvenue du widget, position du widget. L'option « Apprendre depuis le site » permet de saisir une URL pour suggérer description et FAQ."
+      },
+      "team": {
+        "title": "Membres de l'équipe",
+        "body": "Invitez des membres depuis la section Compte (Membres de l'équipe). Seul le propriétaire peut inviter ; forfaits payants requis. Les invités reçoivent un e-mail avec un lien d'acceptation. Vous pouvez gérer les membres et les invitations en attente."
+      },
+      "deployments": {
+        "title": "Installation",
+        "body": "Installation est l’endroit où vous récupérez le code du widget pour votre site. Copiez la balise script et collez-la juste avant </body>. Utilisez Aperçu sur la page Installation pour voir le rendu."
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "body": "Certaines automatisations peuvent appeler une URL webhook externe lorsqu’un événement se produit (comme un nouveau lead). Si vous ne voyez pas d’options webhook, elles ne sont peut-être pas activées sur votre forfait."
+      },
+      "inbox": {
+        "title": "Boîte de réception",
+        "body": "Si activée sur votre forfait, la boîte de réception permet de répondre en tant qu’humain, d’assigner des conversations et d’ajouter des notes internes. Si vous ne la voyez pas, vous pouvez quand même consulter les conversations dans Conversations."
+      }
     }
   },
   "legal": {
@@ -755,8 +890,7 @@
     "viewTerms": "Voir les conditions",
     "accept": "Accepter",
     "and": "et"
-  }
-  ,
+  },
   "aiPage": {
     "placeholder": "Écrivez votre message…",
     "send": "Envoyer",
@@ -782,5 +916,277 @@
     "msg4": "Je voudrais un devis pour l'aménagement paysager.",
     "msg5": "Je serais ravi de vous aider. Pourriez-vous partager votre courriel et quelques détails sur le projet ? Nous vous enverrons un devis dans les 24 heures.",
     "reply": "Bien reçu ! Dans le vrai widget, je capturerais vos informations et notifierais l'entreprise immédiatement. Inscrivez-vous gratuitement pour l'ajouter à votre site."
+  },
+  "landing": {
+    "hero": {
+      "badge": "Assistant web pour votre entreprise",
+      "headline": "Ajoutez un assistant IA à votre site qui répond aux visiteurs, capture des prospects et reste disponible jour et nuit",
+      "subheadline": "Spaxio Assistant, c’est un widget de chat et un tableau de bord que vous contrôlez. Il répond aux questions courantes, collecte des prospects et des demandes de devis, peut recommander ce que vous vendez et inclut une recherche IA—sans demander aux clients de parcourir tout le site.",
+      "ctaPrimary": "Commencer",
+      "ctaSecondary": "Voir le fonctionnement",
+      "trust1": "Sans code",
+      "trust2": "Prise en charge multilingue",
+      "trust3": "Configuration guidée dans le tableau de bord",
+      "visual": {
+        "widgetLabel": "Sur votre site",
+        "widgetUrl": "votreentreprise.com",
+        "dashboardLabel": "Dans votre tableau de bord",
+        "dashboardRow1": "Assistant web",
+        "dashboardStatus": "Actif",
+        "dashboardRow2": "Détails et connaissances",
+        "dashboardRow3": "Prospects et devis",
+        "chatLabel": "Avec vos visiteurs",
+        "chatUser": "Proposez-vous des rendez-vous en soirée ?",
+        "chatAssistant": "Oui—voici nos heures et un lien pour réserver. Voulez-vous que j’envoie les détails par courriel ?",
+        "chatUser2": "Oui, s’il vous plaît.",
+        "send": "Envoyer"
+      }
+    },
+    "what": {
+      "title": "Ce que ça fait",
+      "subtitle": "Un assistant sur votre site, adapté à votre façon de vendre et d’aider.",
+      "cards": {
+        "answer": {
+          "title": "Répondre aux questions",
+          "desc": "Les visiteurs obtiennent des réponses claires sur les services, les heures, les zones desservies et comment vous joindre—selon ce que vous enseignez à l’assistant."
+        },
+        "leads": {
+          "title": "Capturer des prospects",
+          "desc": "Transformez les conversations en contacts à relancer. Vous choisissez les champs et où envoyer les notifications."
+        },
+        "quotes": {
+          "title": "Gérer les demandes de devis",
+          "desc": "Collectez des demandes structurées avec les informations dont vous avez besoin—formulaires et règles que vous configurez."
+        },
+        "recommend": {
+          "title": "Recommander produits ou services",
+          "desc": "Orientez les gens vers la bonne offre quand ils décrivent leur besoin, à partir de votre catalogue et du contexte."
+        },
+        "aiSearch": {
+          "title": "Agent de recherche IA",
+          "desc": "Aidez les visiteurs à trouver réponses et produits avec une recherche IA qui correspond aux vraies formulations."
+        },
+        "languages": {
+          "title": "Multilingue",
+          "desc": "Accueillez les visiteurs dans plusieurs langues à partir de la même configuration."
+        }
+      }
+    },
+    "how": {
+      "title": "Comment ça marche",
+      "subtitle": "Quatre étapes simples de la première connexion à la mise en ligne.",
+      "steps": {
+        "s1": {
+          "title": "Parlez de votre entreprise à l’IA",
+          "desc": "Ajoutez votre site, vos services et les faits importants. L’assistant s’en sert comme source de vérité."
+        },
+        "s2": {
+          "title": "Choisissez ce que l’IA doit faire",
+          "desc": "Activez la capture de prospects, les devis, les recommandations et la recherche IA—seulement ce dont vous avez besoin."
+        },
+        "s3": {
+          "title": "Ajoutez-le à votre site",
+          "desc": "Copiez un court extrait de code et collez-le sur votre site. Souvent quelques minutes."
+        },
+        "s4": {
+          "title": "Aidez les clients et capturez des prospects",
+          "desc": "Conversations, prospects et devis apparaissent dans votre tableau de bord pour des réponses rapides."
+        }
+      }
+    },
+    "setupSection": {
+      "title": "Guide de configuration simple",
+      "subtitle": "Un chemin clair du compte à la mise en ligne—sans compétences techniques.",
+      "fullGuideCta": "Ouvrir le guide complet",
+      "steps": {
+        "s1": {
+          "title": "Créer votre compte",
+          "desc": "Inscrivez-vous et ouvrez votre espace—sans carte bancaire pour explorer."
+        },
+        "s2": {
+          "title": "Ajouter les détails de l’entreprise",
+          "desc": "Indiquez le nom, l’offre, les heures et comment vous contacter."
+        },
+        "s3": {
+          "title": "Former l’IA",
+          "desc": "Ajoutez des connaissances depuis votre site et vos FAQ pour des réponses fidèles."
+        },
+        "s4": {
+          "title": "Activer les fonctions voulues",
+          "desc": "Activez prospects, devis, recommandations et recherche IA quand vous êtes prêt."
+        },
+        "s5": {
+          "title": "Ajouter prix ou prestations",
+          "desc": "Expliquez comment fonctionnent les prix ou ce qu’il faut pour un devis pour rester précis."
+        },
+        "s6": {
+          "title": "Installer sur le site",
+          "desc": "Collez le code du widget pour que l’assistant soit visible."
+        },
+        "s7": {
+          "title": "Tout tester",
+          "desc": "Parcourez les questions et formulaires comme un client."
+        },
+        "s8": {
+          "title": "Mettre en ligne",
+          "desc": "Publiez et aidez les visiteurs pendant que votre équipe reçoit les alertes."
+        }
+      }
+    },
+    "why": {
+      "title": "Pourquoi les entreprises l’utilisent",
+      "subtitle": "Des effets concrets sur les ventes et le support.",
+      "cards": {
+        "faster": {
+          "title": "Répondre plus vite",
+          "desc": "Les visiteurs ont une réponse tout de suite au lieu d’attendre une boîte courriel."
+        },
+        "fewerMissed": {
+          "title": "Manquer moins de prospects",
+          "desc": "Capturez coordonnées et devis dans la conversation."
+        },
+        "saveTime": {
+          "title": "Gagner du temps",
+          "desc": "Moins de questions répétitives pour se concentrer sur l’essentiel."
+        },
+        "experience": {
+          "title": "Améliorer l’expérience",
+          "desc": "Une aide claire sur chaque page où le widget est présent."
+        },
+        "sales": {
+          "title": "Plus d’opportunités",
+          "desc": "Orientez vers la bonne offre pendant que l’intérêt est fort."
+        },
+        "setup": {
+          "title": "Configurer plus vite avec l’IA",
+          "desc": "Des outils dans le tableau de bord aident à décrire les objectifs sans coder."
+        }
+      }
+    },
+    "industries": {
+      "title": "Adapté à votre réalité",
+      "subtitle": "Le même produit pour des contextes différents.",
+      "cards": {
+        "services": {
+          "title": "Entreprises de services",
+          "desc": "Réponses sur rendez-vous et prestations, qualification du besoin et collecte pour le devis avant le rappel."
+        },
+        "ecommerce": {
+          "title": "Boutiques en ligne",
+          "desc": "Aider à choisir un produit, clarifier les politiques et capturer les contacts pas encore prêts à acheter."
+        },
+        "local": {
+          "title": "Commerces locaux",
+          "desc": "Heures, lieu et offre—puis capture des demandes à proximité."
+        },
+        "quotes": {
+          "title": "Devis sur mesure",
+          "desc": "Collecte structurée des détails de projet pour des estimations plus rapides et complètes."
+        }
+      }
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "items": {
+        "coding": {
+          "q": "Faut-il savoir coder ?",
+          "a": "Non. Vous collez un petit extrait sur votre site. Avec un constructeur ou un CMS, souvent un bloc « code personnalisé » ou en-tête/pied de page. Quelques minutes pour une personne web."
+        },
+        "languages": {
+          "q": "Le multilingue est-il inclus ?",
+          "a": "Oui. Vous pouvez servir les visiteurs dans plusieurs langues."
+        },
+        "leads": {
+          "q": "Comment fonctionne la capture de prospects ?",
+          "a": "Vous choisissez les champs (nom, courriel, détails du projet). Les envois vont au tableau de bord et peuvent déclencher des courriels."
+        },
+        "quotes": {
+          "q": "Peut-on collecter des devis ?",
+          "a": "Oui. Des flux de demande avec les champs et règles dont vous avez besoin."
+        },
+        "recommend": {
+          "q": "Peut-on recommander des produits ou services ?",
+          "a": "Oui. Avec vos offres et le contexte, l’assistant peut suggérer ce qui convient selon ce que dit le visiteur."
+        },
+        "search": {
+          "q": "Est-ce que ça remplace la recherche de tout mon site ?",
+          "a": "L’agent de recherche IA aide à trouver réponses et produits en langage naturel. C’est un complément à votre navigation et à la recherche existante, pas un remplacement du CMS."
+        }
+      }
+    },
+    "final": {
+      "title": "Prêt à aider plus de visiteurs et capturer plus de prospects ?",
+      "subtitle": "Créez votre compte, configurez l’assistant et ajoutez-le au site quand vous voulez.",
+      "ctaPrimary": "Commencer",
+      "ctaSecondary": "Voir les tarifs"
+    }
+  },
+  "setupGuide": {
+    "title": "Guide de configuration",
+    "intro": "Explications simples pour chaque partie de Spaxio Assistant. À utiliser avec le tableau de bord pour lancer sereinement.",
+    "back": "Retour à l’accueil",
+    "labels": {
+      "what": "Qu’est-ce que c’est :",
+      "why": "Pourquoi c’est important :",
+      "fill": "Quoi remplir :"
+    },
+    "footerHint": "Quand vous êtes prêt, créez un compte et parcourez ces sections dans l’ordre.",
+    "cta": "Commencer",
+    "sections": {
+      "business": {
+        "heading": "Informations sur l’entreprise",
+        "what": "Le profil de votre entreprise dans Spaxio Assistant—offre, clientèle, heures, lieux et moyens de contact.",
+        "why": "L’assistant ne sonne juste que s’il connaît vos vrais services et la façon de vous joindre.",
+        "fill": "Nom, description, lieux, heures, liens et faits à répéter fidèlement dans le chat."
+      },
+      "behavior": {
+        "heading": "Comportement de l’IA",
+        "what": "Règles et style d’accueil, niveau de formalité, sujets à ne pas promettre et quand passer la main à un humain.",
+        "why": "Garde une voix de marque cohérente et limite les réponses trop vagues.",
+        "fill": "Ton, sujets à mettre en avant, que faire en cas de doute, et comment transférer."
+      },
+      "leads": {
+        "heading": "Capture de prospects",
+        "what": "Formulaires et incitations pour transformer une conversation en prospect enregistré.",
+        "why": "Les visiteurs intéressés ne disparaissent pas après le chat.",
+        "fill": "Champs requis et moment où l’assistant propose le formulaire."
+      },
+      "quotes": {
+        "heading": "Demandes de devis",
+        "what": "Un parcours pour les devis ou estimations, souvent plus structuré qu’un simple prospect.",
+        "why": "Votre équipe reçoit assez d’informations pour chiffrer sans longs allers-retours.",
+        "fill": "Questions sur le périmètre, délais, lieu, matériaux et règles de prix à respecter."
+      },
+      "recommendations": {
+        "heading": "Recommandations produits ou services",
+        "what": "Lien entre ce que vous vendez et les besoins exprimés pour suggérer une bonne option.",
+        "why": "Aide les clients à trouver l’offre sans tout parcourir.",
+        "fill": "Noms, courtes descriptions, quand suggérer quoi et liens pour en savoir plus."
+      },
+      "aiSearch": {
+        "heading": "Agent de recherche IA",
+        "what": "Une recherche en langage naturel sur votre catalogue et vos connaissances.",
+        "why": "Les visiteurs peuvent demander « qu’avez-vous pour… » au lieu de deviner des mots-clés.",
+        "fill": "Contenu et produits à inclure, règles de priorité pour ce qui remonte en premier."
+      },
+      "install": {
+        "heading": "Installation sur le site",
+        "what": "Le petit script qui charge le widget et le relie à votre compte.",
+        "why": "Sans lui, les visiteurs ne voient pas l’assistant.",
+        "fill": "Copiez le code depuis le tableau de bord et placez-le où votre plateforme autorise les scripts (souvent avant la balise body fermante)."
+      },
+      "notifications": {
+        "heading": "Notifications et courriels",
+        "what": "Alertes lors d’un prospect, d’un devis ou d’un événement important dans le chat.",
+        "why": "Pour réagir pendant que le visiteur se souvient encore de la conversation.",
+        "fill": "Boîtes de réception ou destinations et événements à suivre."
+      },
+      "testing": {
+        "heading": "Tests",
+        "what": "Essai réel des questions, formulaires et langues avant de s’en remettre aux clients.",
+        "why": "Repère les trous de connaissance ou le mauvais ton avant qu’ils impactent les ventes.",
+        "fill": "Une courte liste de vraies questions clients et un passage complet sur les flux prospects et devis."
+      }
+    }
   }
 }

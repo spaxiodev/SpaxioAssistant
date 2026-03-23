@@ -1,21 +1,6 @@
-import { getOrganizationId } from '@/lib/auth-server';
-import { getTranslations } from 'next-intl/server';
-import { AssistantSettingsForm } from '@/components/dashboard/assistant-settings-form';
+import { redirect } from 'next/navigation';
 
-export default async function AssistantPage() {
-  const orgId = await getOrganizationId();
-  if (!orgId) return null;
-
-  const t = await getTranslations('dashboard');
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t('assistant')}</h1>
-        <p className="text-muted-foreground">{t('assistantDescription')}</p>
-      </div>
-
-      <AssistantSettingsForm />
-    </div>
-  );
+/** Assistant behavior and welcome message live under Settings (widget & business). */
+export default function AssistantPageRedirect() {
+  redirect('/dashboard/settings');
 }

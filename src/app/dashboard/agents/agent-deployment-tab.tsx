@@ -133,7 +133,7 @@ export function AgentDeploymentTab({
 
         {!hasWidget && !hasFullPage && (
           <p className="text-sm text-muted-foreground">
-            This agent has no widget or full-page deployment yet. When creating an assistant, choose &quot;Widget&quot;, &quot;Full page&quot;, or &quot;Both&quot; to get install codes.
+            No widget is linked to this agent yet. Go to Install &amp; Deployments to assign widgets and copy embed codes.
           </p>
         )}
 

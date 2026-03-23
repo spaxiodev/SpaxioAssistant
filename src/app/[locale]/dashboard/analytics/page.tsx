@@ -150,15 +150,6 @@ export default async function AnalyticsPage() {
           </CardContent>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage overview</CardTitle>
-          <CardDescription>
-            Agent runs, token usage, and per-agent metrics will appear here as you use agents and automations.
-          </CardDescription>
-        </CardHeader>
-      </Card>
     </div>
   );
 }

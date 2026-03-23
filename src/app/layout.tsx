@@ -80,7 +80,7 @@ export default async function RootLayout({
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: SITE_NAME,
-      description: 'AI website assistant platform: chat widget or full-page assistant that learns from your site, answers questions using your content, captures and qualifies leads with AI, collects quote requests with configurable forms and estimates, and automates follow-up workflows.',
+      description: DEFAULT_SEO.description,
       url: baseUrl,
       category: 'Business Software',
       brand: { '@type': 'Brand', name: SITE_NAME },
@@ -100,7 +100,7 @@ export default async function RootLayout({
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       url: baseUrl,
-      description: 'AI website assistant platform: add one script for a chat widget or full-page assistant. Learns from your website, answers questions, captures and qualifies leads with AI, collects quote requests with configurable forms and pricing rules, automates follow-up, optional voice—so you miss fewer inquiries and respond faster.',
+      description: DEFAULT_SEO.description,
       featureList: [
         'Chat widget or full-page assistant (one script install)',
         'Learn from your website—AI extracts business info, FAQs, services',
@@ -124,7 +124,7 @@ export default async function RootLayout({
       '@type': 'WebSite',
       name: SITE_NAME,
       url: baseUrl,
-      description: 'AI website assistant platform: chat widget or full-page assistant, learns from your site, captures and qualifies leads, collects quote requests with estimates, automates follow-up.',
+      description: DEFAULT_SEO.description,
       publisher: { '@type': 'Organization', name: SITE_NAME, url: baseUrl },
     },
     {

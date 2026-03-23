@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('business_settings')
       .select(
-        'business_name, industry, company_description, services_offered, contact_email, phone, lead_notification_email, primary_brand_color, chatbot_name, chatbot_welcome_message'
+        'business_name, industry, company_description, services_offered, contact_email, phone, lead_notification_email, primary_brand_color, chatbot_name, chatbot_welcome_message, website_url'
       )
       .eq('organization_id', organizationId)
       .single();
@@ -37,6 +37,7 @@ export async function GET() {
       primary_brand_color: row.primary_brand_color ?? null,
       chatbot_name: row.chatbot_name ?? null,
       chatbot_welcome_message: row.chatbot_welcome_message ?? null,
+      website_url: row.website_url ?? null,
     });
   } catch (err) {
     return handleApiError(err, 'settings/GET');

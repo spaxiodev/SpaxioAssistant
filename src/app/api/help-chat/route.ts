@@ -25,7 +25,7 @@ function buildUserAccessBlock(
   const have: string[] = [];
   const dontHave: string[] = [];
 
-  have.push('Overview (counts and quick links)');
+  have.push('Overview (Developer Mode: lead, conversation, and quote counts with links; Simple Mode: richer home view with stats and priorities when data exists)');
   have.push('AI Setup (industry-aware setup — add website URL or describe your business; AI auto-detects your industry and tailors suggestions for tone, templates, greeting, and capture flow)');
   have.push('AI Assistant (create and adjust how your assistant behaves—in Developer Mode: Agents)');
   have.push('Website Info / Business Info (teach your assistant from your website and files—in Developer Mode: Knowledge)');
@@ -39,7 +39,7 @@ function buildUserAccessBlock(
   have.push('Billing (see plan and manage payment)');
   have.push('Settings (business info, widget look, assistant tone, notifications)');
   have.push('Global search / command palette (press Cmd+K or Ctrl+K to search pages, actions, leads, quote requests, and more)');
-  have.push('Live dashboard intelligence (high-priority leads, pending quote requests, conversion signals surface automatically on the home page)');
+  have.push('Home insights in Simple Mode (when you have data: suggestions, priority items, and stats — not shown as a separate page)');
 
   if (entitlements.ai_lead_scoring_enabled) {
     have.push('AI lead scoring & qualification (every lead gets a score 0-100, priority label, AI summary, urgency, and recommended next action)');
@@ -54,13 +54,13 @@ function buildUserAccessBlock(
   }
 
   if (entitlements.analytics_advanced_enabled) {
-    have.push('Advanced analytics (lead quality distribution, conversion rates, top services, conversation patterns — in Analytics)');
+    have.push('Advanced analytics tier (richer usage metrics where the app exposes them)');
   } else {
-    dontHave.push('Advanced analytics (that\'s on Pro plan or above)');
+    dontHave.push('Advanced analytics tier (that\'s on Pro plan or above)');
   }
 
   if (entitlements.conversation_learning_enabled) {
-    have.push('Conversation learning (analyzes conversation patterns to surface frequent questions, pricing confusion, and optimization gaps — in Analytics)');
+    have.push('Conversation learning (pattern insights for review when generated — not auto-applied to your assistant)');
   } else {
     dontHave.push('Conversation learning / insights (that\'s on Pro plan or above)');
   }
@@ -126,7 +126,7 @@ function buildUserAccessBlock(
   }
 
   if (entitlements.analytics_level === 'advanced') {
-    have.push('Advanced analytics (detailed reports on how the widget is used)');
+    have.push('Advanced analytics level on the plan (see Analytics for snapshot metrics; deeper breakdowns appear as the product surfaces them)');
   } else {
     dontHave.push('Advanced analytics (that\'s on a higher plan)');
   }
@@ -183,11 +183,11 @@ const HELP_BASE_PROMPT = `You are the in-app help assistant for Spaxio Assistant
 - For "how do I install the widget?", give: 1) Open Spaxio Assistant and log in. 2) Click "Install" in the left sidebar. 3) Copy the code (script tag). 4) Paste it into your website HTML just before the closing </body> tag. 5) Save and publish.
 
 **Topics you can explain (only if the user has access - see below):**
-- **Overview / Home:** The home page shows live intelligence: high-priority leads, pending quotes, recent lead counts, conversion signals, and AI suggestions. Numbers at the top are counts for leads, quote requests, and conversations.
+- **Overview / Home:** Developer Mode Overview shows three count cards (leads, conversations, quote requests) and a quick link to install. Simple Mode home can additionally show suggestions, priority leads, and attention signals when your account has real data (nothing is faked when empty).
 - **AI Setup (industry-aware):** The AI detects your industry automatically (home services, agency, healthcare, SaaS, etc.) and tailors the setup — different industries get appropriate templates, greeting styles, and capture flows. Give your website URL and the AI analyzes it, drafts everything, and applies safe changes. You can edit in chat (e.g. "make tone more professional", "change welcome message"). Review the draft summary and click Publish when ready.
 - **AI Lead Scoring:** Every captured lead is automatically analyzed. Each lead gets: a score (0-100), priority (high/medium/low), a plain-English summary, urgency, and a recommended next action. High-priority leads are shown first in the dashboard and highlighted on the home page.
-- **AI Suggestions:** The home page shows proactive recommendations grounded in real data: "3 high-priority leads need follow-up", "add pricing rules to provide estimates", etc. You can dismiss suggestions you don't need.
-- **Live Dashboard Intelligence:** The home page surfaces what matters most — high-priority leads this month, pending quote requests, new leads this week, and conversation-to-lead conversion rate. It updates automatically.
+- **AI Suggestions:** When enabled on the plan, recommendations can appear on the Simple Mode home view (dismissible). They are generated from real configuration and usage gaps—not generic filler.
+- **Home stats:** Simple Mode can show conversion and activity stats when the intelligence service has enough data. Developer Mode Overview sticks to the three headline counts plus install CTA.
 - **AI Assistant:** How to create and edit the assistant (how it behaves and what it should do). In Developer Mode this is called "Agents".
 - **Website Info / Business Info:** How to add a source (add a website URL or upload a file) so the assistant answers from real content. In Developer Mode this is called "Knowledge".
 - **Install:** How to install the assistant on their website: 1) Click Install in the sidebar. 2) Copy the script. 3) Paste just before </body>. 4) Save and publish.
@@ -196,7 +196,7 @@ const HELP_BASE_PROMPT = `You are the in-app help assistant for Spaxio Assistant
 - **Quote requests:** Where quote requests appear and what the fields mean.
 - **Quote Form Setup:** In Quote Requests → Form Setup, control how the quote form appears in the widget: intro text, submit button label, whether name/email/phone are required, and how the estimate is shown.
 - **Pricing Rules / Quote Engine:** In Quote Requests → Pricing Rules, configure variables and rules that calculate the estimate. Supports: fixed price, per-unit, tiered, add-ons, multipliers, minimum charges. The assistant maps customer requests to these rules for instant estimate ranges.
-- **Analytics:** Leads over time, lead quality distribution (high/medium/low), quote requests over time, conversation-to-lead conversion rate, top requested services. Advanced analytics (Pro+) includes deeper breakdowns.
+- **Analytics (Developer Mode):** Snapshot totals (conversations, messages, leads, quote requests, automation runs) and a short list of recent automation runs — not a full charting product unless the user’s plan adds separate advanced reporting elsewhere in the app.
 - **Conversation Learning (Pro+):** Analyzes conversation patterns to surface frequently asked questions, pricing confusion signals, and gaps. Always for review, never auto-applied.
 - **Billing:** What their plan is, trial, how to upgrade, how to open the Stripe Customer Portal to manage payment.
 - **Widget:** What the widget does (answers questions, captures leads, collects quote requests; optional voice if they have it); where to customize it (Settings); multiple languages (default/supported languages, language switcher in Settings).

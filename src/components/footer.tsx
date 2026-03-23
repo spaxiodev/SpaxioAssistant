@@ -17,6 +17,12 @@ export async function Footer() {
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
           <Link
+            href="/setup-guide"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t('setupGuide')}
+          </Link>
+          <Link
             href="/contact"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >

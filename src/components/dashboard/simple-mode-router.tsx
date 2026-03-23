@@ -13,6 +13,9 @@ import { SimpleConversationsPage } from '@/components/dashboard/simple-pages/sim
 import { SimpleBillingPage } from '@/components/dashboard/simple-pages/simple-billing-page';
 import { SimpleAccountPage } from '@/components/dashboard/simple-pages/simple-account-page';
 import { SimpleGenericPage } from '@/components/dashboard/simple-pages/simple-generic-page';
+import { SimpleAiSearchPage } from '@/components/dashboard/simple-pages/simple-ai-search-page';
+import { SimpleSetupWizard } from '@/components/dashboard/simple-setup-wizard/simple-setup-wizard';
+import { SimpleLeadsQuotesPage } from '@/components/dashboard/simple-pages/simple-leads-quotes-page';
 import { routing } from '@/i18n/routing';
 
 type SimpleModeRouterProps = {
@@ -43,6 +46,8 @@ function getSimplePage(pathname: string): React.ReactNode {
   const base = normalizeBasePath(pathname);
 
   if (base === '/dashboard' || base === '/') return <SimpleDashboardOverview />;
+  if (base.startsWith('/dashboard/setup')) return <SimpleSetupWizard />;
+  if (base.startsWith('/dashboard/leads-quotes')) return <SimpleLeadsQuotesPage />;
   if (base.startsWith('/dashboard/ai-setup')) return <SimpleAiSetupPage />;
   if (base.startsWith('/dashboard/install')) return <SimpleInstallPage />;
   if (base === '/dashboard/agents' || base.startsWith('/dashboard/agents/')) return <SimpleAgentsPage />;
@@ -56,15 +61,12 @@ function getSimplePage(pathname: string): React.ReactNode {
   if (base.startsWith('/dashboard/account')) return <SimpleAccountPage />;
   if (base.startsWith('/dashboard/business-setup')) return <SimpleAiSetupPage />;
   if (base.startsWith('/dashboard/deployments')) return <SimpleInstallPage />;
+  if (base.startsWith('/dashboard/ai-search')) return <SimpleAiSearchPage />;
 
   // True fallback only for unknown dashboard subroutes (e.g. webhooks, integrations, documents)
   const segment = base.replace(/^\/dashboard\/?/, '') || 'dashboard';
   const fallbackTitle = segment === 'dashboard' ? 'Dashboard' : segment.split('/')[0].replace(/-/g, ' ');
   const fallbackTitlePascal = fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1);
-  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-    console.debug('[SimpleMode] unmatched route:', { pathname, base, fallbackTitle: fallbackTitlePascal });
-  }
   return (
     <SimpleGenericPage
       title={fallbackTitlePascal}

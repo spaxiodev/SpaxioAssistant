@@ -56,6 +56,13 @@ export async function GET(request: Request) {
     .eq('organization_id', widget.organization_id)
     .single();
 
+  const aiSearchRes = await supabase
+    .from('ai_search_settings')
+    .select('enabled, display_mode, quick_prompts, include_site_content')
+    .eq('organization_id', widget.organization_id)
+    .maybeSingle();
+  const aiSearchSettings = aiSearchRes.error ? null : aiSearchRes.data;
+
   const enabled = settings?.widget_enabled !== false;
   const brandingAllowed = await canRemoveBranding(supabase, widget.organization_id, false);
   const showWidgetLabel = brandingAllowed ? (settings?.show_widget_label ?? false) : true;
@@ -134,6 +141,14 @@ export async function GET(request: Request) {
       quoteFormConfig: (settings?.quote_form_config && typeof settings.quote_form_config === 'object')
         ? (settings.quote_form_config as Record<string, unknown>)
         : undefined,
+      aiSearch: {
+        enabled: aiSearchSettings?.enabled === true,
+        displayMode: (aiSearchSettings?.display_mode as string) ?? 'modal',
+        quickPrompts: Array.isArray(aiSearchSettings?.quick_prompts)
+          ? (aiSearchSettings.quick_prompts as string[]).filter((s) => typeof s === 'string').slice(0, 12)
+          : [],
+        includeSiteContent: aiSearchSettings?.include_site_content === true,
+      },
     },
     { headers: corsHeaders }
   );

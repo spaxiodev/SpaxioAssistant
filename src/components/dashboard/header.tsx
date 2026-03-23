@@ -9,8 +9,7 @@ import { useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { Menu, MoreVertical } from 'lucide-react';
 import { useDashboardSidebar } from '@/contexts/dashboard-sidebar-context';
-import { useViewMode } from '@/contexts/view-mode-context';
-import { Switch } from '@/components/ui/switch';
+import { DashboardModeSwitcher } from '@/components/dashboard/dashboard-mode-switcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SearchTrigger } from '@/components/command-palette';
-import { Search } from 'lucide-react';
 
 type HeaderProps = {
   organizationId?: string;
@@ -30,7 +28,6 @@ export function Header({ showUpgradeButton }: HeaderProps) {
   const router = useRouter();
   const t = useTranslations('common');
   const { toggle } = useDashboardSidebar();
-  const { mode, setMode } = useViewMode();
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -40,8 +37,8 @@ export function Header({ showUpgradeButton }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-white/30 bg-background px-4 dark:border-white/10 md:px-6">
-      <div className="flex shrink-0 items-center gap-2">
+    <header className="sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-2 border-b border-border/50 bg-background/95 px-3 py-2.5 backdrop-blur-md dark:border-white/10 md:flex-nowrap md:gap-3 md:px-5 md:py-3">
+      <div className="flex min-w-0 shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -51,40 +48,17 @@ export function Header({ showUpgradeButton }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2">
-          {showUpgradeButton && (
-            <Button variant="default" size="sm" className="shrink-0 rounded-lg" asChild>
-              <Link href="/pricing">{t('upgrade')}</Link>
-            </Button>
-          )}
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-background/70 px-2 py-1 text-xs text-muted-foreground sm:gap-2 sm:px-3">
-            <button
-              type="button"
-              className={`transition-colors ${mode === 'simple' ? 'font-semibold text-foreground' : ''}`}
-              onClick={() => setMode('simple')}
-            >
-              Simple
-            </button>
-            <Switch
-              checked={mode === 'developer'}
-              onCheckedChange={(checked) => setMode(checked ? 'developer' : 'simple')}
-              aria-label="Toggle advanced Developer Mode"
-            />
-            <button
-              type="button"
-              className={`transition-colors ${mode === 'developer' ? 'font-semibold text-foreground' : ''}`}
-              onClick={() => setMode('developer')}
-            >
-              <span className="sm:hidden">Dev</span>
-              <span className="hidden sm:inline">Developer (Advanced)</span>
-            </button>
-          </div>
-        </div>
+        {showUpgradeButton && (
+          <Button variant="default" size="sm" className="shrink-0 rounded-lg" asChild>
+            <Link href="/pricing">{t('upgrade')}</Link>
+          </Button>
+        )}
+        <DashboardModeSwitcher />
       </div>
-      <div className="hidden min-w-0 flex-1 px-2 md:flex md:items-center">
-        <SearchTrigger className="min-w-0 w-full justify-start" />
+      <div className="hidden min-w-0 flex-1 px-1 md:flex md:max-w-xl md:justify-center lg:max-w-2xl">
+        <SearchTrigger className="min-w-0 w-full max-w-xl justify-start" />
       </div>
-      <div className="flex shrink-0 items-center gap-1 md:gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
         <div className="hidden md:flex md:items-center md:gap-2">
           <LocaleSwitcher />
           <ThemeToggle />

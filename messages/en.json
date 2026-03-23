@@ -24,7 +24,241 @@
     "password": "Password",
     "loading": "Loading...",
     "signUpToSeeMore": "Sign up to see more.",
-    "signUpToSeeFullSite": "Sign up to see the full site."
+    "signUpToSeeFullSite": "Sign up to see the full site.",
+    "features": "Features",
+    "howItWorksNav": "How it works",
+    "setupGuide": "Setup guide",
+    "signIn": "Sign in"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Website assistant for your business",
+      "headline": "Add an AI assistant to your website that answers visitors, captures leads, and works around the clock",
+      "subheadline": "Spaxio Assistant is a chat widget and dashboard you control. It answers common questions, collects leads and quote requests, can recommend what you sell, and includes an AI search experience—without asking your customers to dig through your whole site.",
+      "ctaPrimary": "Get started",
+      "ctaSecondary": "See how it works",
+      "trust1": "No coding required",
+      "trust2": "Multilingual support",
+      "trust3": "Guided setup in the dashboard",
+      "visual": {
+        "widgetLabel": "On your website",
+        "widgetUrl": "yourbusiness.com",
+        "dashboardLabel": "In your dashboard",
+        "dashboardRow1": "Website assistant",
+        "dashboardStatus": "Live",
+        "dashboardRow2": "Business details & knowledge",
+        "dashboardRow3": "Leads & quote requests",
+        "chatLabel": "With your visitors",
+        "chatUser": "Do you offer evening appointments?",
+        "chatAssistant": "Yes—here are our hours and a quick link to book. Want me to send the details by email?",
+        "chatUser2": "Yes, please.",
+        "send": "Send"
+      }
+    },
+    "what": {
+      "title": "What it does",
+      "subtitle": "One assistant on your site, tuned to how you sell and support customers.",
+      "cards": {
+        "answer": {
+          "title": "Answer questions",
+          "desc": "Visitors get clear replies about services, hours, service areas, and how to reach you—based on what you teach the assistant."
+        },
+        "leads": {
+          "title": "Capture leads",
+          "desc": "Turn chats into contacts you can follow up with. You choose which fields to collect and where notifications go."
+        },
+        "quotes": {
+          "title": "Handle quote requests",
+          "desc": "Collect structured quote or estimate requests with the details you need to respond—forms and rules you configure."
+        },
+        "recommend": {
+          "title": "Recommend products or services",
+          "desc": "Point people to the right offerings when they describe what they need, using your catalog and business context."
+        },
+        "aiSearch": {
+          "title": "AI search agent",
+          "desc": "Help visitors find answers and products with AI-powered search that matches how people actually phrase questions."
+        },
+        "languages": {
+          "title": "Multilingual support",
+          "desc": "Serve visitors in more than one language so you can support broader audiences from the same setup."
+        }
+      }
+    },
+    "how": {
+      "title": "How it works",
+      "subtitle": "Four straightforward steps from first login to a live assistant.",
+      "steps": {
+        "s1": {
+          "title": "Tell the AI about your business",
+          "desc": "Add your website, services, and the facts you want customers to know. The assistant uses this as the source of truth."
+        },
+        "s2": {
+          "title": "Choose what the AI should do",
+          "desc": "Turn on lead capture, quote requests, recommendations, and AI search—only what you need. You stay in control."
+        },
+        "s3": {
+          "title": "Add it to your website",
+          "desc": "Copy a short install snippet and paste it into your site. Most teams finish this in a few minutes."
+        },
+        "s4": {
+          "title": "Start helping customers and capturing leads",
+          "desc": "Conversations, leads, and quote requests show up in your dashboard so your team can respond quickly."
+        }
+      }
+    },
+    "setupSection": {
+      "title": "Simple setup guide",
+      "subtitle": "A clear path from account to go-live—no technical background required.",
+      "fullGuideCta": "Open the full setup guide",
+      "steps": {
+        "s1": { "title": "Create your account", "desc": "Sign up and open your workspace—no credit card required to explore." },
+        "s2": { "title": "Add your business details", "desc": "Tell the assistant your name, what you offer, hours, and how customers should contact you." },
+        "s3": { "title": "Train the AI", "desc": "Add knowledge from your site and FAQs so answers match how you really work." },
+        "s4": { "title": "Turn on the features you want", "desc": "Enable lead capture, quotes, recommendations, and AI search when you are ready." },
+        "s5": { "title": "Add pricing or service details", "desc": "Share how pricing works or what you need for a quote so replies stay accurate." },
+        "s6": { "title": "Install on your website", "desc": "Paste the widget code so the assistant appears for visitors." },
+        "s7": { "title": "Test everything", "desc": "Run through common questions and forms as if you were a customer." },
+        "s8": { "title": "Go live", "desc": "Publish and start helping visitors while your team gets notified on new leads." }
+      }
+    },
+    "why": {
+      "title": "Why businesses use it",
+      "subtitle": "Practical outcomes you can feel in day-to-day sales and support.",
+      "cards": {
+        "faster": { "title": "Reply faster", "desc": "Visitors get immediate answers instead of waiting on an inbox." },
+        "fewerMissed": { "title": "Miss fewer leads", "desc": "Capture contact details and quote requests right inside the conversation." },
+        "saveTime": { "title": "Save time", "desc": "Reduce repetitive questions so your team focuses on high-value conversations." },
+        "experience": { "title": "Improve customer experience", "desc": "Clear, consistent help on every page where you add the widget." },
+        "sales": { "title": "Grow sales opportunities", "desc": "Guide people to the right product or next step while intent is high." },
+        "setup": { "title": "Set up faster with AI assistance", "desc": "In-dashboard tools help you describe goals and configure the assistant without writing code." }
+      }
+    },
+    "industries": {
+      "title": "Built for how you work",
+      "subtitle": "Same product, tailored to different kinds of businesses.",
+      "cards": {
+        "services": {
+          "title": "Service businesses",
+          "desc": "Answer scheduling and service questions, qualify the job, and collect quote details before you call back."
+        },
+        "ecommerce": {
+          "title": "E-commerce stores",
+          "desc": "Help shoppers find the right product, clarify policies, and capture leads when they are not ready to buy yet."
+        },
+        "local": {
+          "title": "Local businesses",
+          "desc": "Share hours, location, and what you offer—then capture inquiries from people nearby."
+        },
+        "quotes": {
+          "title": "Custom quote businesses",
+          "desc": "Collect structured project details and pricing inputs so estimates are faster and more complete."
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": {
+        "coding": {
+          "q": "Do I need to code?",
+          "a": "No. You paste a small snippet into your website. If you use a site builder or CMS, that is usually a “custom code” or “header/footer” block. Your web person can do it in minutes."
+        },
+        "languages": {
+          "q": "Is multilingual support included?",
+          "a": "Yes. You can serve visitors in more than one language so the assistant matches how your customers browse and ask questions."
+        },
+        "leads": {
+          "q": "How does lead capture work?",
+          "a": "You choose what information to ask for—like name, email, and project details. Submissions show up in your dashboard and can trigger email notifications."
+        },
+        "quotes": {
+          "q": "Can it collect quote requests?",
+          "a": "Yes. You can set up quote or estimate flows with the fields and rules your business needs, so requests arrive organized."
+        },
+        "recommend": {
+          "q": "Can it recommend products or services?",
+          "a": "Yes. When you connect your offerings and business context, the assistant can suggest what fits based on what the visitor says they need."
+        },
+        "search": {
+          "q": "Is this an AI search replacement for my whole site?",
+          "a": "The AI Search Agent helps visitors find answers and products using natural language. It complements your existing site search and navigation rather than replacing your CMS."
+        }
+      }
+    },
+    "final": {
+      "title": "Ready to help more visitors and capture more leads?",
+      "subtitle": "Create your account, configure your assistant, and add it to your site when you are ready.",
+      "ctaPrimary": "Get started",
+      "ctaSecondary": "View pricing"
+    }
+  },
+  "setupGuide": {
+    "title": "Setup guide",
+    "intro": "Plain-language explanations of each part of Spaxio Assistant. Use this alongside the dashboard to go from empty account to a confident launch.",
+    "back": "Back to home",
+    "labels": {
+      "what": "What it is:",
+      "why": "Why it matters:",
+      "fill": "What to fill out:"
+    },
+    "footerHint": "When you are ready, create an account and work through these areas in order.",
+    "cta": "Get started",
+    "sections": {
+      "business": {
+        "heading": "Business information",
+        "what": "The profile of your company inside Spaxio Assistant—what you sell, who you serve, hours, locations, and contact options.",
+        "why": "The assistant only sounds like you if it knows your real services, boundaries, and how customers should reach you.",
+        "fill": "Business name, description, locations, hours, links, and any facts you want repeated accurately in chat."
+      },
+      "behavior": {
+        "heading": "AI behavior",
+        "what": "Rules and style for how the assistant greets visitors, how formal it is, what it should never promise, and which topics to escalate.",
+        "why": "Keeps tone consistent with your brand and reduces answers that are too vague or off-message.",
+        "fill": "Tone notes, topics to emphasize, what to do when unsure, and how to hand off to a human."
+      },
+      "leads": {
+        "heading": "Lead capture",
+        "what": "Forms and prompts that turn a conversation into a saved lead with the fields you care about.",
+        "why": "So interested visitors do not disappear after the chat—you get structured contact details for follow-up.",
+        "fill": "Which fields to require (name, email, phone, project type), and when the assistant should offer the form."
+      },
+      "quotes": {
+        "heading": "Quote requests",
+        "what": "A dedicated flow to collect estimate or quote details, often with more structured questions than a simple lead.",
+        "why": "Your team receives enough information to price jobs without long back-and-forth.",
+        "fill": "Questions about scope, timeline, location, materials, and any pricing rules you want the assistant to respect."
+      },
+      "recommendations": {
+        "heading": "Product or service recommendations",
+        "what": "Connections between what you sell and how you describe customer needs, so the assistant can suggest a good fit.",
+        "why": "Helps shoppers or clients find the right offer instead of browsing every page.",
+        "fill": "Product or service names, short descriptions, when to suggest each, and links to learn more."
+      },
+      "aiSearch": {
+        "heading": "AI Search Agent",
+        "what": "An AI-powered search experience that answers natural-language questions using your catalog and knowledge.",
+        "why": "Visitors can ask “what do you have for…” instead of guessing keywords in a traditional search box.",
+        "fill": "Which content and products to include, and any priority rules for what should surface first."
+      },
+      "install": {
+        "heading": "Website installation",
+        "what": "The small script that loads the widget on your site and ties it to your account.",
+        "why": "Without it, visitors never see your assistant—this is the technical link between your website and Spaxio Assistant.",
+        "fill": "Copy the install code from the dashboard and place it where your platform allows sitewide scripts (often before the closing body tag)."
+      },
+      "notifications": {
+        "heading": "Notifications and emails",
+        "what": "Alerts when someone submits a lead, quote, or important chat event.",
+        "why": "So your team responds while the visitor still remembers the conversation.",
+        "fill": "Which inboxes or destinations should receive alerts, and which events matter most to your workflow."
+      },
+      "testing": {
+        "heading": "Testing",
+        "what": "A dry run of real questions, forms, and languages before you tell customers to rely on it.",
+        "why": "Catches missing knowledge or wrong tone before they affect real prospects.",
+        "fill": "A short checklist of questions your customers actually ask, plus one full pass through lead and quote flows."
+      }
+    }
   },
   "home": {
     "title": "Spaxio Assistant",
@@ -208,6 +442,23 @@
     "navSectionDevelopers": "Developers",
     "navSectionAccount": "Account",
     "developerModeAdvanced": "Developer Mode (Advanced)",
+    "navSimpleHome": "Home",
+    "navSimpleSetup": "Setup",
+    "navSimpleLeadsQuotes": "Leads & Quotes",
+    "navSimpleWebsiteInstall": "Website Install",
+    "navSimpleSettings": "Settings",
+    "navDevOverview": "Overview",
+    "navDevAiCore": "AI Core",
+    "navDevKnowledgeBase": "Knowledge Base",
+    "navDevQuotes": "Customer quote requests",
+    "navDevIntegrations": "Integrations",
+    "navDevWebsiteWidget": "Website Widget",
+    "navDevEmailsNotifications": "Emails & Notifications",
+    "navDevAnalytics": "Analytics",
+    "navDevWebhooks": "Webhooks & API",
+    "developerOverviewSubtitle": "Operations, funnels, and automations at a glance—the same workspace as Simple Mode, organized for advanced work.",
+    "developerSetupWarnings": "Configuration to review",
+    "developerSetupWarningsHint": "Quick checks that help you catch gaps before going live.",
     "navAriaLabel": "Dashboard navigation",
     "installAndSettings": "Install & settings",
     "crm": "CRM",
@@ -219,6 +470,7 @@
     "deployments": "Install options",
     "aiPages": "AI Pages",
     "embeddedForms": "Embedded Forms",
+    "aiSearch": "AI Search Agent",
     "knowledge": "Knowledge",
     "knowledgeDescription": "Teach your assistant using your website pages and files so answers stay accurate.",
     "automations": "Automations",
@@ -280,6 +532,73 @@
     "noAgent": "None",
     "analytics": "Analytics",
     "analyticsDescription": "See how your assistant is performing: conversations handled, leads captured, and more.",
+    "aiSearchTitle": "AI Search Agent",
+    "aiSearchDescription": "Natural-language product search for your site: visitors describe what they need, you control ranking and business-friendly boosts—without surfacing irrelevant items.",
+    "aiSearchTabSettings": "Settings",
+    "aiSearchTabCatalog": "Catalog",
+    "aiSearchTabAnalytics": "Analytics",
+    "aiSearchTabEmbed": "Install",
+    "aiSearchSectionGeneral": "General",
+    "aiSearchSectionGeneralHint": "Turn the feature on, choose how it appears on your site, and tune how strict matching should be.",
+    "aiSearchEnabled": "AI Search enabled",
+    "aiSearchEnabledHint": "When off, the public search API and embed stay inactive.",
+    "aiSearchDisplayMode": "Placement",
+    "aiSearchDisplayReplace": "Replace the search bar",
+    "aiSearchDisplayBeside": "Beside the search bar",
+    "aiSearchDisplayModal": "Open in a modal",
+    "aiSearchDisplayWidget": "Inside the website widget only",
+    "aiSearchMode": "Search mode",
+    "aiSearchModeStrict": "Strict — fewer, tighter matches",
+    "aiSearchModeBalanced": "Balanced",
+    "aiSearchModeBroad": "Broad — more exploratory matches",
+    "aiSearchHideOos": "Hide out-of-stock products",
+    "aiSearchHideOosHint": "Visitors won’t see products with zero inventory when this is on.",
+    "aiSearchCustomBoost": "Use owner boost score when cost is unknown",
+    "aiSearchCustomBoostHint": "If margin or cost isn’t set, your custom boost and promotions still influence ranking among relevant results.",
+    "aiSearchIncludeSiteContent": "Include site content (pages & knowledge)",
+    "aiSearchIncludeSiteContentHint": "Adds semantically related help pages from your knowledge base alongside product results.",
+    "aiSearchWeights": "Ranking weights",
+    "aiSearchWeightsHint": "Relevance always gates results first; weights apply among items that already match the request. Keep relevance highest for trustworthy results.",
+    "aiSearchWeightRelevance": "Relevance",
+    "aiSearchWeightProfit": "Margin / profitability signal",
+    "aiSearchWeightPromotion": "Promotions",
+    "aiSearchWeightInventory": "Inventory / clearance signal",
+    "aiSearchWeightPopularity": "Popularity",
+    "aiSearchPriorityTitle": "Tie-break priorities",
+    "aiSearchPriorityHint": "When two products score similarly, we prefer the higher item in this list (subtle—never overrides relevance).",
+    "aiSearchPriorityPromoted": "Promoted products",
+    "aiSearchPriorityHighMargin": "Higher margin",
+    "aiSearchPriorityOverstock": "Higher inventory (clearance-friendly)",
+    "aiSearchPriorityNewest": "Newest",
+    "aiSearchPriorityPopular": "Most popular",
+    "aiSearchQuickPrompts": "Suggested prompts (one per line)",
+    "aiSearchQuickPromptsHint": "Shown as quick chips in the AI search UI when supported by your theme.",
+    "aiSearchQuickPromptsPlaceholder": "Waterproof jacket under $150\nGift ideas under $50\nBest seller in stock",
+    "aiSearchImportUrlTitle": "Import from your website",
+    "aiSearchImportUrlHint": "Paste a shop, collection, or category page URL. We read schema.org JSON-LD when the theme exposes it (common on Shopify and many stores). If not, we analyze the visible text with AI. Single-page only—use your main catalog URL.",
+    "aiSearchImportUrlPlaceholder": "https://yourstore.com/collections/all",
+    "aiSearchImportUrlRun": "Import from page",
+    "aiSearchImportUrlReplace": "Replace entire catalog first",
+    "aiSearchImportUrlReplaceHint": "Removes all existing catalog products for this business, then adds what we extract. Turn off to append and skip duplicates (same SKU or product link).",
+    "aiSearchImportUrlSuccess": "Added {count} products ({method}).",
+    "aiSearchImportUrlError": "Something went wrong. Check the URL and try again.",
+    "aiSearchImportMethodJsonLd": "structured data",
+    "aiSearchImportMethodAi": "AI extraction",
+    "aiSearchCatalogTitle": "Product catalog",
+    "aiSearchCatalogHint": "Paste a JSON array of products (title required). Import adds new rows—use your own workflow to sync updates from your store.",
+    "aiSearchCatalogPlaceholder": "Example product fields: title, price, description, tags, inventory_count, promoted, popularity_score, custom_boost_score, image_url, product_url",
+    "aiSearchCatalogImport": "Import products",
+    "aiSearchAnalyticsTitle": "Search performance",
+    "aiSearchAnalyticsHint": "Last 30 days: queries, engagement, and estimated margin impact from clicks.",
+    "aiSearchAnalyticsOpen": "Open this tab to load analytics.",
+    "aiSearchAnQueries": "Search queries",
+    "aiSearchAnClicks": "Product clicks",
+    "aiSearchAnNoResults": "No-result searches",
+    "aiSearchAnMargin": "Est. margin impact (USD)",
+    "aiSearchEmbedTitle": "Embed code",
+    "aiSearchEmbedHint": "Add this script to your site to load the AI Search UI. Style it to match your theme; the widget script can also read aiSearch settings from the widget config API.",
+    "aiSearchEmbedNote": "The widget integration uses your widget ID. For modal or beside-search modes, mount the embed container where you want it and listen for the script’s events.",
+    "aiSearchWidgetId": "Widget ID",
     "aiActions": "AI Actions",
     "aiActionsDescription": "Optional actions the assistant can take (advanced): create leads, book appointments, send emails, and more.",
     "actionLogs": "Action logs",
@@ -634,9 +953,11 @@
   "metadata": {
     "appName": "Spaxio Assistant",
     "title": "AI Website Assistant for Businesses",
-    "description": "Spaxio Assistant is an AI website assistant that learns your business, answers customer questions, captures leads, collects quote requests, and automates follow-up.",
-    "homeTitle": "AI Website Assistant that Captures Leads",
-    "homeDescription": "Teach your assistant your business from your website, answer customer questions, capture leads, collect quote requests, and follow up faster. Add one script to your site.",
+    "description": "Spaxio Assistant is an AI website assistant that learns from your site, answers customer questions, captures and qualifies leads with AI, collects quote requests with configurable forms and estimates, and automates follow-up. Add one script for a chat widget or full-page assistant.",
+    "homeTitle": "Spaxio Assistant — AI assistant for your website",
+    "homeDescription": "Add an AI assistant that answers visitors, captures leads, collects quote requests, recommends products, and includes AI search. No coding required. Multilingual support.",
+    "setupGuideTitle": "Setup guide",
+    "setupGuideDescription": "Step-by-step explanations for business information, AI behavior, leads, quotes, recommendations, AI search, installation, notifications, and testing.",
     "pricingTitle": "Pricing",
     "pricingDescription": "Simple plans for an AI website assistant. Start free and upgrade as you grow.",
     "contactTitle": "Contact Spaxio Assistant — Support & Sales",
@@ -756,6 +1077,7 @@
   },
   "footer": {
     "copyright": "Spaxio",
+    "setupGuide": "Setup guide",
     "contact": "Contact",
     "about": "About",
     "pricing": "Pricing",
