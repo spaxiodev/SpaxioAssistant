@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getOrganizationId } from '@/lib/auth-server';
+import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { handleApiError } from '@/lib/api-error';
 import { getPlanForOrg } from '@/lib/entitlements';
@@ -16,8 +17,10 @@ export async function POST(request: Request) {
     if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabase = createAdminClient();
+    const adminAllowed = await isOrgAllowedByAdmin(supabase, orgId);
     const plan = await getPlanForOrg(supabase, orgId);
-    if (!hasFeatureAccess(plan?.slug, 'ai_search')) {
+    const effectiveSlug = adminAllowed ? 'enterprise' : plan?.slug;
+    if (!hasFeatureAccess(effectiveSlug, 'ai_search')) {
       return NextResponse.json({ error: 'Upgrade required' }, { status: 403 });
     }
 
