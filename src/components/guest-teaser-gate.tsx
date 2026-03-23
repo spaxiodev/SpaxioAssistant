@@ -27,6 +27,7 @@ export function GuestTeaserGate({ children }: { children: React.ReactNode }) {
   const t = useTranslations('common');
   const tHome = useTranslations('home');
   const [isGuest, setIsGuest] = useState<boolean | null>(null);
+  const [hasReachedGatePoint, setHasReachedGatePoint] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -41,7 +42,22 @@ export function GuestTeaserGate({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const showOverlay = isGuest === true && isTeaserRoute(pathname);
+  useEffect(() => {
+    const checkScroll = () => {
+      const threshold = (window.innerHeight * TEASER_PEEK_VH) / 100;
+      setHasReachedGatePoint(window.scrollY >= threshold);
+    };
+
+    checkScroll();
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      window.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, []);
+
+  const showOverlay = isGuest === true && isTeaserRoute(pathname) && hasReachedGatePoint;
 
   if (!showOverlay) {
     return <>{children}</>;
