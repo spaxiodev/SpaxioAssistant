@@ -78,6 +78,48 @@ function isLightBrandColor(hex: string): boolean {
   return L > 0.7;
 }
 
+function shouldOpenQuoteForm(text: string, locale: string): boolean {
+  const s = text.toLowerCase();
+  if (/[€$£¥]/.test(s)) return true;
+  if (/\b\d+\s*(usd|eur|gbp|cad|aud|chf)\b/i.test(s)) return true;
+  const lang = normalizeLocale(locale);
+  const patternsByLang: Record<string, RegExp[]> = {
+    en: [
+      /\b(price|pricing|cost|quote|estimate|rate|rates|fee|fees|charge|charges)\b/i,
+      /\bhow\s+much\b/i,
+      /\bwhat('?s|\s+is)\s+the\s+(price|cost)\b/i,
+      /\bcan\s+i\s+get\s+a\s+quote\b/i,
+    ],
+    fr: [
+      /\b(prix|tarif|tarifs|co[uû]t|co[uû]ts|devis|estimation|combien)\b/i,
+      /\bquel\s+est\s+le\s+prix\b/i,
+      /\bcombien\s+(co[uû]te|ça\s+co[uû]te)\b/i,
+    ],
+    'fr-ca': [
+      /\b(prix|tarif|tarifs|co[uû]t|co[uû]ts|devis|estimation|combien)\b/i,
+      /\bcombien\s+ça\s+co[uû]te\b/i,
+    ],
+    es: [
+      /\b(precio|precios|tarifa|tarifas|costo|coste|presupuesto|cotizaci[oó]n|estimaci[oó]n|cu[aá]nto)\b/i,
+      /\bcu[aá]nto\s+cuesta\b/i,
+    ],
+    de: [
+      /\b(preis|preise|kosten|kostet|angebot|sch[aä]tzung|quote)\b/i,
+      /\bwie\s+viel\b/i,
+    ],
+    pt: [
+      /\b(pre[cç]o|pre[cç]os|valor|valores|custo|custos|or[cç]amento|cota[cç][aã]o|estima[cç][aã]o|quanto)\b/i,
+      /\bquanto\s+custa\b/i,
+    ],
+    it: [
+      /\b(prezzo|prezzi|costo|costi|preventivo|stima|quanto)\b/i,
+      /\bquanto\s+costa\b/i,
+    ],
+  };
+  const patterns = patternsByLang[lang] ?? patternsByLang.en;
+  return patterns.some((re) => re.test(s));
+}
+
 function WidgetContent() {
   const searchParams = useSearchParams();
   const widgetId = searchParams.get('widgetId');
@@ -224,10 +266,36 @@ function WidgetContent() {
           text: m.content,
         }));
 
+  function openQuoteFormFromIntent(userText?: string) {
+    setShowQuoteForm(true);
+    setQuoteSubmitted(false);
+    setQuoteSubmitError(null);
+    setQuoteSubmitResult(null);
+    setQuoteFieldErrors({});
+    setLeadName('');
+    setLeadEmail('');
+    setLeadPhone('');
+    setLeadErrors({});
+    const defaults: Record<string, string> = {};
+    (config?.quoteVariables ?? []).forEach((v) => {
+      if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
+    });
+    setQuoteFormInputs(defaults);
+    if (userText) {
+      setMessages((m) => [...m, { role: 'user', content: userText }, { role: 'assistant', content: qs.quoteFormIntro }]);
+    }
+  }
+
   async function send(text: string) {
     if (!text.trim() || !widgetId || loading) return;
+    const trimmed = text.trim();
+    if (shouldOpenQuoteForm(trimmed, resolvedLocale)) {
+      setInput('');
+      openQuoteFormFromIntent(trimmed);
+      return;
+    }
     setInput('');
-    setMessages((m) => [...m, { role: 'user', content: text.trim() }]);
+    setMessages((m) => [...m, { role: 'user', content: trimmed }]);
     setLoading(true);
     try {
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || '');
@@ -237,7 +305,7 @@ function WidgetContent() {
         body: JSON.stringify({
           widgetId,
           conversationId,
-          message: text.trim(),
+          message: trimmed,
           language: resolvedLocale,
           detectedLocale: activeLocale,
           activeLocale: resolvedLocale,
@@ -261,20 +329,7 @@ function WidgetContent() {
       }
       if (data.action && typeof data.action === 'object' && typeof data.action.type === 'string') {
         if (data.action.type === 'open_quote_form') {
-          setShowQuoteForm(true);
-          setQuoteSubmitted(false);
-          setQuoteSubmitError(null);
-          setQuoteSubmitResult(null);
-          setQuoteFieldErrors({});
-          setLeadName('');
-          setLeadEmail('');
-          setLeadPhone('');
-          setLeadErrors({});
-          const defaults: Record<string, string> = {};
-          (config?.quoteVariables ?? []).forEach((v) => {
-            if (v.default_value != null && v.default_value !== '') defaults[v.key] = String(v.default_value);
-          });
-          setQuoteFormInputs(defaults);
+          openQuoteFormFromIntent();
         }
         try {
           window.parent?.postMessage?.({ type: 'spaxio-action', action: data.action }, '*');
