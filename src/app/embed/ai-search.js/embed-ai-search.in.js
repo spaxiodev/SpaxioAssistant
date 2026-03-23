@@ -1,12 +1,26 @@
 /**
  * Spaxio AI Search embed loader — injected __SPAXIO_BASE_URL__ at serve time.
- * Minimal UI: floating button opens panel; searches /api/widget/ai-search.
+ * Supports takeover mode (existing website search bar) and widget mode.
  */
 (function () {
   var BASE_URL = '__SPAXIO_BASE_URL__';
-  var BASE = BASE_URL.replace(/\/$/, '');
   var scripts = document.getElementsByTagName('script');
   var me = scripts[scripts.length - 1];
+  function resolveBaseUrl(raw) {
+    var v = (raw || '').trim();
+    if (v && v.indexOf('__SPAXIO_BASE_URL__') === -1) {
+      return v.replace(/\/$/, '');
+    }
+    try {
+      var scriptSrc = me && me.src ? me.src : '';
+      if (!scriptSrc) return '';
+      var u = new URL(scriptSrc, window.location.href);
+      return (u.origin || '').replace(/\/$/, '');
+    } catch (_e) {
+      return '';
+    }
+  }
+  var BASE = resolveBaseUrl(BASE_URL);
   var widgetId = me.getAttribute('data-widget-id');
   if (!widgetId || !BASE) return;
 
@@ -40,23 +54,12 @@
     return pack[key] || STR.en[key] || key;
   }
 
-  var root = document.createElement('div');
-  root.id = 'spaxio-ai-search-root';
-  root.style.cssText =
-    'position:fixed;z-index:2147483000;bottom:96px;right:24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
-  document.body.appendChild(root);
-
-  var btn = document.createElement('button');
-  btn.type = 'button';
-  btn.textContent = t('open');
-  btn.style.cssText =
-    'border:0;border-radius:9999px;padding:12px 18px;font-weight:600;cursor:pointer;box-shadow:0 10px 40px rgba(15,23,42,0.18);background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;';
-  root.appendChild(btn);
-
-  var panel = document.createElement('div');
-  panel.style.cssText =
-    'display:none;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;margin-top:10px;border-radius:16px;background:#fff;color:#0f172a;box-shadow:0 24px 80px rgba(15,23,42,0.25);border:1px solid rgba(148,163,184,0.35);';
-  root.appendChild(panel);
+  var root = null;
+  var btn = null;
+  var panel = null;
+  var takeoverMode = false;
+  var quickPrompts = [];
+  var boundSearchInput = null;
 
   function esc(s) {
     var d = document.createElement('div');
@@ -81,11 +84,16 @@
   function renderResults(data) {
     var html = '';
     html +=
-      '<div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#f8fafc,#fff);border-radius:16px 16px 0 0;">';
-    html += '<input id="spaxio-ai-q" type="search" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:14px;" placeholder="' +
-      esc(t('placeholder')) +
-      '" />';
-    html += '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">';
+      '<div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#f8fafc,#fff);' +
+      (takeoverMode ? 'border-radius:12px 12px 0 0;' : 'border-radius:16px 16px 0 0;') +
+      '">';
+    if (!takeoverMode) {
+      html +=
+        '<input id="spaxio-ai-q" type="search" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;font-size:14px;" placeholder="' +
+        esc(t('placeholder')) +
+        '" />';
+    }
+    html += '<div style="' + (takeoverMode ? '' : 'margin-top:8px;') + 'display:flex;flex-wrap:wrap;gap:6px;">';
     var prompts = data.quick_prompts || [];
     for (var i = 0; i < prompts.length; i++) {
       html +=
@@ -160,9 +168,11 @@
     }
 
     html +=
-      '<div style="padding:10px;text-align:right;border-top:1px solid #f1f5f9;"><button type="button" id="spaxio-ai-close" style="border:0;background:transparent;color:#64748b;cursor:pointer;font-size:13px;">' +
-      esc(t('close')) +
-      '</button></div>';
+      (takeoverMode
+        ? ''
+        : '<div style="padding:10px;text-align:right;border-top:1px solid #f1f5f9;"><button type="button" id="spaxio-ai-close" style="border:0;background:transparent;color:#64748b;cursor:pointer;font-size:13px;">' +
+          esc(t('close')) +
+          '</button></div>');
 
     panel.innerHTML = html;
 
@@ -172,9 +182,14 @@
         if (ev.key === 'Enter') runSearch(input.value);
       });
     }
-    document.getElementById('spaxio-ai-close').addEventListener('click', function () {
-      panel.style.display = 'none';
-    });
+    if (!takeoverMode) {
+      var closeBtn = document.getElementById('spaxio-ai-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          panel.style.display = 'none';
+        });
+      }
+    }
     var pills = panel.querySelectorAll('.spaxio-pill');
     for (var p = 0; p < pills.length; p++) {
       pills[p].addEventListener('click', function (ev) {
@@ -205,7 +220,9 @@
 
   function runSearch(q) {
     if (!q || !q.trim()) return;
+    if (!panel) return;
     panel.style.display = 'block';
+    if (boundSearchInput) boundSearchInput.setAttribute('aria-busy', 'true');
     panel.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">' + esc(t('loading')) + '</div>';
     history.push({ role: 'user', content: q.trim() });
     fetch(BASE + '/api/widget/ai-search', {
@@ -225,6 +242,7 @@
       .then(function (data) {
         if (data.error) {
           panel.innerHTML = '<div style="padding:16px;color:#b91c1c;font-size:14px;">' + esc(data.error) + '</div>';
+          if (boundSearchInput) boundSearchInput.removeAttribute('aria-busy');
           return;
         }
         renderResults(data);
@@ -232,34 +250,119 @@
           role: 'assistant',
           content: data.intent_summary || '',
         });
+        if (boundSearchInput) boundSearchInput.removeAttribute('aria-busy');
       })
       .catch(function () {
         panel.innerHTML = '<div style="padding:16px;color:#b91c1c;">Network error</div>';
+        if (boundSearchInput) boundSearchInput.removeAttribute('aria-busy');
       });
   }
 
-  btn.addEventListener('click', function () {
-    if (panel.style.display === 'block') {
-      panel.style.display = 'none';
-      return;
+  function getSearchInput() {
+    var explicitSelector = me.getAttribute('data-search-selector');
+    if (explicitSelector) {
+      var selected = document.querySelector(explicitSelector);
+      if (selected && selected.tagName === 'INPUT') return selected;
     }
-    panel.style.display = 'block';
-    if (!panel.innerHTML) {
-      panel.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">' + esc(t('loading')) + '</div>';
-      fetch(BASE + '/api/widget/config?widgetId=' + encodeURIComponent(widgetId))
-        .then(function (r) {
-          return r.json();
-        })
-        .then(function (cfg) {
-          var qs = (cfg.aiSearch && cfg.aiSearch.quickPrompts) || [];
-          renderResults({ results: [], quick_prompts: qs, fallback_suggestions: [] });
-          var inp = document.getElementById('spaxio-ai-q');
-          if (inp) inp.focus();
-        })
-        .catch(function () {
-          renderResults({ results: [], quick_prompts: [], fallback_suggestions: [] });
-        });
+    var candidates = document.querySelectorAll(
+      'input[type="search"], input[name*="search" i], input[id*="search" i], form[role="search"] input'
+    );
+    for (var i = 0; i < candidates.length; i++) {
+      var el = candidates[i];
+      if (el && el.tagName === 'INPUT' && el.offsetParent !== null) return el;
     }
-  });
+    return null;
+  }
+
+  function initWidgetMode() {
+    root = document.createElement('div');
+    root.id = 'spaxio-ai-search-root';
+    root.style.cssText =
+      'position:fixed;z-index:2147483000;bottom:96px;right:24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+    document.body.appendChild(root);
+
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = t('open');
+    btn.style.cssText =
+      'border:0;border-radius:9999px;padding:12px 18px;font-weight:600;cursor:pointer;box-shadow:0 10px 40px rgba(15,23,42,0.18);background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;';
+    root.appendChild(btn);
+
+    panel = document.createElement('div');
+    panel.style.cssText =
+      'display:none;width:min(420px,calc(100vw - 32px));max-height:70vh;overflow:auto;margin-top:10px;border-radius:16px;background:#fff;color:#0f172a;box-shadow:0 24px 80px rgba(15,23,42,0.25);border:1px solid rgba(148,163,184,0.35);';
+    root.appendChild(panel);
+
+    btn.addEventListener('click', function () {
+      if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+        return;
+      }
+      panel.style.display = 'block';
+      if (!panel.innerHTML) {
+        renderResults({ results: [], quick_prompts: quickPrompts, fallback_suggestions: [] });
+        var inp = document.getElementById('spaxio-ai-q');
+        if (inp) inp.focus();
+      }
+    });
+  }
+
+  function initTakeoverMode() {
+    boundSearchInput = getSearchInput();
+    if (!boundSearchInput) return false;
+    takeoverMode = true;
+
+    var host = document.createElement('div');
+    host.id = 'spaxio-ai-search-results';
+    host.style.cssText =
+      'display:none;margin-top:10px;border-radius:12px;background:#fff;color:#0f172a;box-shadow:0 10px 32px rgba(15,23,42,0.16);border:1px solid rgba(148,163,184,0.35);max-height:70vh;overflow:auto;';
+
+    var searchForm = boundSearchInput.form || boundSearchInput.closest('form');
+    var parent = searchForm || boundSearchInput.parentElement;
+    if (!parent || !parent.parentNode) return false;
+    if (searchForm && searchForm.parentNode) {
+      searchForm.parentNode.insertBefore(host, searchForm.nextSibling);
+    } else {
+      parent.parentNode.insertBefore(host, parent.nextSibling);
+    }
+    panel = host;
+
+    var submitHandler = function (ev) {
+      if (ev) ev.preventDefault();
+      runSearch(boundSearchInput.value);
+    };
+    if (searchForm) {
+      searchForm.addEventListener('submit', submitHandler);
+    }
+    boundSearchInput.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        runSearch(boundSearchInput.value);
+      }
+    });
+
+    renderResults({ results: [], quick_prompts: quickPrompts, fallback_suggestions: [] });
+    return true;
+  }
+
+  fetch(BASE + '/api/widget/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ widgetId: widgetId }),
+  })
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (cfg) {
+      var aiSearch = cfg && cfg.aiSearch ? cfg.aiSearch : {};
+      quickPrompts = Array.isArray(aiSearch.quickPrompts) ? aiSearch.quickPrompts : [];
+      var displayMode = typeof aiSearch.displayMode === 'string' ? aiSearch.displayMode : 'modal';
+      var wantsTakeover = displayMode === 'replace_search' || displayMode === 'beside_search';
+      if (wantsTakeover && initTakeoverMode()) return;
+      initWidgetMode();
+    })
+    .catch(function () {
+      initWidgetMode();
+    });
 })();
 

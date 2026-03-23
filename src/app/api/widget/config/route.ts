@@ -6,7 +6,7 @@ import { canRemoveBranding } from '@/lib/entitlements';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
 };
@@ -15,10 +15,8 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-export async function GET(request: Request) {
+async function handleConfigRequest(request: Request, rawWidgetId: string | null | undefined) {
   const ip = getClientIp(request);
-  const { searchParams } = new URL(request.url);
-  const rawWidgetId = searchParams.get('widgetId');
 
   if (!rawWidgetId || typeof rawWidgetId !== 'string') {
     return NextResponse.json({ error: 'Missing widgetId' }, { status: 400, headers: corsHeaders });
@@ -152,4 +150,15 @@ export async function GET(request: Request) {
     },
     { headers: corsHeaders }
   );
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  return handleConfigRequest(request, searchParams.get('widgetId'));
+}
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => ({}));
+  const rawWidgetId = typeof body?.widgetId === 'string' ? body.widgetId : null;
+  return handleConfigRequest(request, rawWidgetId);
 }
