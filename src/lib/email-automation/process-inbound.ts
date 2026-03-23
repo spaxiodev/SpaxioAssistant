@@ -4,9 +4,7 @@
  * Orchestrates: spam filter → language detection → dedup check →
  * lead upsert → reply generation → provider-aware send → status update.
  *
- * Outbound sending is provider-aware:
- *   - gmail / outlook / imap providers use their own credentials
- *   - webhook_inbound / resend / unset providers fall back to Resend
+ * Outbound sending uses Resend for all provider records.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -257,9 +255,7 @@ export async function processInboundEmail(params: {
 
   const autoReplyId = (autoReplyRow?.id as string | null) ?? null;
 
-  // ── 9. Send via provider-aware abstraction ────────────────────────────────
-  // Use the inbound provider for sending if it supports outbound (gmail/outlook/imap).
-  // Otherwise falls back to Resend automatically.
+  // ── 9. Send via provider abstraction (Resend-only) ───────────────────────
   const providerRecord = await getProviderRecord(supabase, emailProviderId, organizationId);
 
   const sendResult = await sendEmailViaProvider(providerRecord, {

@@ -69,7 +69,7 @@ export default async function BillingPage() {
               className="rounded-lg px-6 py-6 text-base font-semibold"
             />
             <p className="text-xs text-muted-foreground">
-              Start with a 49-day free trial. No credit card required upfront.{' '}
+              Start with a 7-day free trial. No credit card required upfront.{' '}
               <Link href="/pricing" className="underline hover:no-underline">
                 View all plans →
               </Link>

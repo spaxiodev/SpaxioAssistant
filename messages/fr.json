@@ -30,7 +30,7 @@
   },
   "landing": {
     "hero": {
-      "badge": "Assistant web pour votre entreprise",
+      "badge": "Assistant web pour votre entreprise - essai gratuit disponible",
       "headline": "Ajoutez un assistant IA à votre site qui répond aux visiteurs, capture des prospects et reste disponible jour et nuit",
       "subheadline": "Spaxio Assistant, c’est un widget de chat et un tableau de bord que vous contrôlez. Il répond aux questions courantes, collecte des prospects et des demandes de devis, peut recommander ce que vous vendez et inclut une recherche IA—sans demander aux clients de parcourir tout le site.",
       "ctaPrimary": "Commencer",
@@ -734,13 +734,13 @@
     "messages": "Messages",
     "aiActions": "Actions IA",
     "upgradeCtaTitle": "Passer à Assistant Pro",
-    "upgradeCtaDescription": "Profitez de l'assistant complet avec 7 semaines d'essai gratuit, puis 29 $/mois. Annulez à tout moment.",
+    "upgradeCtaDescription": "Profitez de l'assistant complet avec 7 jours d'essai gratuit, puis 29 $/mois. Annulez à tout moment.",
     "assistantProPlanName": "Assistant Pro",
-    "assistantProDescription": "7 semaines gratuites, puis 29 $/mois. Annulez à tout moment.",
+    "assistantProDescription": "7 jours gratuits, puis 29 $/mois. Annulez à tout moment.",
     "subscribeNow": "S'abonner",
     "redirecting": "Redirection...",
     "testCheckoutTitle": "Admin : Test de paiement",
-    "testCheckoutDescription": "Ouvrir Stripe Checkout pour tester le flux d'abonnement (7 semaines gratuites, puis 29 $/mois).",
+    "testCheckoutDescription": "Ouvrir Stripe Checkout pour tester le flux d'abonnement (7 jours gratuits, puis 29 $/mois).",
     "testCheckoutButton": "Tester le paiement",
     "backToDashboard": "Retour au tableau de bord",
     "somethingWentWrong": "Une erreur s'est produite",
@@ -821,7 +821,7 @@
   "pricing": {
     "title": "Tarifs",
     "subtitle": "Commencez gratuitement, évoluez avec votre activité. Choisissez l'offre adaptée à vos assistants IA.",
-    "trialNote": "7 semaines d'essai gratuit sur les forfaits payants. Annulez à tout moment.",
+    "trialNote": "7 jours d'essai gratuit sur les forfaits payants. Annulez à tout moment.",
     "currentPlan": "Offre actuelle",
     "backToHome": "Retour à l'accueil",
     "tiers": {

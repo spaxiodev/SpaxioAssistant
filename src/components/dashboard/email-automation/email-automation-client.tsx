@@ -80,36 +80,10 @@ const TONE_OPTIONS: { value: TonePreset; label: string; description: string }[] 
 
 const PROVIDER_OPTIONS = [
   {
-    value: 'webhook_inbound',
-    label: 'Webhook (Universal)',
-    description: 'Forward inbound emails from any provider via a webhook URL',
-    connectMode: 'webhook' as const,
-  },
-  {
     value: 'resend',
-    label: 'Resend Inbound',
-    description: 'Route inbound email through Resend inbound routing',
+    label: 'Resend',
+    description: 'Use Resend for inbound routing and outbound auto-replies',
     connectMode: 'webhook' as const,
-  },
-  {
-    value: 'gmail',
-    label: 'Gmail / Google Workspace',
-    description: 'Connect your Google account with OAuth — send replies from Gmail',
-    connectMode: 'oauth' as const,
-    oauthPath: '/api/email-automation/providers/google/start',
-  },
-  {
-    value: 'outlook',
-    label: 'Outlook / Microsoft 365',
-    description: 'Connect your Microsoft account with OAuth — send replies via Graph API',
-    connectMode: 'oauth' as const,
-    oauthPath: '/api/email-automation/providers/microsoft/start',
-  },
-  {
-    value: 'imap',
-    label: 'IMAP / Custom',
-    description: 'Connect any mailbox using IMAP/SMTP credentials',
-    connectMode: 'imap' as const,
   },
 ];
 
@@ -1252,30 +1226,17 @@ function ProvidersTab({
   saving: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [addType, setAddType] = useState('webhook_inbound');
+  const [addType, setAddType] = useState('resend');
 
   const selectedOption = PROVIDER_OPTIONS.find((p) => p.value === addType);
 
   function handleWebhookAdd(displayName: string) {
     onAdd({ provider_type: addType, display_name: displayName || null });
     setShowAdd(false);
-    setAddType('webhook_inbound');
+    setAddType('resend');
   }
 
-  function handleOAuthConnect() {
-    const option = PROVIDER_OPTIONS.find((p) => p.value === addType);
-    if (!option || option.connectMode !== 'oauth') return;
-    const returnTo = window.location.pathname;
-    window.location.href = `${option.oauthPath}?returnTo=${encodeURIComponent(returnTo)}`;
-  }
-
-  function handleImapSave(body: Record<string, unknown>) {
-    onAdd(body);
-    setShowAdd(false);
-    setAddType('webhook_inbound');
-  }
-
-  const atLimit = providers.length >= 3;
+  const atLimit = providers.length >= 1;
 
   // Local state for webhook/resend display name input
   const [webhookDisplayName, setWebhookDisplayName] = useState('');
@@ -1290,10 +1251,8 @@ function ProvidersTab({
             <div className="text-sm">
               <p className="font-medium">Email provider connections</p>
               <p className="mt-1 text-muted-foreground">
-                Connect a provider to send auto-replies from your own email address.
-                Use <strong>Webhook</strong> or <strong>Resend</strong> for inbound routing.
-                Connect <strong>Gmail</strong> or <strong>Outlook</strong> via OAuth for reply sending.
-                Use <strong>IMAP / Custom</strong> for any mailbox with SMTP credentials.
+                Email automation uses <strong>Resend only</strong> for both inbound routing and outbound auto-replies.
+                Add a single Resend provider to generate your inbound webhook URL.
               </p>
             </div>
           </div>
@@ -1307,7 +1266,7 @@ function ProvidersTab({
             <Mail className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">No email provider connected yet.</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Add a provider below to start routing inbound emails and sending auto-replies.
+              Add your Resend provider below to start routing inbound emails and sending auto-replies.
             </p>
           </CardContent>
         </Card>
@@ -1385,34 +1344,6 @@ function ProvidersTab({
               </div>
             )}
 
-            {selectedOption?.connectMode === 'oauth' && (
-              <div className="space-y-3">
-                <div className="rounded-md border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
-                  You will be redirected to {addType === 'gmail' ? 'Google' : 'Microsoft'} to authorize
-                  Spaxio to send emails on your behalf. Your login credentials are never shared with Spaxio.
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleOAuthConnect}
-                    className="gap-1.5"
-                    disabled={saving}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Connect with {addType === 'gmail' ? 'Google' : 'Microsoft'}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {selectedOption?.connectMode === 'imap' && (
-              <ImapForm
-                onSave={handleImapSave}
-                onCancel={() => setShowAdd(false)}
-                saving={saving}
-              />
-            )}
           </CardContent>
         </Card>
       ) : (
@@ -1421,10 +1352,10 @@ function ProvidersTab({
           className="w-full gap-2"
           onClick={() => { setShowAdd(true); setWebhookDisplayName(''); }}
           disabled={atLimit}
-          title={atLimit ? 'Maximum of 3 providers reached' : undefined}
+          title={atLimit ? 'Only one Resend provider is allowed' : undefined}
         >
           <Plus className="h-4 w-4" />
-          {atLimit ? 'Provider limit reached (max 3)' : 'Add Email Provider'}
+          {atLimit ? 'Provider already configured' : 'Add Resend Provider'}
         </Button>
       )}
     </div>

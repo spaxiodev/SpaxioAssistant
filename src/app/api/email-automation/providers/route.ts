@@ -2,7 +2,7 @@
  * /api/email-automation/providers
  *
  * GET    – list all providers for the org (no config_json / secrets)
- * POST   – create a new provider (webhook, resend, or imap with credentials)
+ * POST   – create a new provider (resend only)
  * PATCH  – update provider fields (status, display_name, is_default, enabled/disabled)
  * DELETE – remove a provider
  */
@@ -11,8 +11,6 @@ import { NextResponse } from 'next/server';
 import { requireOrg } from '@/lib/api-org-auth';
 import { getPlanAccess } from '@/lib/plan-access';
 import { randomBytes } from 'crypto';
-import { buildImapConfig, testSmtpConnection, testImapConnectivity } from '@/lib/email/providers/imap';
-import { isEncryptionConfigured } from '@/lib/security/secrets';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +64,7 @@ export async function POST(request: Request) {
     display_name?: string;
   };
 
-  const ALLOWED_TYPES = ['gmail', 'outlook', 'imap', 'resend', 'webhook_inbound'];
+  const ALLOWED_TYPES = ['resend'];
   if (!provider_type || !ALLOWED_TYPES.includes(provider_type)) {
     return NextResponse.json({ error: 'Invalid provider_type' }, { status: 400 });
   }
@@ -77,103 +75,12 @@ export async function POST(request: Request) {
     .select('id', { count: 'exact', head: true })
     .eq('organization_id', organizationId);
 
-  if ((count ?? 0) >= 3) {
-    return NextResponse.json(
-      { error: 'Maximum of 3 email providers allowed. Remove an existing provider first.' },
-      { status: 400 }
-    );
+  if ((count ?? 0) >= 1) {
+    return NextResponse.json({ error: 'Only one Resend provider is allowed.' }, { status: 400 });
   }
 
-  // ── IMAP: validate + encrypt credentials ─────────────────────────────────
-  if (provider_type === 'imap') {
-    if (!isEncryptionConfigured()) {
-      return NextResponse.json(
-        { error: 'Credential encryption is not configured on this server (EMAIL_ENCRYPTION_KEY missing).' },
-        { status: 503 }
-      );
-    }
-
-    const email = typeof body.email === 'string' ? body.email.trim() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-    const imapHost = typeof body.imap_host === 'string' ? body.imap_host.trim() : '';
-    const imapPort = typeof body.imap_port === 'number' ? body.imap_port : parseInt(String(body.imap_port), 10);
-    const imapSecure = Boolean(body.imap_secure);
-    const smtpHost = typeof body.smtp_host === 'string' ? body.smtp_host.trim() : '';
-    const smtpPort = typeof body.smtp_port === 'number' ? body.smtp_port : parseInt(String(body.smtp_port), 10);
-    const smtpSecure = Boolean(body.smtp_secure);
-    const fromName = typeof body.from_name === 'string' ? body.from_name.trim() : null;
-
-    if (!email || !password || !imapHost || !smtpHost) {
-      return NextResponse.json(
-        { error: 'email, password, imap_host, and smtp_host are required for IMAP providers.' },
-        { status: 400 }
-      );
-    }
-    if (isNaN(imapPort) || imapPort < 1 || imapPort > 65535) {
-      return NextResponse.json({ error: 'Invalid imap_port.' }, { status: 400 });
-    }
-    if (isNaN(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
-      return NextResponse.json({ error: 'Invalid smtp_port.' }, { status: 400 });
-    }
-
-    // Test the connection before saving
-    const [imapResult, smtpResult] = await Promise.all([
-      testImapConnectivity({ host: imapHost, port: imapPort, secure: imapSecure }),
-      testSmtpConnection({ host: smtpHost, port: smtpPort, secure: smtpSecure, email, password }),
-    ]);
-
-    if (!imapResult.ok || !smtpResult.ok) {
-      return NextResponse.json(
-        {
-          error: 'Connection test failed.',
-          imap_ok: imapResult.ok,
-          smtp_ok: smtpResult.ok,
-          imap_error: imapResult.ok ? null : imapResult.error,
-          smtp_error: smtpResult.ok ? null : smtpResult.error,
-        },
-        { status: 422 }
-      );
-    }
-
-    const configJson = buildImapConfig({
-      email,
-      from_name: fromName,
-      password,
-      imap_host: imapHost,
-      imap_port: imapPort,
-      imap_secure: imapSecure,
-      smtp_host: smtpHost,
-      smtp_port: smtpPort,
-      smtp_secure: smtpSecure,
-    });
-
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('email_providers')
-      .insert({
-        organization_id: organizationId,
-        provider_type: 'imap',
-        display_name: display_name ?? email,
-        status: 'connected',
-        config_json: configJson,
-        connected_email: email,
-        connected_name: fromName,
-        last_verified_at: now,
-        connected_at: now,
-        inbound_webhook_token: null, // IMAP providers don't use webhook tokens
-      })
-      .select(SAFE_SELECT)
-      .maybeSingle();
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ provider: data }, { status: 201 });
-  }
-
-  // ── Webhook / Resend: generate webhook token ──────────────────────────────
-  const webhookToken =
-    provider_type === 'webhook_inbound' || provider_type === 'resend'
-      ? randomBytes(32).toString('hex')
-      : null;
+  // ── Resend: generate webhook token ────────────────────────────────────────
+  const webhookToken = randomBytes(32).toString('hex');
 
   const { data, error } = await supabase
     .from('email_providers')
@@ -181,7 +88,7 @@ export async function POST(request: Request) {
       organization_id: organizationId,
       provider_type,
       display_name: display_name ?? null,
-      status: 'disconnected',
+      status: 'connected',
       inbound_webhook_token: webhookToken,
     })
     .select(SAFE_SELECT)

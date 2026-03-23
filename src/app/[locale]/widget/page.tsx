@@ -385,7 +385,9 @@ function WidgetContent() {
   return (
     <div
       ref={contentRef}
-      className="flex h-full w-full flex-col items-center justify-start bg-white font-sans dark:bg-black transition-colors duration-300 overflow-hidden"
+      className={`flex h-full w-full flex-col items-center justify-start bg-white font-sans transition-colors duration-300 dark:bg-black ${
+        showQuoteForm ? 'overflow-x-hidden overflow-y-auto px-2 pb-3 pt-2' : 'overflow-hidden'
+      }`}
       style={{ isolation: 'isolate', boxSizing: 'border-box' }}
     >
       {config?.showLanguageSwitcher && supportedLangs.length > 1 && (

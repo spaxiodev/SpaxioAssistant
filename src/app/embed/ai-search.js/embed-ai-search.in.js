@@ -5,7 +5,7 @@
 (function () {
   var BASE_URL = '__SPAXIO_BASE_URL__';
   var scripts = document.getElementsByTagName('script');
-  var me = scripts[scripts.length - 1];
+  var me = document.currentScript || scripts[scripts.length - 1];
   function resolveBaseUrl(raw) {
     var v = (raw || '').trim();
     if (v && v.indexOf('__SPAXIO_BASE_URL__') === -1) {
@@ -58,6 +58,7 @@
   var btn = null;
   var panel = null;
   var takeoverMode = false;
+  var modeInitialized = false;
   var quickPrompts = [];
   var boundSearchInput = null;
   var aiSearchEnabled = true;
@@ -301,6 +302,7 @@
   }
 
   function initWidgetMode() {
+    if (modeInitialized) return;
     root = document.createElement('div');
     root.id = 'spaxio-ai-search-root';
     root.style.cssText =
@@ -331,9 +333,11 @@
         if (inp) inp.focus();
       }
     });
+    modeInitialized = true;
   }
 
   function initTakeoverMode() {
+    if (modeInitialized) return true;
     boundSearchInput = getSearchInput();
     if (!boundSearchInput) return false;
     takeoverMode = true;
@@ -368,7 +372,45 @@
     });
 
     renderResults({ results: [], quick_prompts: quickPrompts, fallback_suggestions: [] });
+    modeInitialized = true;
     return true;
+  }
+
+  function initTakeoverWithRetry(displayMode) {
+    var maxAttempts = 24; // ~12s total at 500ms
+    var attempts = 0;
+    var timer = null;
+
+    function tryInit() {
+      if (initTakeoverMode()) {
+        if (timer) clearInterval(timer);
+        return;
+      }
+      attempts += 1;
+      if (attempts < maxAttempts) return;
+      if (timer) clearInterval(timer);
+      if (displayMode === 'replace_search') {
+        // In strict replace mode, never show floating fallback.
+        console.warn('[Spaxio AI Search] replace_search mode enabled but no search input was found.');
+        return;
+      }
+      initWidgetMode();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+          tryInit();
+          timer = setInterval(tryInit, 500);
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    tryInit();
+    timer = setInterval(tryInit, 500);
   }
 
   fetch(BASE + '/api/widget/config', {
@@ -386,10 +428,8 @@
       var displayMode = typeof aiSearch.displayMode === 'string' ? aiSearch.displayMode : 'modal';
       if (!aiSearchEnabled) return;
       var wantsTakeover = displayMode === 'replace_search' || displayMode === 'beside_search';
-      if (wantsTakeover && initTakeoverMode()) return;
-      if (displayMode === 'replace_search') {
-        // In strict replace mode, never show the floating fallback button.
-        console.warn('[Spaxio AI Search] replace_search mode enabled but no search input was found.');
+      if (wantsTakeover) {
+        initTakeoverWithRetry(displayMode);
         return;
       }
       initWidgetMode();

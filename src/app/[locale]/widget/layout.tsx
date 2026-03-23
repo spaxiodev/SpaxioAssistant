@@ -17,7 +17,7 @@ export default function WidgetLayout({
   return (
     <div
       data-spaxio-widget-root
-      className="h-screen w-full overflow-hidden bg-white opacity-100 dark:bg-black"
+      className="h-screen w-full overflow-x-hidden overflow-y-auto bg-white opacity-100 dark:bg-black"
       style={{
         boxSizing: 'border-box',
         isolation: 'isolate',
