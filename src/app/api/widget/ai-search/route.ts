@@ -6,8 +6,6 @@ import { isOrgAllowedByAdmin } from '@/lib/admin';
 import { hasActiveSubscription } from '@/lib/entitlements';
 import { widgetNoSubscriptionResponse } from '@/lib/billing/access';
 import { recordMessageUsage } from '@/lib/billing/usage';
-import { getPlanForOrg } from '@/lib/entitlements';
-import { hasFeatureAccess } from '@/lib/plan-config';
 import { ensureAiSearchSettingsRow } from '@/lib/ai-search/ensure-settings';
 import { rowToRankingConfig, defaultRankingConfig } from '@/lib/ai-search/settings-defaults';
 import { runAiSearchPipeline } from '@/lib/ai-search/pipeline';
@@ -46,6 +44,11 @@ function serializeResult(r: RankedProduct) {
   };
 }
 
+/**
+ * Public embed endpoint: billing is enforced on the widget's organization only.
+ * Site visitors are never authenticated with Spaxio; they only send widgetId + query.
+ * Access = active subscription (or admin bypass) + AI Search enabled in dashboard.
+ */
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const body = await request.json().catch(() => ({}));
@@ -99,11 +102,6 @@ export async function POST(request: Request) {
   const allowed = await hasActiveSubscription(supabase, widget.organization_id, adminAllowed);
   if (!allowed) {
     return NextResponse.json(widgetNoSubscriptionResponse(), { status: 402, headers: corsHeaders });
-  }
-
-  const plan = await getPlanForOrg(supabase, widget.organization_id);
-  if (!hasFeatureAccess(plan?.slug, 'ai_search')) {
-    return NextResponse.json({ error: 'Feature not available', upgrade: true }, { status: 403, headers: corsHeaders });
   }
 
   const row = await ensureAiSearchSettingsRow(supabase, widget.organization_id);

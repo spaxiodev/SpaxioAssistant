@@ -23,6 +23,9 @@
   var BASE = resolveBaseUrl(BASE_URL);
   var widgetId = me.getAttribute('data-widget-id');
   if (!widgetId || !BASE) return;
+  var initKey = '__spaxioAiSearchInit__' + BASE + '::' + widgetId;
+  if (window[initKey]) return;
+  window[initKey] = true;
 
   var sessionId = 's_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
   var history = [];
@@ -371,6 +374,24 @@
     return true;
   }
 
+  function tryInitTakeoverWithRetry(displayMode) {
+    if (initTakeoverMode()) return true;
+    var attempts = 0;
+    var maxAttempts = 5;
+    var delayMs = 300;
+    var retry = function () {
+      if (initTakeoverMode()) return;
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        window.setTimeout(retry, delayMs);
+        return;
+      }
+      if (displayMode !== 'replace_search') initWidgetMode();
+    };
+    window.setTimeout(retry, delayMs);
+    return true;
+  }
+
   fetch(BASE + '/api/widget/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -386,10 +407,10 @@
       var displayMode = typeof aiSearch.displayMode === 'string' ? aiSearch.displayMode : 'modal';
       if (!aiSearchEnabled) return;
       var wantsTakeover = displayMode === 'replace_search' || displayMode === 'beside_search';
-      if (wantsTakeover && initTakeoverMode()) return;
+      if (wantsTakeover && tryInitTakeoverWithRetry(displayMode)) return;
       if (displayMode === 'replace_search') {
         // In strict replace mode, never show the floating fallback button.
-        console.warn('[Spaxio AI Search] replace_search mode enabled but no search input was found.');
+        // The takeover retry path handles late-hydrated search inputs and then no-ops quietly.
         return;
       }
       initWidgetMode();

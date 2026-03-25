@@ -5,8 +5,6 @@ import { rateLimit } from '@/lib/rate-limit';
 import { hasActiveSubscription } from '@/lib/entitlements';
 import { widgetNoSubscriptionResponse } from '@/lib/billing/access';
 import { isOrgAllowedByAdmin } from '@/lib/admin';
-import { getPlanForOrg } from '@/lib/entitlements';
-import { hasFeatureAccess } from '@/lib/plan-config';
 import { logAiSearchEvent } from '@/lib/ai-search/analytics';
 
 const corsHeaders = {
@@ -56,11 +54,6 @@ export async function POST(request: Request) {
   const allowed = await hasActiveSubscription(supabase, widget.organization_id, adminAllowed);
   if (!allowed) {
     return NextResponse.json(widgetNoSubscriptionResponse(), { status: 402, headers: corsHeaders });
-  }
-
-  const plan = await getPlanForOrg(supabase, widget.organization_id);
-  if (!hasFeatureAccess(plan?.slug, 'ai_search')) {
-    return NextResponse.json({ error: 'Feature not available' }, { status: 403, headers: corsHeaders });
   }
 
   const { data: product } = await supabase
