@@ -1,6 +1,6 @@
 export type TonePreset = 'professional' | 'friendly' | 'luxury' | 'concise';
 
-export type EmailProviderType = 'gmail' | 'outlook' | 'imap' | 'resend' | 'webhook_inbound';
+export type EmailProviderType = 'resend' | 'gmail' | 'outlook' | 'imap' | 'webhook_inbound';
 
 /**
  * Provider connection status.

@@ -1,19 +1,10 @@
 /**
  * Email provider abstraction layer.
  *
- * Routes outbound email sending through the correct provider implementation
- * based on the provider_type stored in the email_providers table.
- *
- * Falls back to Resend when:
- * - The provider type is 'resend' or 'webhook_inbound'
- * - No provider is specified
- * - The provider record lacks required credentials
+ * Email automation now uses Resend as the only outbound provider.
  */
 
 import { Resend } from 'resend';
-import { sendViaGmail, validateGmailConnection } from './gmail';
-import { sendViaOutlook, validateOutlookConnection } from './outlook';
-import { sendViaSmtp, validateImapConnection } from './imap';
 import type { SendEmailPayload, SendEmailResult, ValidateConnectionResult, ProviderRecord } from './types';
 
 export type { SendEmailPayload, SendEmailResult, ValidateConnectionResult, ProviderRecord };
@@ -22,50 +13,27 @@ export type { SendEmailPayload, SendEmailResult, ValidateConnectionResult, Provi
 
 /**
  * Sends an email via the specified provider.
- * If provider is null / not connected, falls back to Resend (existing behaviour).
+ * Provider selection is ignored; all sends are routed through Resend.
  */
 export async function sendEmailViaProvider(
-  provider: ProviderRecord | null,
+  _provider: ProviderRecord | null,
   payload: SendEmailPayload
 ): Promise<SendEmailResult> {
-  if (!provider) return sendViaResend(payload);
-
-  switch (provider.provider_type) {
-    case 'gmail':
-      return sendViaGmail(provider, payload);
-    case 'outlook':
-      return sendViaOutlook(provider, payload);
-    case 'imap':
-      return sendViaSmtp(provider, payload);
-    case 'resend':
-    case 'webhook_inbound':
-    default:
-      return sendViaResend(payload);
-  }
+  return sendViaResend(payload);
 }
 
 // ── Connection Validation ─────────────────────────────────────────────────────
 
 /** Validates an existing provider connection and returns the result. */
 export async function validateProviderConnection(
-  provider: ProviderRecord
+  _provider: ProviderRecord
 ): Promise<ValidateConnectionResult> {
-  switch (provider.provider_type) {
-    case 'gmail':
-      return validateGmailConnection(provider);
-    case 'outlook':
-      return validateOutlookConnection(provider);
-    case 'imap':
-      return validateImapConnection(provider);
-    case 'resend':
-      // Resend does not need per-provider validation — the API key is global.
-      return { ok: true, email: undefined };
-    case 'webhook_inbound':
-      // Webhook providers are always "connected" once created.
-      return { ok: true, email: undefined };
-    default:
-      return { ok: false, error: `Unknown provider type: ${provider.provider_type}` };
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: 'RESEND_API_KEY is not configured' };
   }
+
+  return { ok: true, email: undefined };
 }
 
 // ── Resend fallback ───────────────────────────────────────────────────────────

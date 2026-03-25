@@ -12,7 +12,6 @@ import { widgetAiLimitResponse, widgetNoSubscriptionResponse } from '@/lib/billi
 import { hasActiveSubscription, hasExceededMonthlyMessages, hasExceededMonthlyAiActions, canUseAiActions, canUseAutomation, canUseToolCalling } from '@/lib/entitlements';
 import { searchKnowledge } from '@/lib/knowledge/search';
 import type { Agent } from '@/lib/supabase/database.types';
-import { parseAndSanitizeAction } from '@/lib/widget-actions/types';
 import { emitAutomationEvent } from '@/lib/automations/engine';
 import { parseActionFromReply } from '@/lib/widget-actions/parse-action-from-reply';
 import { getRelevantMemories, formatMemoriesForPrompt } from '@/lib/ai-memory/retrieve-memory';
@@ -37,6 +36,220 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
 };
+
+function maybeExtractAndPersistQuoteRequest(params: {
+  supabase: ReturnType<typeof createAdminClient>;
+  organizationId: string;
+  conversationId: string;
+  resolvedCustomerLanguage: string;
+  transcript: string;
+  openaiModel: string;
+}) {
+  void (async () => {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    try {
+      const extractCompletion = await openai.chat.completions.create({
+        model: params.openaiModel,
+        messages: [
+          {
+            role: 'system',
+            content: `You extract quote requests from chat transcripts. If the user has requested a quote or estimate and provided at least a name (or said "I'm X" / "my name is X"), return a JSON object with: customer_name (required, string), service_type, project_details, dimensions_size, location, notes (all optional strings), budget_text (optional string - exact phrase user said about budget e.g. "around $500"), budget_amount (optional number - numeric value only, e.g. 500 for "$500" or "500 dollars", 1000 for "1k"). If there is no clear quote request or no name, return {"customer_name":""}. Reply with only the JSON, no other text.`,
+          },
+          { role: 'user', content: params.transcript },
+        ],
+        max_tokens: 300,
+        response_format: { type: 'json_object' },
+      });
+      const raw = extractCompletion.choices[0]?.message?.content?.trim();
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        customer_name?: string;
+        service_type?: string;
+        project_details?: string;
+        dimensions_size?: string;
+        location?: string;
+        notes?: string;
+        budget_text?: string;
+        budget_amount?: number;
+      };
+      const name = typeof parsed.customer_name === 'string' ? parsed.customer_name.trim() : '';
+      const hasServiceContext =
+        (typeof parsed.service_type === 'string' && parsed.service_type.trim().length > 0) ||
+        (typeof parsed.project_details === 'string' && parsed.project_details.trim().length > 0) ||
+        (typeof parsed.dimensions_size === 'string' && parsed.dimensions_size.trim().length > 0) ||
+        (typeof parsed.location === 'string' && parsed.location.trim().length > 0) ||
+        (typeof parsed.budget_text === 'string' && parsed.budget_text.trim().length > 0) ||
+        (typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount));
+      if (!name || !hasServiceContext) return;
+
+      const { data: existing } = await params.supabase
+        .from('quote_requests')
+        .select('id')
+        .eq('conversation_id', params.conversationId)
+        .limit(1)
+        .maybeSingle();
+      if (existing) return;
+
+      const budgetAmount =
+        typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount)
+          ? parsed.budget_amount
+          : null;
+      const { data: newQuote } = await params.supabase
+        .from('quote_requests')
+        .insert({
+          organization_id: params.organizationId,
+          conversation_id: params.conversationId,
+          customer_name: name.slice(0, 500),
+          customer_language: params.resolvedCustomerLanguage,
+          service_type: typeof parsed.service_type === 'string' ? parsed.service_type.slice(0, 500) : null,
+          project_details: typeof parsed.project_details === 'string' ? parsed.project_details.slice(0, 2000) : null,
+          dimensions_size: typeof parsed.dimensions_size === 'string' ? parsed.dimensions_size.slice(0, 500) : null,
+          location: typeof parsed.location === 'string' ? parsed.location.slice(0, 500) : null,
+          notes: typeof parsed.notes === 'string' ? parsed.notes.slice(0, 2000) : null,
+          budget_text: typeof parsed.budget_text === 'string' ? parsed.budget_text.slice(0, 500) : null,
+          budget_amount: budgetAmount,
+        })
+        .select('id')
+        .single();
+
+      if (newQuote?.id) {
+        const adminAllowed = await isOrgAllowedByAdmin(params.supabase, params.organizationId);
+        const automationsAllowed = await canUseAutomation(params.supabase, params.organizationId, adminAllowed);
+        if (automationsAllowed) {
+          emitAutomationEvent(params.supabase, {
+            organization_id: params.organizationId,
+            event_type: 'quote_request_submitted',
+            payload: {
+              trigger_type: 'quote_request_submitted',
+              conversation_id: params.conversationId,
+              quote_request_id: newQuote.id,
+              customer_name: name,
+              customer_language: params.resolvedCustomerLanguage,
+              service_type: parsed.service_type ?? undefined,
+              project_details: parsed.project_details ?? undefined,
+            },
+            trace_id: `quote-${newQuote.id}`,
+            source: 'widget_chat',
+            actor: { type: 'quote_request', id: newQuote.id },
+          }).catch((err) => console.warn('[widget/chat] quote_request_submitted emit failed', err));
+        }
+      }
+    } catch (err) {
+      console.warn('[widget/chat] async quote extraction failed', err);
+    }
+  })();
+}
+
+function maybeExtractAndPersistLead(params: {
+  supabase: ReturnType<typeof createAdminClient>;
+  organizationId: string;
+  conversationId: string;
+  resolvedCustomerLanguage: string;
+  leadTranscriptSnippet: string;
+  openaiModel: string;
+}) {
+  void (async () => {
+    const openaiLead = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    try {
+      const leadCompletion = await openaiLead.chat.completions.create({
+        model: params.openaiModel,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You extract sales leads from chat transcripts for a service business. If the user has clear intent to purchase, book, request pricing, or get a quote, and has provided at least (a) name and (b) email OR phone, return a JSON object with: name (required string), email, phone, requested_service, message, requested_timeline (when they need it / deadline e.g. "next month"), project_details (what they want done), location (address or area). All except name are optional strings. If you are not confident there is a real lead with contact details, return {"name":""}. Reply with only the JSON, no other text.',
+          },
+          { role: 'user', content: params.leadTranscriptSnippet },
+        ],
+        max_tokens: 300,
+        response_format: { type: 'json_object' },
+      });
+      const rawLead = leadCompletion.choices[0]?.message?.content?.trim();
+      if (!rawLead) return;
+      const parsedLead = JSON.parse(rawLead) as {
+        name?: string;
+        email?: string;
+        phone?: string;
+        requested_service?: string;
+        message?: string;
+        requested_timeline?: string;
+        project_details?: string;
+        location?: string;
+      };
+
+      const leadName = typeof parsedLead.name === 'string' ? parsedLead.name.trim() : '';
+      const leadEmail = typeof parsedLead.email === 'string' ? parsedLead.email.trim() : '';
+      const leadPhone = typeof parsedLead.phone === 'string' ? parsedLead.phone.trim() : '';
+      if (!leadName || (!leadEmail && !leadPhone)) return;
+
+      const { data: existingLead } = await params.supabase
+        .from('leads')
+        .select('id')
+        .eq('conversation_id', params.conversationId)
+        .limit(1)
+        .maybeSingle();
+      if (existingLead) return;
+
+      const transcriptSnippet = params.leadTranscriptSnippet.slice(0, 1000);
+      const { data: newLead } = await params.supabase
+        .from('leads')
+        .insert({
+          organization_id: params.organizationId,
+          conversation_id: params.conversationId,
+          name: leadName.slice(0, 500),
+          email: leadEmail ? leadEmail.slice(0, 500) : 'unknown@example.com',
+          phone: leadPhone ? leadPhone.slice(0, 100) : null,
+          customer_language: params.resolvedCustomerLanguage,
+          requested_service:
+            typeof parsedLead.requested_service === 'string'
+              ? parsedLead.requested_service.slice(0, 500)
+              : null,
+          message: typeof parsedLead.message === 'string' ? parsedLead.message.slice(0, 2000) : null,
+          requested_timeline:
+            typeof parsedLead.requested_timeline === 'string'
+              ? parsedLead.requested_timeline.slice(0, 500)
+              : null,
+          project_details:
+            typeof parsedLead.project_details === 'string'
+              ? parsedLead.project_details.slice(0, 2000)
+              : null,
+          location: typeof parsedLead.location === 'string' ? parsedLead.location.slice(0, 500) : null,
+          transcript_snippet: transcriptSnippet,
+        })
+        .select('id')
+        .single();
+
+      if (newLead?.id && process.env.OPENAI_API_KEY) {
+        const { qualifyLeadWithAi, updateLeadWithQualification, maybeCreateDealForHighPriorityLead } = await import('@/lib/lead-qualification/qualify');
+        qualifyLeadWithAi({
+          name: leadName,
+          email: leadEmail || '',
+          phone: leadPhone || null,
+          message: parsedLead.message ?? null,
+          requested_service: parsedLead.requested_service ?? null,
+          requested_timeline: parsedLead.requested_timeline ?? null,
+          project_details: parsedLead.project_details ?? null,
+          location: parsedLead.location ?? null,
+          transcript_snippet: transcriptSnippet || null,
+        })
+          .then(async (result) => {
+            await updateLeadWithQualification(params.supabase, newLead.id, params.organizationId, result);
+            if (result.priority === 'high') {
+              maybeCreateDealForHighPriorityLead(
+                params.supabase,
+                params.organizationId,
+                { name: leadName, email: leadEmail || '', phone: leadPhone || null },
+                result
+              ).catch((err) => console.warn('[widget/chat] deal creation failed', err));
+            }
+          })
+          .catch((err) => console.warn('[widget/chat] lead qualification failed', err));
+      }
+    } catch (err) {
+      console.warn('[widget/chat] async lead extraction failed', err);
+    }
+  })();
+}
 
 function normalizeLanguageCode(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -546,244 +759,39 @@ If the user clearly wants a detailed quote, support ticket, or intake/booking fo
         .catch((err) => console.warn('[widget/chat] memory extraction failed', err));
     }
 
-    // Extract quote request from conversation if user asked for a quote
+    // Extract quote request from conversation if user asked for a quote.
+    // Run asynchronously so it does not delay the chat response.
     const transcript = fullHistory.map((m) => `${m.role}: ${m.content}`).join('\n');
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    try {
-      const extractCompletion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You extract quote requests from chat transcripts. If the user has requested a quote or estimate and provided at least a name (or said "I'm X" / "my name is X"), return a JSON object with: customer_name (required, string), service_type, project_details, dimensions_size, location, notes (all optional strings), budget_text (optional string - exact phrase user said about budget e.g. "around $500"), budget_amount (optional number - numeric value only, e.g. 500 for "$500" or "500 dollars", 1000 for "1k"). If there is no clear quote request or no name, return {"customer_name":""}. Reply with only the JSON, no other text.`,
-          },
-          { role: 'user', content: transcript },
-        ],
-        max_tokens: 300,
-        response_format: { type: 'json_object' },
-      });
-      const raw = extractCompletion.choices[0]?.message?.content?.trim();
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as {
-            customer_name?: string;
-            service_type?: string;
-            project_details?: string;
-            dimensions_size?: string;
-            location?: string;
-            notes?: string;
-            budget_text?: string;
-            budget_amount?: number;
-          };
-          const name = typeof parsed.customer_name === 'string' ? parsed.customer_name.trim() : '';
-          const hasServiceContext =
-            (typeof parsed.service_type === 'string' && parsed.service_type.trim().length > 0) ||
-            (typeof parsed.project_details === 'string' && parsed.project_details.trim().length > 0) ||
-            (typeof parsed.dimensions_size === 'string' && parsed.dimensions_size.trim().length > 0) ||
-            (typeof parsed.location === 'string' && parsed.location.trim().length > 0) ||
-            (typeof parsed.budget_text === 'string' && parsed.budget_text.trim().length > 0) ||
-            (typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount));
-          if (name && hasServiceContext) {
-            const { data: existing } = await supabase
-              .from('quote_requests')
-              .select('id')
-              .eq('conversation_id', convId)
-              .limit(1)
-              .maybeSingle();
-            if (!existing) {
-              const budgetAmount =
-                typeof parsed.budget_amount === 'number' && Number.isFinite(parsed.budget_amount)
-                  ? parsed.budget_amount
-                  : null;
-              const { data: newQuote } = await supabase.from('quote_requests').insert({
-                organization_id: widget.organization_id,
-                conversation_id: convId,
-                customer_name: name.slice(0, 500),
-                customer_language: resolvedCustomerLanguage,
-                service_type: typeof parsed.service_type === 'string' ? parsed.service_type.slice(0, 500) : null,
-                project_details: typeof parsed.project_details === 'string' ? parsed.project_details.slice(0, 2000) : null,
-                dimensions_size: typeof parsed.dimensions_size === 'string' ? parsed.dimensions_size.slice(0, 500) : null,
-                location: typeof parsed.location === 'string' ? parsed.location.slice(0, 500) : null,
-                notes: typeof parsed.notes === 'string' ? parsed.notes.slice(0, 2000) : null,
-                budget_text: typeof parsed.budget_text === 'string' ? parsed.budget_text.slice(0, 500) : null,
-                budget_amount: budgetAmount,
-              }).select('id').single();
-              if (newQuote?.id) {
-                const adminAllowed = await isOrgAllowedByAdmin(supabase, widget.organization_id);
-                const automationsAllowed = await canUseAutomation(supabase, widget.organization_id, adminAllowed);
-                if (automationsAllowed) {
-                  emitAutomationEvent(supabase, {
-                    organization_id: widget.organization_id,
-                    event_type: 'quote_request_submitted',
-                    payload: {
-                      trigger_type: 'quote_request_submitted',
-                      conversation_id: convId,
-                      quote_request_id: newQuote.id,
-                      customer_name: name,
-                      customer_language: resolvedCustomerLanguage,
-                      service_type: parsed.service_type ?? undefined,
-                      project_details: parsed.project_details ?? undefined,
-                    },
-                    trace_id: `quote-${newQuote.id}`,
-                    source: 'widget_chat',
-                    actor: { type: 'quote_request', id: newQuote.id },
-                  }).catch((err) => console.warn('[widget/chat] quote_request_submitted emit failed', err));
-                }
-              }
-            }
-          }
-        } catch (parseErr) {
-          console.warn('Failed to parse quote request JSON', { error: (parseErr as Error).message });
-        }
-      }
-    } catch (_) {
-      // Non-fatal: quote extraction failed
-    }
+    maybeExtractAndPersistQuoteRequest({
+      supabase,
+      organizationId: widget.organization_id,
+      conversationId: convId,
+      resolvedCustomerLanguage,
+      transcript,
+      openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    });
 
-    // Extract general lead details when there is purchase / booking / quote intent or contact info shared
-    try {
-      const leadTranscriptSnippet = fullHistory
-        .slice(-10)
-        .map((m) => `${m.role}: ${m.content}`)
-        .join('\n')
-        .slice(0, 4000);
-
-      const openaiLead = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-      const leadCompletion = await openaiLead.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You extract sales leads from chat transcripts for a service business. If the user has clear intent to purchase, book, request pricing, or get a quote, and has provided at least (a) name and (b) email OR phone, return a JSON object with: name (required string), email, phone, requested_service, message, requested_timeline (when they need it / deadline e.g. "next month"), project_details (what they want done), location (address or area). All except name are optional strings. If you are not confident there is a real lead with contact details, return {"name":""}. Reply with only the JSON, no other text.',
-          },
-          { role: 'user', content: leadTranscriptSnippet },
-        ],
-        max_tokens: 300,
-        response_format: { type: 'json_object' },
-      });
-
-      const rawLead = leadCompletion.choices[0]?.message?.content?.trim();
-      if (rawLead) {
-        try {
-          const parsedLead = JSON.parse(rawLead) as {
-            name?: string;
-            email?: string;
-            phone?: string;
-            requested_service?: string;
-            message?: string;
-            requested_timeline?: string;
-            project_details?: string;
-            location?: string;
-          };
-
-          const leadName = typeof parsedLead.name === 'string' ? parsedLead.name.trim() : '';
-          const leadEmail = typeof parsedLead.email === 'string' ? parsedLead.email.trim() : '';
-          const leadPhone = typeof parsedLead.phone === 'string' ? parsedLead.phone.trim() : '';
-
-          if (leadName && (leadEmail || leadPhone)) {
-            const { data: existingLead } = await supabase
-              .from('leads')
-              .select('id')
-              .eq('conversation_id', convId)
-              .limit(1)
-              .maybeSingle();
-
-            if (!existingLead) {
-              const transcriptSnippet = leadTranscriptSnippet.slice(0, 1000);
-              const { data: newLead } = await supabase
-                .from('leads')
-                .insert({
-                  organization_id: widget.organization_id,
-                  conversation_id: convId,
-                  name: leadName.slice(0, 500),
-                  email: leadEmail ? leadEmail.slice(0, 500) : 'unknown@example.com',
-                  phone: leadPhone ? leadPhone.slice(0, 100) : null,
-                  customer_language: resolvedCustomerLanguage,
-                  requested_service:
-                    typeof parsedLead.requested_service === 'string'
-                      ? parsedLead.requested_service.slice(0, 500)
-                      : null,
-                  message:
-                    typeof parsedLead.message === 'string' ? parsedLead.message.slice(0, 2000) : null,
-                  requested_timeline:
-                    typeof parsedLead.requested_timeline === 'string'
-                      ? parsedLead.requested_timeline.slice(0, 500)
-                      : null,
-                  project_details:
-                    typeof parsedLead.project_details === 'string'
-                      ? parsedLead.project_details.slice(0, 2000)
-                      : null,
-                  location:
-                    typeof parsedLead.location === 'string' ? parsedLead.location.slice(0, 500) : null,
-                  transcript_snippet: transcriptSnippet,
-                })
-                .select('id')
-                .single();
-              if (newLead?.id && process.env.OPENAI_API_KEY) {
-                const { qualifyLeadWithAi, updateLeadWithQualification, maybeCreateDealForHighPriorityLead } = await import('@/lib/lead-qualification/qualify');
-                qualifyLeadWithAi({
-                  name: leadName,
-                  email: leadEmail || '',
-                  phone: leadPhone || null,
-                  message: parsedLead.message ?? null,
-                  requested_service: parsedLead.requested_service ?? null,
-                  requested_timeline: parsedLead.requested_timeline ?? null,
-                  project_details: parsedLead.project_details ?? null,
-                  location: parsedLead.location ?? null,
-                  transcript_snippet: transcriptSnippet || null,
-                })
-                  .then(async (result) => {
-                    await updateLeadWithQualification(supabase, newLead.id, widget.organization_id, result);
-                    if (result.priority === 'high') {
-                      maybeCreateDealForHighPriorityLead(
-                        supabase,
-                        widget.organization_id,
-                        { name: leadName, email: leadEmail || '', phone: leadPhone || null },
-                        result
-                      ).catch((err) => console.warn('[widget/chat] deal creation failed', err));
-                    }
-                  })
-                  .catch((err) => console.warn('[widget/chat] lead qualification failed', err));
-              }
-            }
-          }
-        } catch (parseErr) {
-          console.warn('Failed to parse lead JSON', { error: (parseErr as Error).message });
-        }
-      }
-    } catch (_) {
-      // Non-fatal: lead extraction failed
-    }
+    // Extract general lead details in the background to reduce chat latency.
+    const leadTranscriptSnippet = fullHistory
+      .slice(-10)
+      .map((m) => `${m.role}: ${m.content}`)
+      .join('\n')
+      .slice(0, 4000);
+    maybeExtractAndPersistLead({
+      supabase,
+      organizationId: widget.organization_id,
+      conversationId: convId,
+      resolvedCustomerLanguage,
+      leadTranscriptSnippet,
+      openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    });
 
     // Use action from parsed reply line (ACTION: type); else optionally infer from separate call
     let resolvedAction: { type: string; payload?: Record<string, unknown> } | null = action
       ? { type: action.type, payload: action.payload as Record<string, unknown> | undefined }
       : null;
-    if (!resolvedAction) {
-      try {
-        const actionCompletion = await openai.chat.completions.create({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `You decide if the assistant's reply should trigger a website action. Allowed types: open_contact_form, open_quote_form, open_booking_form, show_pricing, scroll_to_section, open_link. For open_link return payload: { url: "https://..." }. For scroll_to_section return payload: { section_id: "id" }. If the user asked for a quote, estimate, or price in any language (e.g. English: quote, estimate, pricing, how much; French: devis, prix, tarif, combien, estimation; similar intent in other languages) and the assistant agreed to show the form, return { "action": { "type": "open_quote_form" } }. If no action, return {}. Reply with only the JSON.`,
-            },
-            { role: 'user', content: `User: ${message}\nAssistant: ${replyToStore}` },
-          ],
-          max_tokens: 100,
-          response_format: { type: 'json_object' },
-        });
-        const actionRaw = actionCompletion.choices[0]?.message?.content?.trim();
-        if (actionRaw) {
-          const parsed = JSON.parse(actionRaw) as { action?: unknown };
-          const sanitized = parseAndSanitizeAction(parsed.action);
-          if (sanitized) resolvedAction = { type: sanitized.type, payload: sanitized.payload };
-        }
-      } catch (_) {
-        // Non-fatal
-      }
-    }
+    // Do not run a second LLM request for action inference here; it adds avoidable
+    // latency. Use only the explicit ACTION line parsed from the assistant reply.
 
     await recordMessageUsage(supabase, widget.organization_id);
 

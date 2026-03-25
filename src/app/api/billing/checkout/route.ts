@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         cancel_url: cancelUrl,
         locale: locale === 'fr-CA' ? 'fr-CA' : 'en',
         subscription_data: {
-          trial_period_days: 49,
+          trial_period_days: 7,
           metadata: { organization_id: organizationId },
         },
         metadata: { organization_id: organizationId },

@@ -4,9 +4,7 @@
  * Tests the connection for an existing saved provider.
  * Updates last_verified_at and status on the provider record.
  *
- * For Gmail/Outlook: validates the OAuth token (fetches profile).
- * For IMAP: runs SMTP auth test.
- * For webhook_inbound / resend: always returns ok=true (no credentials to test).
+ * Resend-only mode: validates global Resend configuration.
  */
 
 import { NextResponse } from 'next/server';
